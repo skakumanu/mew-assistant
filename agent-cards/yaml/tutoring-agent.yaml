@@ -1,0 +1,148 @@
+# Mew Assistant - Tutoring Agent Card
+# AGNTCY.org compatible agent card for tutoring support
+
+name: mew-tutoring-agent
+version: 1.0.0
+type: assistant
+category: education
+
+metadata:
+  display_name: "Mew Tutoring Assistant"
+  description: "Specialized tutoring coordinator for special needs students, managing sessions, progress tracking, and personalized learning plans"
+  author: "Mew Assistant Team"
+  license: "MIT"
+  tags:
+    - tutoring
+    - education
+    - special-needs
+    - learning-support
+    - accessibility
+
+capabilities:
+  - session_coordination
+  - progress_tracking
+  - personalized_recommendations
+  - multi_channel_communication
+  - adaptive_scheduling
+
+interfaces:
+  input_channels:
+    - email
+    - sms
+    - whatsapp
+    - web_form
+  
+  output_channels:
+    - email
+    - sms
+    - whatsapp
+    - notification
+
+endpoints:
+  base_url: "http://localhost:8000"
+  
+  create_tutoring_session:
+    path: "/mew/session"
+    method: POST
+    description: "Create a new tutoring session"
+    parameters:
+      session_type: "tutoring"
+    
+  confirm_tutoring:
+    path: "/mew/confirm"
+    method: POST
+    description: "Confirm tutoring session"
+    
+  get_session_messages:
+    path: "/mew/messages/session/{session_id}"
+    method: GET
+    description: "View tutoring session communication history"
+
+features:
+  adaptive_scheduling:
+    enabled: true
+    factors:
+      - student_energy_levels
+      - optimal_learning_times
+      - family_schedule
+      - caregiver_availability
+  
+  progress_tracking:
+    enabled: true
+    metrics:
+      - session_completion_rate
+      - learning_objectives_met
+      - student_engagement
+      - parent_satisfaction
+  
+  communication:
+    multi_channel: true
+    channels:
+      - email
+      - sms
+      - whatsapp
+    response_time_sla: "4 hours"
+
+configuration:
+  session_duration:
+    default: 60  # minutes
+    range:
+      min: 30
+      max: 120
+  
+  subjects:
+    - mathematics
+    - reading
+    - writing
+    - science
+    - social_skills
+    - life_skills
+  
+  learning_styles:
+    - visual
+    - auditory
+    - kinesthetic
+    - reading_writing
+
+usage_examples:
+  - description: "Schedule math tutoring session"
+    request:
+      endpoint: "/mew/session"
+      payload:
+        user_id: "student_789"
+        session_type: "tutoring"
+        title: "Algebra homework help"
+        description: "Focus on quadratic equations"
+        priority: "normal"
+        scheduled_at: "2025-11-15T16:00:00Z"
+  
+  - description: "Generate session summary"
+    request:
+      endpoint: "/mew/summary"
+      payload:
+        user_id: "student_789"
+        session_id: 42
+        include_recommendations: true
+
+integration:
+  requires:
+    - postgresql: ">=12.0"
+    - python: ">=3.9"
+    - fastapi: ">=0.100.0"
+  
+  optional:
+    - learning_management_system: "For assignment integration"
+    - video_conferencing: "For virtual sessions"
+    - ai_assistant: "For adaptive learning recommendations"
+
+best_practices:
+  - "Schedule sessions at consistent times for routine building"
+  - "Use visual aids and adaptive materials"
+  - "Maintain regular communication with caregivers"
+  - "Track progress and celebrate small wins"
+  - "Allow flexible session lengths based on student needs"
+
+support:
+  documentation: "https://github.com/your-org/mew-assistant/README.md"
+  training: "https://academy.mew-assistant.org"
+  issues: "https://github.com/your-org/mew-assistant/issues"

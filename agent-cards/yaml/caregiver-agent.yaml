@@ -1,0 +1,180 @@
+# Mew Assistant - Caregiver Summary Agent Card
+# AGNTCY.org compatible agent card for caregiver insights
+
+name: mew-caregiver-agent
+version: 1.0.0
+type: assistant
+category: family-support
+
+metadata:
+  display_name: "Mew Caregiver Insights Assistant"
+  description: "Intelligent summary generator providing actionable insights and recommendations for special needs families and caregivers"
+  author: "Mew Assistant Team"
+  license: "MIT"
+  tags:
+    - caregiver-support
+    - special-needs
+    - family-insights
+    - progress-tracking
+    - recommendations
+
+capabilities:
+  - summary_generation
+  - insight_extraction
+  - recommendation_engine
+  - progress_analysis
+  - trend_detection
+
+interfaces:
+  input_channels:
+    - api
+    - scheduled_jobs
+    - webhook
+  
+  output_channels:
+    - email
+    - pdf_report
+    - dashboard
+    - mobile_app
+
+endpoints:
+  base_url: "http://localhost:8000"
+  
+  generate_summary:
+    path: "/mew/summary"
+    method: POST
+    description: "Generate caregiver summary with insights"
+    
+  get_summary:
+    path: "/mew/summary/{summary_id}"
+    method: GET
+    description: "Retrieve existing summary"
+    
+  list_summaries:
+    path: "/mew/summaries/user/{user_id}"
+    method: GET
+    description: "List all summaries for a user"
+
+features:
+  summary_generation:
+    enabled: true
+    frequency_options:
+      - daily
+      - weekly
+      - monthly
+      - on_demand
+    
+    components:
+      - session_overview
+      - key_highlights
+      - progress_indicators
+      - recommendations
+      - next_steps
+  
+  ai_insights:
+    enabled: true
+    features:
+      - pattern_recognition
+      - trend_analysis
+      - predictive_recommendations
+      - personalized_advice
+  
+  customization:
+    enabled: true
+    options:
+      - include_charts: true
+      - include_recommendations: true
+      - detail_level: ["brief", "standard", "detailed"]
+      - format: ["json", "pdf", "email"]
+
+configuration:
+  summary_periods:
+    daily:
+      hours: 24
+    weekly:
+      days: 7
+    monthly:
+      days: 30
+    custom:
+      enabled: true
+  
+  recommendation_categories:
+    - scheduling_optimization
+    - learning_strategies
+    - communication_tips
+    - resource_suggestions
+    - wellness_reminders
+
+usage_examples:
+  - description: "Generate weekly summary"
+    request:
+      endpoint: "/mew/summary"
+      payload:
+        user_id: "family_456"
+        period_start: "2025-11-06T00:00:00Z"
+        period_end: "2025-11-13T23:59:59Z"
+        include_recommendations: true
+  
+  - description: "Generate summary for specific session"
+    request:
+      endpoint: "/mew/summary"
+      payload:
+        user_id: "family_456"
+        session_id: 42
+        include_recommendations: true
+
+output_format:
+  summary_structure:
+    - section: overview
+      content: "High-level summary of period"
+    
+    - section: key_points
+      content: "Bullet points of important highlights"
+      format: list
+    
+    - section: session_breakdown
+      content: "Details of each session type"
+      includes:
+        - count
+        - completion_rate
+        - notable_events
+    
+    - section: recommendations
+      content: "AI-generated actionable recommendations"
+      format: list
+      priority_ranked: true
+    
+    - section: next_steps
+      content: "Suggested actions for upcoming period"
+
+integration:
+  requires:
+    - postgresql: ">=12.0"
+    - python: ">=3.9"
+    - fastapi: ">=0.100.0"
+  
+  optional:
+    - ai_service: "For enhanced recommendations (OpenAI, Anthropic)"
+    - email_service: "For automated summary delivery"
+    - pdf_generator: "For printable reports"
+
+privacy_and_security:
+  - "HIPAA compliant data handling"
+  - "Encrypted data storage"
+  - "User data anonymization options"
+  - "Configurable data retention policies"
+  - "Audit logging for all access"
+
+best_practices:
+  - "Generate summaries regularly for consistency"
+  - "Focus on actionable insights, not just data"
+  - "Highlight both successes and areas for improvement"
+  - "Use plain language accessible to all caregivers"
+  - "Include specific, measurable recommendations"
+  - "Respect family privacy and confidentiality"
+
+support:
+  documentation: "https://github.com/your-org/mew-assistant/README.md"
+  examples: "https://academy.mew-assistant.org/summaries"
+  issues: "https://github.com/your-org/mew-assistant/issues"
+  privacy_policy: "https://mew-assistant.org/privacy"

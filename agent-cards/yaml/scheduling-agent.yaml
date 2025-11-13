@@ -1,0 +1,132 @@
+# Mew Assistant - Scheduling Agent Card
+# AGNTCY.org compatible agent card for scheduling support
+
+name: mew-scheduling-agent
+version: 1.0.0
+type: assistant
+category: scheduling
+
+metadata:
+  display_name: "Mew Scheduling Assistant"
+  description: "Intelligent scheduling agent for special needs families, managing appointments, tutoring sessions, and therapy schedules"
+  author: "Mew Assistant Team"
+  license: "MIT"
+  tags:
+    - scheduling
+    - special-needs
+    - family-support
+    - accessibility
+    - education
+
+capabilities:
+  - schedule_management
+  - conflict_detection
+  - priority_handling
+  - multi_channel_communication
+  - cooldown_protection
+
+interfaces:
+  input_channels:
+    - email
+    - sms
+    - whatsapp
+    - web_form
+  
+  output_channels:
+    - email
+    - sms
+    - whatsapp
+    - push_notification
+
+endpoints:
+  base_url: "http://localhost:8000"
+  
+  create_session:
+    path: "/mew/session"
+    method: POST
+    description: "Create a new scheduling session"
+    
+  confirm_session:
+    path: "/mew/confirm"
+    method: POST
+    description: "Confirm a scheduled session with cooldown protection"
+    
+  update_session:
+    path: "/mew/session/{session_id}"
+    method: PATCH
+    description: "Update session details"
+
+features:
+  priority_periods:
+    enabled: true
+    windows:
+      - name: morning_prep
+        time: "07:00-09:00"
+        description: "Morning school preparation"
+      
+      - name: after_school
+        time: "15:00-18:00"
+        description: "After-school activities"
+      
+      - name: evening_routine
+        time: "19:00-21:00"
+        description: "Evening routine and homework"
+  
+  cooldown_protection:
+    enabled: true
+    default_hours: 24
+    priority_modifiers:
+      low: 1.5
+      normal: 1.0
+      high: 0.5
+      urgent: 0.0
+
+configuration:
+  database:
+    type: postgresql
+    connection_string: "${DATABASE_URL}"
+  
+  session_types:
+    - tutoring
+    - scheduling
+    - caregiver_summary
+  
+  priority_levels:
+    - low
+    - normal
+    - high
+    - urgent
+
+usage_examples:
+  - description: "Schedule a tutoring session"
+    request:
+      endpoint: "/mew/session"
+      payload:
+        user_id: "user_12345"
+        session_type: "tutoring"
+        title: "Math homework help"
+        priority: "normal"
+        scheduled_at: "2025-11-15T14:00:00Z"
+  
+  - description: "Confirm session with cooldown override"
+    request:
+      endpoint: "/mew/confirm"
+      payload:
+        session_id: 42
+        notes: "Emergency session"
+        override_cooldown: true
+
+integration:
+  requires:
+    - postgresql: ">=12.0"
+    - python: ">=3.9"
+    - fastapi: ">=0.100.0"
+  
+  optional:
+    - redis: "For caching and rate limiting"
+    - celery: "For background task processing"
+
+support:
+  documentation: "https://github.com/your-org/mew-assistant/README.md"
+  issues: "https://github.com/your-org/mew-assistant/issues"
+  community: "https://discord.gg/your-community"
