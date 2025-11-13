@@ -1,0 +1,74 @@
+# Mew Assistant - Container Compose File
+# Works with both docker-compose and podman-compose
+# Recommended: Use podman-compose or the provided ./podman-*.sh scripts
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: mew-db
+    environment:
+      POSTGRES_USER: mew_user
+      POSTGRES_PASSWORD: mew_password
+      POSTGRES_DB: mew_assistant
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mew_user -d mew_assistant"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Mew Assistant API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mew-api
+    environment:
+      DATABASE_URL: postgresql://mew_user:mew_password@db:5432/mew_assistant
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - ./.env:/app/.env
+    restart: unless-stopped
+
+  # Optional: Redis for caching (uncomment to enable)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: mew-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  # redis_data:
+  #   driver: local
+
+networks:
+  default:
+    name: mew-network
+
+# Usage:
+# With podman-compose: podman-compose up -d
+# With docker-compose: docker-compose up -d
+# Or use the provided scripts: ./podman-full.sh
+
