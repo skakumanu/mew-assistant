@@ -1,5 +1,12 @@
 # Mew Assistant
 
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
+[![Podman](https://img.shields.io/badge/Podman-ready-purple.svg)](https://podman.io/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 **Mew Assistant** is a FastAPI-based modular assistant designed for special needs families. It supports scheduling, tutoring coordination, and caregiver summaries with multi-channel ingestion (email, SMS, WhatsApp).
 
 ---
