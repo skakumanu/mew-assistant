@@ -1,0 +1,53 @@
+"""
+Database connection and session management for PostgreSQL.
+Handles connection pooling and session lifecycle.
+"""
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Database URL from environment variable
+# Format: postgresql://user:password@host:port/database
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://mew_user:mew_password@localhost:5432/mew_assistant"
+)
+
+# Create engine with connection pooling
+# For SQLite, use different settings
+if DATABASE_URL.startswith('sqlite'):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},  # Needed for SQLite
+        echo=False  # Set to True for SQL query debugging
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,  # Verify connections before using them
+        echo=False  # Set to True for SQL query debugging
+    )
+
+# Session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base class for ORM models
+Base = declarative_base()
+
+
+def get_db():
+    """
+    Dependency to get database session.
+    Usage in FastAPI endpoints: db: Session = Depends(get_db)
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
