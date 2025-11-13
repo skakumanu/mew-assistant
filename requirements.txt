@@ -1,0 +1,40 @@
+# Core FastAPI dependencies
+fastapi==0.121.1
+uvicorn[standard]==0.38.0
+pydantic==2.12.4
+pydantic-settings==2.7.0
+
+# Database
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# Environment and configuration
+python-dotenv==1.2.1
+PyYAML==6.0.3
+
+# Utilities
+python-multipart==0.0.20
+email-validator==2.2.0
+
+# Optional: Development and testing
+# pytest==8.3.4
+# pytest-asyncio==0.24.0
+# pytest-cov==6.0.0
+# black==24.10.0
+# flake8==7.1.1
+# mypy==1.13.0
+
+# Optional: Multi-channel integrations
+# twilio==9.3.7
+# sendgrid==6.11.0
+# python-telegram-bot==21.7
+
+# Optional: AI/LLM integration
+# openai==1.57.4
+# anthropic==0.41.0
+
+# Optional: Caching and background tasks
+# redis==5.2.1
+# celery==5.4.0
+

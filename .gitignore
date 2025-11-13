@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables - CRITICAL: Never commit!
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database - Never commit database files!
+*.db
+*.sqlite
+*.sqlite3
+mew_assistant.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logs
+*.log
+logs/
+
+# Docker/Podman
+*.pid
+*.seed
+*.pid.lock
+
+# Alembic
+alembic/versions/*.pyc
+
+# OS
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Sensitive data
+*.pem
+*.key
+*.cert
+secrets.yaml
+credentials.json
+
+# Copilot prompts (contains development context)
+.copilot-prompts/
+
+# Package signing keys
+*.gpg
+packages.microsoft.gpg
