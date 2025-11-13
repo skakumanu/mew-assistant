@@ -11,6 +11,52 @@
 
 ---
 
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Mew Assistant System                         │
+└─────────────────────────────────────────────────────────────────┘
+
+                         ┌─────────────┐
+                         │   Clients   │
+                         │ (Email/SMS/ │
+                         │  WhatsApp)  │
+                         └──────┬──────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │   FastAPI REST API    │
+                    │  (main.py + routers)  │
+                    └───────────┬───────────┘
+                                │
+              ┌─────────────────┼─────────────────┐
+              │                 │                 │
+      ┌───────▼────────┐ ┌─────▼──────┐ ┌───────▼────────┐
+      │   Session      │ │  Message   │ │   Summary      │
+      │   Service      │ │  Service   │ │   Service      │
+      └───────┬────────┘ └─────┬──────┘ └───────┬────────┘
+              │                 │                 │
+              └─────────────────┼─────────────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │   Database Layer      │
+                    │   (SQLAlchemy ORM)    │
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │   PostgreSQL/SQLite   │
+                    │   (Podman Container)  │
+                    └───────────────────────┘
+
+Key Components:
+• Session Management: Cooldown logic, priority periods
+• Message Ingestion: Multi-channel support
+• Caregiver Summaries: Actionable insights generation
+• Database: Persistent storage with relationship management
+```
+
+---
+
 ## 🌟 Features
 
 - **Session Management**: Schedule and manage tutoring, scheduling, and caregiver sessions

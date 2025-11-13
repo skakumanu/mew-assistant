@@ -1,0 +1,1634 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mew Assistant",
+    "description": "Modular assistant for special needs families supporting scheduling, tutoring, and caregiver summaries",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/mew/session": {
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Create Session",
+        "description": "Create a new session (tutoring, scheduling, or caregiver summary).\n\n**Priority escalation**: Automatically escalates priority during peak hours\n(morning prep, after-school, evening routine).\n\n**Example Request**:\n```json\n{\n    \"user_id\": \"user_12345\",\n    \"session_type\": \"tutoring\",\n    \"title\": \"Math homework help\",\n    \"priority\": \"normal\",\n    \"scheduled_at\": \"2025-11-15T14:00:00Z\"\n}\n```",
+        "operationId": "create_session_mew_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/confirm": {
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Confirm Session",
+        "description": "Confirm a session with cooldown protection.\n\n**Cooldown logic**: Prevents overwhelming families with requests.\n- Normal priority: 24-hour cooldown\n- High priority: 12-hour cooldown\n- Urgent: No cooldown\n\n**Override**: Use `override_cooldown=true` for urgent sessions.\n\n**Example Request**:\n```json\n{\n    \"session_id\": 42,\n    \"notes\": \"Confirmed via phone\",\n    \"override_cooldown\": false\n}\n```",
+        "operationId": "confirm_session_mew_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/session/{session_id}": {
+      "patch": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Update Session",
+        "description": "Update session details.\n\n**Updatable fields**:\n- status (pending, confirmed, active, completed, cancelled)\n- priority (low, normal, high, urgent)\n- title, description, notes\n- scheduled_at",
+        "operationId": "update_session_mew_session__session_id__patch",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get Session",
+        "description": "Get session details by ID.",
+        "operationId": "get_session_mew_session__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/sessions/user/{user_id}": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get User Sessions",
+        "description": "Get all sessions for a user.\n\n**Query Parameters**:\n- status: Filter by status (optional)\n- limit: Maximum results (default: 100)",
+        "operationId": "get_user_sessions_mew_sessions_user__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionResponse"
+                  },
+                  "title": "Response Get User Sessions Mew Sessions User  User Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/ingest": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Ingest Message",
+        "description": "Ingest a message from any supported channel (email, SMS, WhatsApp).\n\n**Supported Channels**:\n- email: Email messages with subject and body\n- sms: Text messages from phone numbers\n- whatsapp: WhatsApp messages\n- web: Web form submissions\n\n**Example Request (Email)**:\n```json\n{\n    \"channel\": \"email\",\n    \"sender\": \"parent@example.com\",\n    \"recipient\": \"mew@assistant.com\",\n    \"subject\": \"Need tutoring help\",\n    \"body\": \"My child needs help with math homework.\",\n    \"session_id\": null\n}\n```\n\n**Example Request (SMS)**:\n```json\n{\n    \"channel\": \"sms\",\n    \"sender\": \"+1234567890\",\n    \"body\": \"Can we schedule a session for tomorrow?\",\n    \"session_id\": 42\n}\n```",
+        "operationId": "ingest_message_mew_ingest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/ingest/batch": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Ingest Batch",
+        "description": "Ingest multiple messages in a single request.\n\n**Batch Size**: Maximum 100 messages per request.\n\n**Example Request**:\n```json\n{\n    \"messages\": [\n        {\n            \"channel\": \"email\",\n            \"sender\": \"parent1@example.com\",\n            \"body\": \"Need scheduling help\"\n        },\n        {\n            \"channel\": \"sms\",\n            \"sender\": \"+1234567890\",\n            \"body\": \"Thank you!\"\n        }\n    ]\n}\n```",
+        "operationId": "ingest_batch_mew_ingest_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageBatchIngest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Ingest Batch Mew Ingest Batch Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/message/{message_id}/processed": {
+      "patch": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Mark Message Processed",
+        "description": "Mark a message as processed.\n\n**Use Case**: After successfully handling a message, mark it as processed\nto avoid duplicate processing.",
+        "operationId": "mark_message_processed_mew_message__message_id__processed_patch",
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/messages/unprocessed": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get Unprocessed Messages",
+        "description": "Get unprocessed messages for background processing.\n\n**Query Parameters**:\n- channel: Filter by channel (optional)\n- limit: Maximum results (default: 100)",
+        "operationId": "get_unprocessed_messages_mew_messages_unprocessed_get",
+        "parameters": [
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "title": "Response Get Unprocessed Messages Mew Messages Unprocessed Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/messages/session/{session_id}": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get Session Messages",
+        "description": "Get all messages for a specific session.\n\n**Use Case**: View conversation history for a session across all channels.",
+        "operationId": "get_session_messages_mew_messages_session__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "title": "Response Get Session Messages Mew Messages Session  Session Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/messages/user/{sender}": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get User Messages",
+        "description": "Get all messages from a specific sender.\n\n**Query Parameters**:\n- sender: Email address, phone number, or user identifier\n- channel: Filter by channel (optional)\n- limit: Maximum results (default: 100)",
+        "operationId": "get_user_messages_mew_messages_user__sender__get",
+        "parameters": [
+          {
+            "name": "sender",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sender"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "title": "Response Get User Messages Mew Messages User  Sender  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/summary": {
+      "post": {
+        "tags": [
+          "summaries"
+        ],
+        "summary": "Generate Summary",
+        "description": "Generate a caregiver summary with insights and recommendations.\n\n**Purpose**: Provides special needs families with actionable insights\nabout sessions, progress, and next steps.\n\n**Features**:\n- Session activity summary\n- Key points extraction\n- AI-generated recommendations (optional)\n- Custom time period support\n\n**Example Request**:\n```json\n{\n    \"user_id\": \"user_12345\",\n    \"session_id\": null,\n    \"period_start\": \"2025-11-01T00:00:00Z\",\n    \"period_end\": \"2025-11-13T23:59:59Z\",\n    \"include_recommendations\": true\n}\n```\n\n**Response includes**:\n- Summary text\n- Key points list\n- Recommendations list\n- Time period covered",
+        "operationId": "generate_summary_mew_summary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SummaryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/summary/{summary_id}": {
+      "get": {
+        "tags": [
+          "summaries"
+        ],
+        "summary": "Get Summary",
+        "description": "Get a specific summary by ID.",
+        "operationId": "get_summary_mew_summary__summary_id__get",
+        "parameters": [
+          {
+            "name": "summary_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Summary Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mew/summaries/user/{user_id}": {
+      "get": {
+        "tags": [
+          "summaries"
+        ],
+        "summary": "Get User Summaries",
+        "description": "Get all summaries for a user.\n\n**Query Parameters**:\n- limit: Maximum results (default: 50)\n\n**Use Case**: View historical summaries and track progress over time.",
+        "operationId": "get_user_summaries_mew_summaries_user__user_id__get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Root",
+        "description": "Health check endpoint.\nReturns basic information about the Mew Assistant API.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health Check",
+        "description": "Detailed health check endpoint.\nUsed by monitoring systems and load balancers.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChannelType": {
+        "type": "string",
+        "enum": [
+          "email",
+          "sms",
+          "whatsapp",
+          "web"
+        ],
+        "title": "ChannelType",
+        "description": "Supported communication channels."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MessageBatchIngest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageIngest"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "MessageBatchIngest",
+        "description": "Request schema for batch message ingestion.",
+        "example": {
+          "messages": [
+            {
+              "body": "Need help with scheduling",
+              "channel": "email",
+              "sender": "parent1@example.com"
+            },
+            {
+              "body": "Confirming tomorrow's session",
+              "channel": "sms",
+              "sender": "+1234567890"
+            }
+          ]
+        }
+      },
+      "MessageIngest": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/ChannelType",
+            "description": "Communication channel"
+          },
+          "sender": {
+            "type": "string",
+            "title": "Sender",
+            "description": "Sender identifier (email, phone number)"
+          },
+          "recipient": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient",
+            "description": "Recipient identifier"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject",
+            "description": "Message subject (email only)"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Body",
+            "description": "Message body/content"
+          },
+          "raw_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Content",
+            "description": "Raw message data for debugging"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Link to existing session"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received At",
+            "description": "When message was received"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel",
+          "sender",
+          "body"
+        ],
+        "title": "MessageIngest",
+        "description": "Request schema for ingesting messages from multiple channels.\nSupports email, SMS, and WhatsApp integration.",
+        "examples": [
+          {
+            "body": "My child needs help with math homework this Thursday.",
+            "channel": "email",
+            "received_at": "2025-11-13T10:00:00Z",
+            "recipient": "mew@assistant.com",
+            "sender": "parent@example.com",
+            "subject": "Need tutoring help"
+          },
+          {
+            "body": "Can we schedule a session for tomorrow?",
+            "channel": "sms",
+            "sender": "+1234567890",
+            "session_id": 42
+          },
+          {
+            "body": "Thank you for the tutoring session!",
+            "channel": "whatsapp",
+            "sender": "+1234567890",
+            "session_id": 42
+          }
+        ]
+      },
+      "MessageResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "sender": {
+            "type": "string",
+            "title": "Sender"
+          },
+          "recipient": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "processed": {
+            "type": "boolean",
+            "title": "Processed"
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed At"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "session_id",
+          "channel",
+          "sender",
+          "recipient",
+          "subject",
+          "body",
+          "processed",
+          "processed_at",
+          "received_at",
+          "created_at"
+        ],
+        "title": "MessageResponse",
+        "description": "Response schema for ingested messages.",
+        "example": {
+          "body": "My child needs help with math homework.",
+          "channel": "email",
+          "created_at": "2025-11-13T10:00:30Z",
+          "id": 123,
+          "processed": true,
+          "processed_at": "2025-11-13T10:05:00Z",
+          "received_at": "2025-11-13T10:00:00Z",
+          "recipient": "mew@assistant.com",
+          "sender": "parent@example.com",
+          "session_id": 42,
+          "subject": "Need tutoring help"
+        }
+      },
+      "PriorityLevel": {
+        "type": "string",
+        "enum": [
+          "low",
+          "normal",
+          "high",
+          "urgent"
+        ],
+        "title": "PriorityLevel",
+        "description": "Priority levels for scheduling."
+      },
+      "SessionConfirm": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id",
+            "description": "Session ID to confirm"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Additional notes"
+          },
+          "override_cooldown": {
+            "type": "boolean",
+            "title": "Override Cooldown",
+            "description": "Override cooldown period for urgent sessions",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "SessionConfirm",
+        "description": "Request schema for confirming a session.",
+        "example": {
+          "notes": "Confirmed via phone call",
+          "override_cooldown": false,
+          "session_id": 42
+        }
+      },
+      "SessionCreate": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User identifier"
+          },
+          "session_type": {
+            "$ref": "#/components/schemas/SessionType",
+            "description": "Type of session to create"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "Session title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Session description"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/PriorityLevel",
+            "description": "Session priority",
+            "default": "normal"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At",
+            "description": "Scheduled time (ISO format)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "session_type"
+        ],
+        "title": "SessionCreate",
+        "description": "Request schema for creating a new session.",
+        "example": {
+          "description": "Algebra homework help",
+          "priority": "normal",
+          "scheduled_at": "2025-11-15T14:00:00Z",
+          "session_type": "tutoring",
+          "title": "Math tutoring session",
+          "user_id": "user_12345"
+        }
+      },
+      "SessionResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "session_type": {
+            "type": "string",
+            "title": "Session Type"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "cooldown_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cooldown Until"
+          },
+          "in_cooldown": {
+            "type": "boolean",
+            "title": "In Cooldown",
+            "description": "Whether session is in cooldown period",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "session_type",
+          "status",
+          "priority",
+          "title",
+          "description",
+          "notes",
+          "created_at",
+          "confirmed_at",
+          "scheduled_at",
+          "completed_at",
+          "cooldown_until"
+        ],
+        "title": "SessionResponse",
+        "description": "Response schema for session data.",
+        "example": {
+          "confirmed_at": "2025-11-13T10:05:00Z",
+          "created_at": "2025-11-13T10:00:00Z",
+          "description": "Algebra homework help",
+          "id": 42,
+          "in_cooldown": false,
+          "notes": "Student needs extra help with quadratics",
+          "priority": "normal",
+          "scheduled_at": "2025-11-15T14:00:00Z",
+          "session_type": "tutoring",
+          "status": "confirmed",
+          "title": "Math tutoring session",
+          "user_id": "user_12345"
+        }
+      },
+      "SessionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "confirmed",
+          "active",
+          "completed",
+          "cancelled"
+        ],
+        "title": "SessionStatus",
+        "description": "Session status values."
+      },
+      "SessionType": {
+        "type": "string",
+        "enum": [
+          "tutoring",
+          "scheduling",
+          "caregiver_summary"
+        ],
+        "title": "SessionType",
+        "description": "Available session types for Mew Assistant."
+      },
+      "SessionUpdate": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriorityLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          }
+        },
+        "type": "object",
+        "title": "SessionUpdate",
+        "description": "Request schema for updating session details."
+      },
+      "SummaryList": {
+        "properties": {
+          "summaries": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryResponse"
+            },
+            "type": "array",
+            "title": "Summaries"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summaries",
+          "total"
+        ],
+        "title": "SummaryList",
+        "description": "Response schema for listing multiple summaries.",
+        "example": {
+          "summaries": [],
+          "total": 0
+        }
+      },
+      "SummaryRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "User identifier"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Specific session to summarize"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start",
+            "description": "Summary period start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End",
+            "description": "Summary period end"
+          },
+          "include_recommendations": {
+            "type": "boolean",
+            "title": "Include Recommendations",
+            "description": "Include AI-generated recommendations",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "SummaryRequest",
+        "description": "Request schema for generating caregiver summaries.\nProvides insights for special needs families.",
+        "example": {
+          "include_recommendations": true,
+          "period_end": "2025-11-13T23:59:59Z",
+          "period_start": "2025-11-01T00:00:00Z",
+          "user_id": "user_12345"
+        }
+      },
+      "SummaryResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "summary_text": {
+            "type": "string",
+            "title": "Summary Text"
+          },
+          "key_points": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key Points",
+            "description": "Key highlights"
+          },
+          "recommendations": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendations",
+            "description": "AI recommendations"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "session_id",
+          "user_id",
+          "summary_text",
+          "period_start",
+          "period_end",
+          "generated_at"
+        ],
+        "title": "SummaryResponse",
+        "description": "Response schema for caregiver summaries.",
+        "example": {
+          "generated_at": "2025-11-13T10:00:00Z",
+          "id": 1,
+          "key_points": [
+            "3 tutoring sessions completed",
+            "Math: Improved algebra understanding",
+            "Reading: Working on comprehension strategies"
+          ],
+          "period_end": "2025-11-13T23:59:59Z",
+          "period_start": "2025-11-01T00:00:00Z",
+          "recommendations": [
+            "Continue daily math practice for 15 minutes",
+            "Introduce visual aids for reading comprehension",
+            "Schedule follow-up session next week"
+          ],
+          "session_id": 42,
+          "summary_text": "This week included 3 tutoring sessions focusing on mathematics and reading comprehension. Student showed significant improvement in algebra.",
+          "user_id": "user_12345"
+        }
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
