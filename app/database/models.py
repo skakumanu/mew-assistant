@@ -66,6 +66,13 @@ class User(Base):
     phone = Column(String, nullable=True)
     timezone = Column(String, default="UTC")
     
+    # Kid-friendly features
+    is_kid_account = Column(Boolean, default=False)
+    parent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    display_name = Column(String, nullable=True)
+    age = Column(Integer, nullable=True)
+    avatar_emoji = Column(String, default="😊")
+    
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -75,6 +82,7 @@ class User(Base):
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    kids = relationship("User", backref="parent", remote_side=[id])
     
     __table_args__ = (
         Index('idx_user_email', 'email'),

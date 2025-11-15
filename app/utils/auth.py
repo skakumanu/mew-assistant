@@ -41,6 +41,31 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
+def verify_kid_account(user: User) -> None:
+    """
+    Verify that the user is a kid account.
+    Raises HTTPException if not a kid account.
+    
+    Args:
+        user: User object to verify
+        
+    Raises:
+        HTTPException: If user is not a kid account
+    """
+    if not user.is_kid_account:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is only available for kid accounts"
+        )
+    
+    # Additional safety check: ensure kid has a linked parent
+    if not user.parent_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Kid account must be linked to a parent account"
+        )
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create JWT access token.

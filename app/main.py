@@ -18,7 +18,8 @@ from .routers import (
     summary_router, 
     auth_router,
     calendar_router,
-    mobile_router
+    mobile_router,
+    kid_router
 )
 from .routers.webhooks import router as webhooks_router
 from .database import Base
@@ -77,6 +78,7 @@ app.include_router(message_router)
 app.include_router(summary_router)
 app.include_router(calendar_router)
 app.include_router(mobile_router)
+app.include_router(kid_router)  # Kid-friendly endpoints
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 
 
@@ -95,6 +97,9 @@ async def root():
             "sessions": "/mew/session, /mew/confirm",
             "messages": "/mew/ingest",
             "summaries": "/mew/summary",
+            "calendar": "/calendar/*",
+            "mobile": "/mobile/*",
+            "kid": "/kid/* (kid-friendly endpoints)",
             "webhooks": "/webhooks/sms/incoming, /webhooks/whatsapp/incoming",
             "docs": "/docs"
         }
