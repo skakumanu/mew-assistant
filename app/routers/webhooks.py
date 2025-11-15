@@ -8,7 +8,9 @@ from datetime import datetime
 
 from app.integrations import SMSIntegration, WhatsAppIntegration
 from app.services.message_service import MessageService
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 

@@ -14,8 +14,11 @@ from ..schemas.message import (
     ChannelType
 )
 from ..services.message_service import MessageService
+from ..utils.privacy import privacy_guardrails
+from ..utils.logger import get_logger
 
 router = APIRouter(prefix="/mew", tags=["messages"])
+logger = get_logger(__name__)
 
 
 @router.post("/ingest", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
@@ -25,6 +28,9 @@ async def ingest_message(
 ):
     """
     Ingest a message from any supported channel (email, SMS, WhatsApp).
+    
+    **Privacy Protection**: All messages are automatically scanned for PII.
+    Detected PII is logged but not blocked to preserve user experience.
     
     **Supported Channels**:
     - email: Email messages with subject and body
@@ -57,6 +63,13 @@ async def ingest_message(
     service = MessageService(db)
     
     try:
+        # Privacy scan for informational purposes
+        message_dict = message_data.model_dump()
+        privacy_scan = privacy_guardrails.scan_and_protect(message_dict, anonymize=False)
+        
+        if privacy_scan['pii_detected']:
+            logger.info(f"PII detected in message from {message_data.sender}: {privacy_scan['findings']}")
+        
         message = service.ingest_message(message_data)
         return MessageResponse.model_validate(message)
     except Exception as e:

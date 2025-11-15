@@ -21,6 +21,7 @@ import bleach
 
 from app.utils.logger import get_logger
 from app.utils.exceptions import SecurityViolationError, RateLimitExceeded
+from app.utils.privacy import privacy_guardrails, PIIDetector
 
 logger = get_logger(__name__)
 
@@ -139,7 +140,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     
     async def _scan_request(self, request: Request):
         """
-        Scan request for malicious patterns
+        Scan request for malicious patterns and PII leakage
         """
         # Scan URL parameters
         query_string = str(request.url.query)
@@ -147,6 +148,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             if pattern.search(query_string):
                 logger.error(f"Malicious pattern detected in query: {query_string}")
                 raise SecurityViolationError("Potentially malicious request detected")
+        
+        # Check for PII in URL (should never be in URL)
+        if PIIDetector.contains_pii(query_string):
+            logger.error(f"PII detected in URL query string from {request.client.host}")
+            raise SecurityViolationError("Sensitive data should not be sent in URL")
         
         # Scan headers
         for header_name, header_value in request.headers.items():
