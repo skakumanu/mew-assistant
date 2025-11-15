@@ -7,7 +7,9 @@ from datetime import datetime
 import json
 
 from app.utils.config import settings
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AIIntegration:

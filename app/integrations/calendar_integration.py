@@ -6,7 +6,9 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 
 from app.utils.config import settings
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class CalendarIntegration:

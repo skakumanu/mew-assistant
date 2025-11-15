@@ -39,15 +39,35 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
+    
+    # CORS
+    CORS_ORIGINS: str = "*"
     
     # Session Management
     SESSION_COOLDOWN_MINUTES: int = 30
     MAX_SESSIONS_PER_USER: int = 10
     
+    # Cooldown Settings (hours)
+    DEFAULT_COOLDOWN_HOURS: int = 24
+    TUTORING_COOLDOWN_HOURS: int = 24
+    SCHEDULING_COOLDOWN_HOURS: int = 12
+    SUMMARY_COOLDOWN_HOURS: int = 48
+    
+    # Priority Period Settings (24-hour format)
+    MORNING_PREP_START: str = "07:00"
+    MORNING_PREP_END: str = "09:00"
+    AFTER_SCHOOL_START: str = "15:00"
+    AFTER_SCHOOL_END: str = "18:00"
+    EVENING_ROUTINE_START: str = "19:00"
+    EVENING_ROUTINE_END: str = "21:00"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"  # Ignore extra fields in .env
     )
 
 

@@ -16,6 +16,7 @@ PyYAML==6.0.2
 # Utilities
 python-multipart==0.0.20
 email-validator==2.2.0
+bleach==6.2.0
 
 # Authentication
 python-jose[cryptography]==3.4.0

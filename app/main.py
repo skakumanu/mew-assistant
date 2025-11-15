@@ -16,6 +16,8 @@ from .routers import session_router, message_router, summary_router, auth_router
 from .routers.webhooks import router as webhooks_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
+from .middleware.compliance import ComplianceMiddleware
+from .middleware.security import SecurityMiddleware
 from .utils.logger import get_logger
 
 # Setup structured logging
@@ -52,7 +54,13 @@ app.add_middleware(
 # 2. Request ID tracking
 app.add_middleware(RequestIDMiddleware)
 
-# 3. Register exception handlers
+# 3. Security middleware (rate limiting, XSS, SQL injection prevention)
+app.add_middleware(SecurityMiddleware)
+
+# 4. Compliance middleware (HIPAA, COPPA, FERPA)
+app.add_middleware(ComplianceMiddleware)
+
+# 5. Register exception handlers
 register_exception_handlers(app)
 
 # Include routers

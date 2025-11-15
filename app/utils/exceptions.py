@@ -89,3 +89,21 @@ class SessionError(MewException):
     """Raised when session operation fails"""
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(message, status_code=400, error_code="SESSION_ERROR", details=details)
+
+
+class ComplianceViolationError(MewException):
+    """Raised when a compliance rule is violated (HIPAA, COPPA, FERPA)"""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=403, error_code="COMPLIANCE_VIOLATION", details=details)
+
+
+class SecurityViolationError(MewException):
+    """Raised when a security threat is detected"""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=403, error_code="SECURITY_VIOLATION", details=details)
+
+
+class RateLimitExceeded(MewException):
+    """Raised when rate limit is exceeded"""
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, status_code=429, error_code="RATE_LIMIT_EXCEEDED", details=details)

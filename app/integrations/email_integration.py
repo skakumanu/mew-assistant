@@ -17,7 +17,9 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 from app.utils.config import settings
-from app.utils.logger import logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class EmailIntegration:
