@@ -5,7 +5,7 @@ Supports scheduling, tutoring, and caregiver summaries with multi-channel ingest
 (email, SMS, WhatsApp). Includes cooldown detection, priority period overrides,
 and PostgreSQL session tracking.
 
-For contributor onboarding, see CONTRIBUTING.md
+For contributor onboarding, see README.md
 """
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -14,15 +14,22 @@ import time
 
 from .routers import session_router, message_router, summary_router, auth_router
 from .database import Base
+from .middleware.error_handler import register_exception_handlers
+from .middleware.request_id import RequestIDMiddleware
+from .utils.logging import setup_logging, get_logger
+
+# Setup structured logging
+setup_logging(log_level="INFO", json_format=False)
+logger = get_logger(__name__)
 
 # Lazy database initialization - only create tables when DB is available
 try:
     from .database import engine
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
 except Exception as e:
-    # Log warning but don't fail on startup if DB is not available
-    print(f"Warning: Could not connect to database: {e}")
-    print("Database tables will be created when connection is available.")
+    logger.warning(f"Could not connect to database: {e}")
+    logger.info("Database tables will be created when connection is available")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -33,6 +40,9 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Add request ID middleware (first to track all requests)
+app.add_middleware(RequestIDMiddleware)
+
 # CORS middleware for web clients
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +51,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register global exception handlers
+register_exception_handlers(app)
 
 
 # Request timing middleware
@@ -94,19 +107,4 @@ async def health_check():
     }
 
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """
-    Global exception handler for unhandled errors.
-    Logs errors and returns user-friendly messages.
-    """
-    # In production, log to proper logging system
-    print(f"Unhandled error: {exc}")
-    
-    return JSONResponse(
-        status_code=500,
-        content={
-            "detail": "Internal server error occurred",
-            "type": type(exc).__name__
-        }
-    )
+
