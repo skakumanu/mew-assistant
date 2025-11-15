@@ -2,7 +2,7 @@
 Database models for Mew Assistant.
 Tracks sessions, messages, and user interactions.
 """
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Enum, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -34,6 +34,43 @@ class PriorityLevel(str, enum.Enum):
     URGENT = "urgent"
 
 
+class User(Base):
+    """
+    User authentication and profile management.
+    Supports parents, caregivers, and tutors using Mew Assistant.
+    """
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
+    
+    # User type and status
+    is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
+    user_type = Column(String, default="parent")  # parent, caregiver, tutor, admin
+    
+    # Profile information
+    phone = Column(String, nullable=True)
+    timezone = Column(String, default="UTC")
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+    
+    # Relationships
+    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index('idx_user_email', 'email'),
+        Index('idx_user_username', 'username'),
+    )
+
+
 class Session(Base):
     """
     Core session tracking table.
@@ -42,7 +79,7 @@ class Session(Base):
     __tablename__ = "sessions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False)  # External user identifier
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     session_type = Column(String, nullable=False)  # tutoring, scheduling, caregiver_summary
     status = Column(Enum(SessionStatus), default=SessionStatus.PENDING)
     priority = Column(Enum(PriorityLevel), default=PriorityLevel.NORMAL)
@@ -63,6 +100,7 @@ class Session(Base):
     notes = Column(Text, nullable=True)
     
     # Relationships
+    user = relationship("User", back_populates="sessions")
     messages = relationship("Message", back_populates="session", cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -78,6 +116,7 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     
     # Channel information
     channel = Column(Enum(ChannelType), nullable=False)
@@ -99,6 +138,7 @@ class Message(Base):
     
     # Relationships
     session = relationship("Session", back_populates="messages")
+    user = relationship("User", back_populates="messages")
     
     def __repr__(self):
         return f"<Message(id={self.id}, channel={self.channel}, sender={self.sender})>"

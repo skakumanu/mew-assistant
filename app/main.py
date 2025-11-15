@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import time
 
-from .routers import session_router, message_router, summary_router
+from .routers import session_router, message_router, summary_router, auth_router
 from .database import Base
 
 # Lazy database initialization - only create tables when DB is available
@@ -55,6 +55,7 @@ async def add_process_time_header(request: Request, call_next):
 
 
 # Include routers
+app.include_router(auth_router)  # Authentication first
 app.include_router(session_router)
 app.include_router(message_router)
 app.include_router(summary_router)
@@ -71,6 +72,7 @@ async def root():
         "version": "1.0.0",
         "status": "healthy",
         "endpoints": {
+            "auth": "/auth/register, /auth/login, /auth/me",
             "sessions": "/mew/session, /mew/confirm",
             "messages": "/mew/ingest",
             "summaries": "/mew/summary",
