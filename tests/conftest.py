@@ -1,39 +1,45 @@
-"""Pytest configuration and fixtures"""
+"""
+Pytest configuration and shared fixtures for Mew Assistant tests.
+"""
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.database.connection import Base
+from sqlalchemy.pool import StaticPool
+
 from app.main import app
-from app.database import get_db
+from app.database import Base, get_db
+
 
 # Use in-memory SQLite for testing
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test.db"
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @pytest.fixture(scope="function")
-def db_session():
-    """Create a fresh database for each test"""
+def test_db():
+    """Create test database tables and provide a database session."""
     Base.metadata.create_all(bind=engine)
-    session = TestingSessionLocal()
+    db = TestingSessionLocal()
     try:
-        yield session
+        yield db
     finally:
-        session.close()
+        db.close()
         Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
-def client(db_session):
-    """Create a test client with test database"""
+def client(test_db):
+    """Create test client with database override."""
     def override_get_db():
         try:
-            yield db_session
+            yield test_db
         finally:
             pass
     
@@ -41,3 +47,44 @@ def client(db_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def sample_user():
+    """Sample user data for testing."""
+    return {
+        "user_id": "test_user_001",
+        "email": "test@example.com",
+        "phone": "+1234567890",
+        "name": "Test User"
+    }
+
+
+@pytest.fixture
+def sample_ingest_data():
+    """Sample ingestion data for testing."""
+    return {
+        "channel": "email",
+        "sender": "parent@example.com",
+        "content": "Can we schedule a tutoring session for tomorrow at 3pm?",
+        "metadata": {
+            "subject": "Tutoring Request",
+            "timestamp": "2024-01-15T10:00:00Z"
+        }
+    }
+
+
+@pytest.fixture
+def sample_confirmation_data():
+    """Sample confirmation data for testing."""
+    return {
+        "session_id": "sess_12345",
+        "user_id": "test_user_001",
+        "action_type": "schedule_tutoring",
+        "details": {
+            "date": "2024-01-16",
+            "time": "15:00",
+            "subject": "Math",
+            "duration_minutes": 60
+        }
+    }

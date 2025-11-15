@@ -14,7 +14,7 @@ import time
 
 from .routers import session_router, message_router, summary_router, auth_router
 from .database import Base
-from .middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware, CORSSecurityMiddleware
+from .middleware import register_exception_handlers, RequestIDMiddleware
 from .utils.logger import get_logger
 
 # Setup structured logging
@@ -39,10 +39,7 @@ app = FastAPI(
 )
 
 # Add middleware in correct order (last added = first executed)
-# 1. Security headers
-app.add_middleware(CORSSecurityMiddleware)
-
-# 2. CORS middleware for web clients
+# 1. CORS middleware for web clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Configure appropriately for production
@@ -51,11 +48,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Request logging (tracks timing and adds request ID)
-app.add_middleware(RequestLoggingMiddleware)
+# 2. Request ID tracking
+app.add_middleware(RequestIDMiddleware)
 
-# 4. Error handling (catches all exceptions)
-app.add_middleware(ErrorHandlingMiddleware)
+# 3. Register exception handlers
+register_exception_handlers(app)
 
 # Include routers
 app.include_router(auth_router)  # Authentication first

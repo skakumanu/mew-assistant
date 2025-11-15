@@ -7,7 +7,7 @@ import logging
 import sys
 import json
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from pathlib import Path
 
 
@@ -64,7 +64,7 @@ def setup_logger(
     name: str,
     level: str = "INFO",
     use_json: bool = False,
-    log_file: str | None = None
+    log_file: Optional[str] = None
 ) -> logging.Logger:
     """
     Set up a logger with consistent configuration.
