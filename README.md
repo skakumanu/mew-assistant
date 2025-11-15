@@ -93,14 +93,39 @@ See [PARENTAL_APPROVAL_SUMMARY.md](PARENTAL_APPROVAL_SUMMARY.md) for detailed im
 
 ---
 
-## 📋 Important Documentation
+## 📋 Documentation
 
-⚠️ **Before deploying to production, please review:**
+### Core Documentation
+- **[README.md](README.md)** (this file) - Quick start and overview
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed system architecture
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
 
-- 📖 **[COMPLIANCE.md](COMPLIANCE.md)** - HIPAA, FERPA, COPPA, GDPR, CCPA requirements
-- 🔒 **[PRIVACY.md](PRIVACY.md)** - Privacy policy and data handling practices
-- 🛡️ **[SECURITY.md](SECURITY.md)** - Security best practices and reporting
-- 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+### Feature Documentation
+- **[docs/FEATURES.md](docs/FEATURES.md)** - Complete features guide including:
+  - Mobile & Calendar Integration
+  - Voice Commands (100+ languages)
+  - Voice Platform Integration (Siri, Alexa, Google Assistant, Tesla)
+  - Kid-Friendly Features
+  - Parental Approval System
+
+### Deployment Documentation
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Complete deployment guide including:
+  - Azure Cloud Setup
+  - CI/CD Pipeline
+  - Deployment Guardrails
+  - Infrastructure as Code
+  - Monitoring & Alerts
+  - Disaster Recovery
+
+### Security & Compliance
+- **[docs/SECURITY_PRIVACY_COMPLIANCE.md](docs/SECURITY_PRIVACY_COMPLIANCE.md)** - Security, privacy, and compliance including:
+  - Security Architecture
+  - Privacy Protection (GDPR, CCPA)
+  - Compliance Standards (COPPA, HIPAA, FERPA, SOC 2)
+  - Security Audit Results
+
+⚠️ **Before deploying to production, please review all documentation in the `docs/` directory.**
 
 ---
 
