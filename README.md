@@ -89,7 +89,7 @@ Key Components:
 - **GDPR/CCPA Ready**: Data privacy and user rights support
 - **Complete Audit Logging**: Track all actions for compliance
 
-See [PARENTAL_APPROVAL_SUMMARY.md](PARENTAL_APPROVAL_SUMMARY.md) for detailed implementation.
+See [docs/SECURITY_PRIVACY_COMPLIANCE.md](docs/SECURITY_PRIVACY_COMPLIANCE.md) for detailed compliance and parental controls implementation.
 
 ---
 
