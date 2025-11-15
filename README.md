@@ -67,6 +67,18 @@ Key Components:
 - **PostgreSQL/SQLite**: Flexible database support
 - **RESTful API**: Clean, documented endpoints with OpenAPI/Swagger support
 - **Podman Support**: Containerized PostgreSQL for easy deployment
+- **🔒 Privacy & Compliance**: HIPAA, FERPA, COPPA, GDPR, CCPA compliant (see [COMPLIANCE.md](COMPLIANCE.md))
+
+---
+
+## 📋 Important Documentation
+
+⚠️ **Before deploying to production, please review:**
+
+- 📖 **[COMPLIANCE.md](COMPLIANCE.md)** - HIPAA, FERPA, COPPA, GDPR, CCPA requirements
+- 🔒 **[PRIVACY.md](PRIVACY.md)** - Privacy policy and data handling practices
+- 🛡️ **[SECURITY.md](SECURITY.md)** - Security best practices and reporting
+- 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
 
 ---
 
