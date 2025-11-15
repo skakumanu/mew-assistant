@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 
-from app.database.session import get_db
+from app.database.connection import get_db
 from app.schemas.calendar import (
     CalendarEventCreate,
     CalendarEventResponse,
@@ -16,7 +16,7 @@ from app.schemas.calendar import (
     UpcomingEventsRequest,
     UpcomingEventsResponse
 )
-from app.integrations.calendar_integration import CalendarIntegration, CalendarProvider
+from app.integrations.calendar_integration import CalendarIntegration
 from app.middleware.auth import get_current_user
 from app.schemas.auth import UserResponse
 

@@ -5,7 +5,6 @@ Pydantic models for calendar integration
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from app.integrations.calendar_integration import CalendarProvider
 
 
 class CalendarConnectionRequest(BaseModel):
@@ -14,9 +13,7 @@ class CalendarConnectionRequest(BaseModel):
         ...,
         description="Provider-specific credentials",
         example={
-            "google": {"token": "oauth2_token"},
-            "apple": {"username": "user@icloud.com", "app_specific_password": "xxxx-xxxx-xxxx-xxxx", "server": "https://caldav.icloud.com"},
-            "outlook": {"client_id": "xxx", "tenant_id": "xxx", "client_secret": "xxx"}
+            "google": {"token": "oauth2_token"}
         }
     )
 
@@ -24,13 +21,13 @@ class CalendarConnectionRequest(BaseModel):
 class CalendarConnectionResponse(BaseModel):
     """Response model for calendar connection"""
     success: bool
-    provider: CalendarProvider
+    provider: str
     message: str
 
 
 class CalendarEventCreate(BaseModel):
     """Request model for creating a calendar event"""
-    provider: CalendarProvider = Field(..., description="Calendar provider")
+    provider: str = Field("google", description="Calendar provider")
     title: str = Field(..., min_length=1, max_length=200, description="Event title")
     start_time: datetime = Field(..., description="Event start time (UTC)")
     end_time: datetime = Field(..., description="Event end time (UTC)")
@@ -57,7 +54,7 @@ class CalendarEventCreate(BaseModel):
 class CalendarEventResponse(BaseModel):
     """Response model for calendar event creation"""
     event_id: str
-    provider: CalendarProvider
+    provider: str
     title: str
     start_time: datetime
     end_time: datetime
@@ -67,7 +64,7 @@ class CalendarEventResponse(BaseModel):
 
 class UpcomingEventsRequest(BaseModel):
     """Request model for retrieving upcoming events"""
-    provider: CalendarProvider = Field(..., description="Calendar provider")
+    provider: str = Field("google", description="Calendar provider")
     days_ahead: int = Field(7, ge=1, le=365, description="Number of days to look ahead")
     
     class Config:
@@ -91,7 +88,7 @@ class CalendarEvent(BaseModel):
 
 class UpcomingEventsResponse(BaseModel):
     """Response model for upcoming events"""
-    provider: CalendarProvider
+    provider: str
     events: List[CalendarEvent]
     count: int
     days_ahead: int

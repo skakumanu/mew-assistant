@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from app.database.session import get_db
+from app.database.connection import get_db
 from app.schemas.mobile import (
     DeviceRegistrationRequest,
     DeviceRegistrationResponse,
@@ -19,7 +19,7 @@ from app.schemas.mobile import (
     ScheduledReminderRequest,
     ScheduledReminderResponse
 )
-from app.integrations.mobile_integration import MobileIntegration, MobilePlatform
+from app.integrations.mobile_integration import MobileIntegration
 from app.middleware.auth import get_current_user
 from app.schemas.auth import UserResponse
 

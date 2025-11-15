@@ -4,12 +4,11 @@ Pydantic models for mobile device integration
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from app.integrations.mobile_integration import MobilePlatform
 
 
 class DeviceRegistrationRequest(BaseModel):
     """Request model for registering a mobile device"""
-    platform: MobilePlatform = Field(..., description="Mobile platform (ios or android)")
+    platform: str = Field(..., description="Mobile platform (ios or android)")
     device_token: str = Field(..., min_length=10, description="Device push notification token")
     device_info: Optional[Dict[str, Any]] = Field(None, description="Additional device information")
     
@@ -30,13 +29,13 @@ class DeviceRegistrationRequest(BaseModel):
 class DeviceRegistrationResponse(BaseModel):
     """Response model for device registration"""
     success: bool
-    platform: MobilePlatform
+    platform: str
     message: str
 
 
 class PushNotificationRequest(BaseModel):
     """Request model for sending a push notification"""
-    platform: MobilePlatform = Field(..., description="Mobile platform")
+    platform: str = Field(..., description="Mobile platform")
     device_token: str = Field(..., description="Device push notification token")
     title: str = Field(..., min_length=1, max_length=100, description="Notification title")
     body: str = Field(..., min_length=1, max_length=500, description="Notification body")
@@ -69,7 +68,7 @@ class PushNotificationResponse(BaseModel):
 
 class BatchNotificationRequest(BaseModel):
     """Request model for sending batch notifications"""
-    platform: MobilePlatform = Field(..., description="Mobile platform")
+    platform: str = Field(..., description="Mobile platform")
     device_tokens: List[str] = Field(..., min_items=1, description="List of device tokens")
     title: str = Field(..., min_length=1, max_length=100, description="Notification title")
     body: str = Field(..., min_length=1, max_length=500, description="Notification body")
@@ -122,7 +121,7 @@ class DeepLinkResponse(BaseModel):
 
 class ScheduledReminderRequest(BaseModel):
     """Request model for scheduling a reminder"""
-    platform: MobilePlatform = Field(..., description="Mobile platform")
+    platform: str = Field(..., description="Mobile platform")
     device_token: str = Field(..., description="Device push notification token")
     title: str = Field(..., min_length=1, max_length=100, description="Notification title")
     body: str = Field(..., min_length=1, max_length=500, description="Notification body")
