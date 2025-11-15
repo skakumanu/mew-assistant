@@ -1,0 +1,289 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  lint:
+    name: Code Linting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort mypy pylint bandit
+        pip install -r requirements.txt
+    
+    - name: Run Black (code formatting check)
+      run: black --check app/ tests/
+      continue-on-error: true
+    
+    - name: Run isort (import sorting check)
+      run: isort --check-only app/ tests/
+      continue-on-error: true
+    
+    - name: Run Flake8 (style guide enforcement)
+      run: flake8 app/ tests/ --max-line-length=120 --extend-ignore=E203,W503
+      continue-on-error: true
+    
+    - name: Run Pylint
+      run: pylint app/ --max-line-length=120 --disable=C0111,R0903
+      continue-on-error: true
+
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+        pip install -r requirements.txt
+    
+    - name: Run Bandit (security linter)
+      run: bandit -r app/ -f json -o bandit-report.json
+      continue-on-error: true
+    
+    - name: Run Safety (dependency vulnerability check)
+      run: safety check --json --output safety-report.json
+      continue-on-error: true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: mew
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: mew_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-cov pytest-xdist pytest-timeout
+    
+    - name: Run tests with pytest
+      run: |
+        pytest tests/ \
+          --cov=app \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term \
+          --junitxml=junit.xml \
+          -n auto \
+          --timeout=300
+      env:
+        DATABASE_URL: postgresql://mew:test_password@localhost:5432/mew_test
+        JWT_SECRET_KEY: test_secret_key_for_ci
+        ENVIRONMENT: test
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: python-${{ matrix.python-version }}
+        fail_ci_if_error: false
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: |
+          junit.xml
+          htmlcov/
+          coverage.xml
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: mew
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: mew_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio httpx
+    
+    - name: Run integration tests
+      run: |
+        pytest tests/integration/ -v --tb=short
+      env:
+        DATABASE_URL: postgresql://mew:test_password@localhost:5432/mew_test
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET_KEY: test_secret_key_for_ci
+        ENVIRONMENT: test
+
+  build:
+    name: Build Container Image
+    runs-on: ubuntu-latest
+    needs: [lint, security, test]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: mew-assistant:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        outputs: type=docker,dest=/tmp/mew-assistant.tar
+    
+    - name: Upload image artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: /tmp/mew-assistant.tar
+        retention-days: 1
+
+  compliance:
+    name: Compliance Checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest
+    
+    - name: Run COPPA compliance tests
+      run: pytest tests/compliance/test_coppa_compliance.py -v
+      env:
+        DATABASE_URL: sqlite:///./test.db
+    
+    - name: Run HIPAA compliance tests
+      run: pytest tests/compliance/test_hipaa_compliance.py -v
+      env:
+        DATABASE_URL: sqlite:///./test.db
+    
+    - name: Run GDPR compliance tests
+      run: pytest tests/compliance/test_gdpr_compliance.py -v
+      env:
+        DATABASE_URL: sqlite:///./test.db
+    
+    - name: Generate compliance report
+      if: always()
+      run: |
+        echo "# Compliance Test Report" > compliance-report.md
+        echo "Generated: $(date)" >> compliance-report.md
+        echo "" >> compliance-report.md
+        pytest tests/compliance/ -v --tb=short >> compliance-report.md || true
+    
+    - name: Upload compliance report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: compliance-report
+        path: compliance-report.md

@@ -1,0 +1,103 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+
+jobs:
+  load-test:
+    name: Load Testing with Locust
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: mew
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: mew_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install locust
+    
+    - name: Start application
+      run: |
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+      env:
+        DATABASE_URL: postgresql://mew:test_password@localhost:5432/mew_test
+        JWT_SECRET_KEY: test_secret_key
+    
+    - name: Run load tests
+      run: |
+        locust -f tests/performance/locustfile.py \
+          --headless \
+          --users 100 \
+          --spawn-rate 10 \
+          --run-time 2m \
+          --host http://localhost:8000 \
+          --html performance-report.html \
+          --csv performance-results
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-results
+        path: |
+          performance-report.html
+          performance-results_*.csv
+
+  benchmark:
+    name: API Benchmarking
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-benchmark
+    
+    - name: Run benchmark tests
+      run: |
+        pytest tests/performance/test_benchmarks.py \
+          --benchmark-only \
+          --benchmark-json=benchmark-results.json
+    
+    - name: Store benchmark result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'pytest'
+        output-file-path: benchmark-results.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true

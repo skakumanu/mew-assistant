@@ -1,0 +1,150 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.mew-assistant.com
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install Azure CLI
+      run: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+    
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Build and push to Azure Container Registry
+      run: |
+        az acr build \
+          --registry ${{ secrets.ACR_NAME }} \
+          --image mew-assistant:staging-${{ github.sha }} \
+          --image mew-assistant:staging-latest \
+          --file Dockerfile \
+          .
+    
+    - name: Deploy to Azure Container Apps (Staging)
+      run: |
+        az containerapp update \
+          --name mew-assistant-staging \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --image ${{ secrets.ACR_NAME }}.azurecr.io/mew-assistant:staging-${{ github.sha }} \
+          --set-env-vars \
+            ENVIRONMENT=staging \
+            DATABASE_URL=secretref:database-url \
+            JWT_SECRET_KEY=secretref:jwt-secret
+    
+    - name: Run smoke tests
+      run: |
+        sleep 30
+        curl -f https://staging.mew-assistant.com/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: []
+    environment:
+      name: production
+      url: https://mew-assistant.com
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install Azure CLI
+      run: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+    
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Build and push to Azure Container Registry
+      run: |
+        az acr build \
+          --registry ${{ secrets.ACR_NAME }} \
+          --image mew-assistant:${{ github.ref_name }} \
+          --image mew-assistant:production-latest \
+          --file Dockerfile \
+          .
+    
+    - name: Create database backup
+      run: |
+        az postgres flexible-server backup create \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --name ${{ secrets.POSTGRES_SERVER }} \
+          --backup-name pre-deploy-$(date +%Y%m%d-%H%M%S)
+    
+    - name: Deploy to Azure Container Apps (Production)
+      run: |
+        az containerapp update \
+          --name mew-assistant-prod \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --image ${{ secrets.ACR_NAME }}.azurecr.io/mew-assistant:${{ github.ref_name }} \
+          --set-env-vars \
+            ENVIRONMENT=production \
+            DATABASE_URL=secretref:database-url \
+            JWT_SECRET_KEY=secretref:jwt-secret
+    
+    - name: Run health checks
+      run: |
+        sleep 30
+        curl -f https://mew-assistant.com/health || exit 1
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        generate_release_notes: true
+        files: |
+          CHANGELOG.md
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [deploy-production]
+    environment:
+      name: production
+    
+    steps:
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Rollback to previous revision
+      run: |
+        az containerapp revision list \
+          --name mew-assistant-prod \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --query "[?properties.active==\`false\`] | [0].name" \
+          --output tsv | xargs -I {} \
+        az containerapp revision activate \
+          --revision {} \
+          --resource-group ${{ secrets.RESOURCE_GROUP }}
