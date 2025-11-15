@@ -25,6 +25,7 @@ from .routers import (
 )
 from .routers.webhooks import router as webhooks_router
 from .routers.backup import router as backup_router
+from .routers.voice_platforms import router as voice_platforms_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
 from .middleware.compliance import ComplianceMiddleware
@@ -84,6 +85,7 @@ app.include_router(mobile_router)
 app.include_router(kid_router)  # Kid-friendly endpoints
 app.include_router(parent_approval_router)  # Parent approval workflow - CRITICAL for kid safety
 app.include_router(voice_router)  # Voice commands with multilingual support
+app.include_router(voice_platforms_router)  # Multi-platform voice assistants (Siri, Alexa, Google, Tesla)
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 app.include_router(backup_router)  # Cloud backup and restore - Azure integration
 
