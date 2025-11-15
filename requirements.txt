@@ -1,7 +1,7 @@
 # Core FastAPI dependencies
-fastapi==0.121.1
-uvicorn[standard]==0.38.0
-pydantic==2.12.4
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.3
 pydantic-settings==2.7.0
 
 # Database
@@ -10,8 +10,8 @@ psycopg2-binary==2.9.10
 alembic==1.14.0
 
 # Environment and configuration
-python-dotenv==1.2.1
-PyYAML==6.0.3
+python-dotenv==1.0.1
+PyYAML==6.0.2
 
 # Utilities
 python-multipart==0.0.20
@@ -21,48 +21,26 @@ email-validator==2.2.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 
-# Optional: Development and testing
-# pytest==8.3.4
-# pytest-asyncio==0.24.0
-# pytest-cov==6.0.0
-# black==24.10.0
-# flake8==7.1.1
-# mypy==1.13.0
-
-# Optional: Multi-channel integrations
-# twilio==9.3.7
-# sendgrid==6.11.0
-# python-telegram-bot==21.7
-
-# Optional: AI/LLM integration
-# openai==1.57.4
-# anthropic==0.41.0
-
-# Optional: Caching and background tasks
-# redis==5.2.1
-# celery==5.4.0
-
-
 # Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
 
 # Code Quality
-black==23.11.0
-isort==5.12.0
-flake8==6.1.0
-mypy==1.7.1
-pre-commit==3.5.0
+black==24.10.0
+isort==5.13.2
+flake8==7.1.1
+mypy==1.13.0
+pre-commit==4.0.1
 
 # Development
-httpx==0.25.1  # For testing FastAPI
+httpx==0.28.1
 
 # External Service Integrations
-twilio>=9.0.0
-google-auth>=2.28.0
-google-auth-oauthlib>=1.2.0
-google-auth-httplib2>=0.2.0
-google-api-python-client>=2.120.0
-openai>=1.12.0
-anthropic>=0.18.0
+twilio==9.3.7
+google-auth==2.37.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.154.0
+openai==1.57.4
+anthropic==0.41.0
