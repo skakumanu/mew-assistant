@@ -13,7 +13,7 @@ from app.schemas.approval import (
     RuleSuggestion
 )
 from app.services.smart_approval_service import SmartApprovalService
-from app.middleware.auth import get_current_user
+from app.utils.auth import get_current_user
 from app.models import User
 
 router = APIRouter(prefix="/api/v1/smart-approval", tags=["Smart Approval"])

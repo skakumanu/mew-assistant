@@ -20,7 +20,7 @@ from app.schemas.mobile import (
     ScheduledReminderResponse
 )
 from app.integrations.mobile_integration import MobileIntegration
-from app.middleware.auth import get_current_user
+from app.utils.auth import get_current_user
 from app.schemas.auth import UserResponse
 
 router = APIRouter(prefix="/mobile", tags=["Mobile"])

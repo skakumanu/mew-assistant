@@ -56,3 +56,9 @@ google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
 google-api-python-client==2.111.0
 msal==1.26.0
+
+# Azure Cloud Services
+azure-identity==1.19.0
+azure-keyvault-secrets==4.9.0
+azure-storage-blob==12.24.0
+cryptography==44.0.0

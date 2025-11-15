@@ -17,7 +17,7 @@ from app.schemas.calendar import (
     UpcomingEventsResponse
 )
 from app.integrations.calendar_integration import CalendarIntegration
-from app.middleware.auth import get_current_user
+from app.utils.auth import get_current_user
 from app.schemas.auth import UserResponse
 
 router = APIRouter(prefix="/calendar", tags=["Calendar"])

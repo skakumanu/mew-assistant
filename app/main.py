@@ -23,6 +23,7 @@ from .routers import (
     parent_approval_router
 )
 from .routers.webhooks import router as webhooks_router
+from .routers.backup import router as backup_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
 from .middleware.compliance import ComplianceMiddleware
@@ -82,6 +83,7 @@ app.include_router(mobile_router)
 app.include_router(kid_router)  # Kid-friendly endpoints
 app.include_router(parent_approval_router)  # Parent approval workflow - CRITICAL for kid safety
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
+app.include_router(backup_router)  # Cloud backup and restore - Azure integration
 
 
 @app.get("/", tags=["health"])
@@ -103,6 +105,7 @@ async def root():
             "mobile": "/mobile/*",
             "kid": "/kid/* (kid-friendly endpoints)",
             "webhooks": "/webhooks/sms/incoming, /webhooks/whatsapp/incoming",
+            "backup": "/api/backup/* (Azure cloud backups)",
             "docs": "/docs"
         }
     }
