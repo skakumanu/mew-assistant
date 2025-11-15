@@ -1,30 +1,34 @@
 """
 JWT authentication utilities.
 Handles token generation, validation, and password hashing.
+Supports both JWT tokens and API keys for authentication.
 """
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+import secrets
+import hashlib
+import json
 import os
 
 from app.database.connection import get_db
-from app.database.models import User
+from app.database.models import User, APIKey
 
 # Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 7
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# OAuth2 scheme for token extraction
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+# Security scheme
+security = HTTPBearer()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -94,7 +98,7 @@ def decode_token(token: str) -> dict:
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
     """
@@ -107,6 +111,8 @@ async def get_current_user(
         return {"user": current_user.email}
     ```
     """
+    token = credentials.credentials
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -138,6 +144,10 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive"
         )
+    
+    # Update last login
+    user.last_login = datetime.utcnow()
+    db.commit()
     
     return user
 
@@ -182,3 +192,87 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         return None
     
     return user
+
+
+def generate_api_key() -> tuple[str, str, str]:
+    """
+    Generate a new API key.
+    Returns: (full_key, key_hash, key_prefix)
+    """
+    key = secrets.token_urlsafe(32)
+    full_key = f"mew_{key}"
+    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    key_prefix = full_key[:12] + "..."
+    return full_key, key_hash, key_prefix
+
+
+async def verify_api_key(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Verify API key and return associated user"""
+    api_key = credentials.credentials
+    
+    if not api_key.startswith("mew_"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key format"
+        )
+    
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    api_key_record = db.query(APIKey).filter(
+        APIKey.key_hash == key_hash,
+        APIKey.is_active == True
+    ).first()
+    
+    if not api_key_record:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key"
+        )
+    
+    if api_key_record.expires_at and api_key_record.expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key has expired"
+        )
+    
+    api_key_record.last_used = datetime.utcnow()
+    db.commit()
+    
+    user = db.query(User).filter(User.id == api_key_record.user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive"
+        )
+    
+    return user
+
+
+async def get_current_user_flexible(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    Flexible authentication: accepts both JWT tokens and API keys.
+    Automatically detects which type is provided.
+    """
+    token = credentials.credentials
+    
+    if token.startswith("mew_"):
+        return await verify_api_key(credentials, db)
+    
+    return await get_current_user(credentials, db)
+
+
+def require_role(*roles: str):
+    """Dependency to require specific user roles"""
+    async def role_checker(current_user: User = Depends(get_current_user_flexible)):
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required roles: {', '.join(roles)}"
+            )
+        return current_user
+    return role_checker

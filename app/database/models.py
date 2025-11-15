@@ -34,6 +34,15 @@ class PriorityLevel(str, enum.Enum):
     URGENT = "urgent"
 
 
+class UserRole(str, enum.Enum):
+    """User roles for access control"""
+    ADMIN = "admin"
+    CAREGIVER = "caregiver"
+    PARENT = "parent"
+    THERAPIST = "therapist"
+    EDUCATOR = "educator"
+
+
 class User(Base):
     """
     User authentication and profile management.
@@ -49,8 +58,9 @@ class User(Base):
     
     # User type and status
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
-    user_type = Column(String, default="parent")  # parent, caregiver, tutor, admin
+    role = Column(Enum(UserRole), default=UserRole.PARENT)
     
     # Profile information
     phone = Column(String, nullable=True)
@@ -64,6 +74,7 @@ class User(Base):
     # Relationships
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_user_email', 'email'),
@@ -167,3 +178,30 @@ class CaregiverSummary(Base):
     
     def __repr__(self):
         return f"<CaregiverSummary(id={self.id}, session_id={self.session_id})>"
+
+
+class APIKey(Base):
+    """API Key model for external integrations"""
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    key_name = Column(String(100), nullable=False)
+    key_hash = Column(String(255), unique=True, index=True, nullable=False)
+    key_prefix = Column(String(20), nullable=False)
+    
+    is_active = Column(Boolean, default=True)
+    expires_at = Column(DateTime, nullable=True)
+    last_used = Column(DateTime)
+    
+    scopes = Column(Text)  # JSON array of allowed scopes
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="api_keys")
+    
+    def __repr__(self):
+        return f"<APIKey(id={self.id}, name={self.key_name}, prefix={self.key_prefix})>"

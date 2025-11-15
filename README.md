@@ -120,15 +120,29 @@ uvicorn app.main:app --reload
 
 ## 📚 API Endpoints
 
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/register` | Register new user account |
+| POST | `/auth/login` | Login and get JWT tokens |
+| POST | `/auth/refresh` | Refresh access token |
+| GET | `/auth/me` | Get current user info |
+| PUT | `/auth/me` | Update user profile |
+| POST | `/auth/change-password` | Change password |
+| POST | `/auth/api-keys` | Create API key |
+| GET | `/auth/api-keys` | List user API keys |
+| DELETE | `/auth/api-keys/{id}` | Delete API key |
+
 ### Session Management
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/mew/session` | Create new session |
-| POST | `/mew/confirm` | Confirm session with cooldown |
-| PATCH | `/mew/session/{id}` | Update session |
-| GET | `/mew/session/{id}` | Get session details |
-| GET | `/mew/sessions/user/{user_id}` | List user sessions |
+| POST | `/mew/session` | Create new session (requires auth) |
+| POST | `/mew/confirm` | Confirm session with cooldown (requires auth) |
+| PATCH | `/mew/session/{id}` | Update session (requires auth) |
+| GET | `/mew/session/{id}` | Get session details (requires auth) |
+| GET | `/mew/sessions/user/{user_id}` | List user sessions (requires auth) |
 
 ### Message Ingestion
 
@@ -153,13 +167,109 @@ uvicorn app.main:app --reload
 
 ## 🧪 API Examples
 
+### Authentication Flow
+
+#### 1. Register a New User
+
+```bash
+curl -X POST "http://localhost:8000/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john_doe",
+    "email": "john@example.com",
+    "password": "SecurePass123!",
+    "full_name": "John Doe",
+    "role": "parent",
+    "phone": "+1234567890"
+  }'
+```
+
+**Response:**
+```json
+{
+  "id": 1,
+  "username": "john_doe",
+  "email": "john@example.com",
+  "full_name": "John Doe",
+  "role": "parent",
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-11-15T10:00:00Z"
+}
+```
+
+#### 2. Login
+
+```bash
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "user": {
+    "id": 1,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "role": "parent"
+  }
+}
+```
+
+#### 3. Create API Key (for programmatic access)
+
+```bash
+curl -X POST "http://localhost:8000/auth/api-keys" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key_name": "My Integration",
+    "expires_in_days": 90,
+    "scopes": ["read", "write"]
+  }'
+```
+
+**Response:**
+```json
+{
+  "id": 1,
+  "key_name": "My Integration",
+  "api_key": "mew_abc123...",
+  "key_prefix": "mew_abc123...",
+  "expires_at": "2026-02-15T10:00:00Z"
+}
+```
+
+⚠️ **Important**: The full API key is only shown once. Store it securely!
+
 ### Create a Session
 
 ```bash
+# Using JWT Token
 curl -X POST "http://localhost:8000/mew/session" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "user_id": "family_001",
+    "session_type": "tutoring",
+    "title": "Math Homework Help",
+    "priority": "normal",
+    "scheduled_at": "2025-11-15T14:00:00Z"
+  }'
+
+# OR using API Key
+curl -X POST "http://localhost:8000/mew/session" \
+  -H "Authorization: Bearer mew_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
     "session_type": "tutoring",
     "title": "Math Homework Help",
     "priority": "normal",
@@ -171,7 +281,7 @@ curl -X POST "http://localhost:8000/mew/session" \
 ```json
 {
   "id": 1,
-  "user_id": "family_001",
+  "user_id": 1,
   "session_type": "tutoring",
   "status": "pending",
   "priority": "normal",
@@ -181,10 +291,14 @@ curl -X POST "http://localhost:8000/mew/session" \
 }
 ```
 
+**Note**: All protected endpoints require authentication via `Authorization: Bearer TOKEN` header.
+Use either JWT access token or API key (starts with `mew_`).
+
 ### Confirm Session
 
 ```bash
 curl -X POST "http://localhost:8000/mew/confirm" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": 1,
@@ -203,6 +317,7 @@ curl -X POST "http://localhost:8000/mew/confirm" \
 
 ```bash
 curl -X POST "http://localhost:8000/mew/ingest" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "channel": "email",
@@ -219,14 +334,31 @@ curl -X POST "http://localhost:8000/mew/ingest" \
 
 ```bash
 curl -X POST "http://localhost:8000/mew/summary" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "user_id": "family_001",
     "period_start": "2025-11-01T00:00:00Z",
     "period_end": "2025-11-13T23:59:59Z",
     "include_recommendations": true
   }'
 ```
+
+### Testing Authentication
+
+Run the comprehensive test script:
+
+```bash
+./test_auth.sh
+```
+
+This will test:
+- ✅ User registration
+- ✅ Login and token generation
+- ✅ JWT authentication
+- ✅ API key creation
+- ✅ API key authentication
+- ✅ Token refresh
+- ✅ Protected endpoints
 
 ---
 
@@ -257,11 +389,56 @@ AFTER_SCHOOL_END=18:00
 EVENING_ROUTINE_START=19:00
 EVENING_ROUTINE_END=21:00
 
+# Authentication & Security
+SECRET_KEY=your-secret-key-change-in-production-use-openssl-rand-hex-32
+JWT_SECRET_KEY=your-jwt-secret-key-change-in-production
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
 # Optional: Multi-Channel Integration
 EMAIL_ENABLED=false
 SMS_ENABLED=false
 WHATSAPP_ENABLED=false
 ```
+
+### Authentication & Security
+
+Mew Assistant uses **JWT (JSON Web Tokens)** for authentication with support for **API keys** for programmatic access.
+
+**User Roles:**
+- `admin` - Full system access
+- `caregiver` - Caregiver and session management
+- `parent` - Family member access
+- `therapist` - Therapist access
+- `educator` - Educator access
+
+**Security Best Practices:**
+1. **Change Secret Keys**: Generate secure keys using `openssl rand -hex 32`
+2. **Use HTTPS**: Always use HTTPS in production
+3. **Rotate API Keys**: Set expiration dates on API keys
+4. **Token Expiration**: Access tokens expire in 30 minutes (configurable)
+5. **Refresh Tokens**: Use refresh tokens to obtain new access tokens
+
+**Generating Secure Keys:**
+```bash
+# Generate JWT secret key
+openssl rand -hex 32
+
+# Or use Python
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+**Authentication Methods:**
+1. **JWT Tokens** (recommended for web/mobile apps)
+   - Short-lived access tokens (30 minutes)
+   - Long-lived refresh tokens (7 days)
+   - Automatic rotation on refresh
+
+2. **API Keys** (for integrations & scripts)
+   - Prefix: `mew_`
+   - Optional expiration (up to 365 days)
+   - Scoped permissions
+   - Revocable anytime
 
 ### Session Types
 

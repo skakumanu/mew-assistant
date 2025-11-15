@@ -7,12 +7,24 @@ from datetime import datetime
 from typing import Optional
 
 
+from enum import Enum
+
+
+class UserRole(str, Enum):
+    """User role enumeration"""
+    ADMIN = "admin"
+    CAREGIVER = "caregiver"
+    PARENT = "parent"
+    THERAPIST = "therapist"
+    EDUCATOR = "educator"
+
+
 class UserBase(BaseModel):
     """Base user schema with common fields."""
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
     full_name: Optional[str] = Field(None, max_length=100)
-    user_type: str = Field("parent", description="User role: parent, caregiver, tutor, admin")
+    role: UserRole = Field(default=UserRole.PARENT, description="User role")
     phone: Optional[str] = Field(None, max_length=20)
     timezone: str = Field("UTC", max_length=50)
 
@@ -53,6 +65,7 @@ class UserResponse(UserBase):
     """Schema for user data in responses."""
     id: int
     is_active: bool
+    is_verified: bool
     is_superuser: bool
     created_at: datetime
     updated_at: datetime
@@ -163,3 +176,25 @@ class PasswordChange(BaseModel):
             "new_password": "NewSecureP@ssw0rd123"
         }
     })
+
+
+class APIKeyCreate(BaseModel):
+    """API key creation request"""
+    key_name: str = Field(..., min_length=1, max_length=100)
+    expires_in_days: Optional[int] = Field(None, ge=1, le=365)
+    scopes: Optional[list[str]] = Field(default=["read"])
+
+
+class APIKeyResponse(BaseModel):
+    """API key response schema"""
+    id: int
+    key_name: str
+    key_prefix: str
+    api_key: Optional[str] = None
+    is_active: bool
+    expires_at: Optional[datetime]
+    created_at: datetime
+    last_used: Optional[datetime]
+    scopes: list[str]
+    
+    model_config = ConfigDict(from_attributes=True)
