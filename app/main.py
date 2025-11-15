@@ -14,12 +14,10 @@ import time
 
 from .routers import session_router, message_router, summary_router, auth_router
 from .database import Base
-from .middleware.error_handler import register_exception_handlers
-from .middleware.request_id import RequestIDMiddleware
-from .utils.logging import setup_logging, get_logger
+from .middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware, CORSSecurityMiddleware
+from .utils.logger import get_logger
 
 # Setup structured logging
-setup_logging(log_level="INFO", json_format=False)
 logger = get_logger(__name__)
 
 # Lazy database initialization - only create tables when DB is available
@@ -40,10 +38,11 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Add request ID middleware (first to track all requests)
-app.add_middleware(RequestIDMiddleware)
+# Add middleware in correct order (last added = first executed)
+# 1. Security headers
+app.add_middleware(CORSSecurityMiddleware)
 
-# CORS middleware for web clients
+# 2. CORS middleware for web clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Configure appropriately for production
@@ -52,20 +51,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register global exception handlers
-register_exception_handlers(app)
+# 3. Request logging (tracks timing and adds request ID)
+app.add_middleware(RequestLoggingMiddleware)
 
-
-# Request timing middleware
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    """Add response time header to all requests."""
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
-
+# 4. Error handling (catches all exceptions)
+app.add_middleware(ErrorHandlingMiddleware)
 
 # Include routers
 app.include_router(auth_router)  # Authentication first
