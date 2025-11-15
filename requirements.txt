@@ -66,3 +66,4 @@ cryptography==44.0.0
 
 # Voice and Language Processing
 langdetect==1.0.9
+lingua-language-detector==2.0.2

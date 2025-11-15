@@ -131,37 +131,66 @@ class VoiceProcessor:
             return VoiceCommandResponse(success=False, error=str(e))
     
     async def _speech_to_text(self, audio_data: bytes, language: Optional[str] = None) -> Optional[str]:
-        """Convert speech to text"""
+        """Convert speech to text with automatic language detection"""
         if not self.speech_config:
             return await self._whisper_fallback(audio_data)
         
         try:
-            if language and language in self.SUPPORTED_LANGUAGES:
-                self.speech_config.speech_recognition_language = language
-            
-            stream = speechsdk.audio.PushAudioInputStream()
-            stream.write(audio_data)
-            stream.close()
-            
-            audio_config = speechsdk.audio.AudioConfig(stream=stream)
-            speech_recognizer = speechsdk.SpeechRecognizer(
-                speech_config=self.speech_config,
-                audio_config=audio_config
-            )
-            
-            result = speech_recognizer.recognize_once()
-            
-            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-                return result.text
-            
-            return None
+            # Enable automatic language detection if no language specified
+            if not language:
+                auto_detect_source_language_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+                    languages=list(self.SUPPORTED_LANGUAGES.keys())
+                )
+                
+                stream = speechsdk.audio.PushAudioInputStream()
+                stream.write(audio_data)
+                stream.close()
+                
+                audio_config = speechsdk.audio.AudioConfig(stream=stream)
+                speech_recognizer = speechsdk.SpeechRecognizer(
+                    speech_config=self.speech_config,
+                    auto_detect_source_language_config=auto_detect_source_language_config,
+                    audio_config=audio_config
+                )
+                
+                result = speech_recognizer.recognize_once()
+                
+                if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                    detected_lang = result.properties.get(
+                        speechsdk.PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult
+                    )
+                    logger.info(f"Auto-detected language: {detected_lang}")
+                    return result.text
+                
+                return None
+            else:
+                # Use specified language
+                if language in self.SUPPORTED_LANGUAGES:
+                    self.speech_config.speech_recognition_language = language
+                
+                stream = speechsdk.audio.PushAudioInputStream()
+                stream.write(audio_data)
+                stream.close()
+                
+                audio_config = speechsdk.audio.AudioConfig(stream=stream)
+                speech_recognizer = speechsdk.SpeechRecognizer(
+                    speech_config=self.speech_config,
+                    audio_config=audio_config
+                )
+                
+                result = speech_recognizer.recognize_once()
+                
+                if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                    return result.text
+                
+                return None
             
         except Exception as e:
             logger.error(f"Azure Speech error: {e}")
             return await self._whisper_fallback(audio_data)
     
     async def _whisper_fallback(self, audio_data: bytes) -> Optional[str]:
-        """Fallback to OpenAI Whisper"""
+        """Fallback to OpenAI Whisper with automatic language detection"""
         try:
             import openai
             from io import BytesIO
@@ -170,13 +199,17 @@ class VoiceProcessor:
             audio_file = BytesIO(audio_data)
             audio_file.name = "audio.wav"
             
+            # Whisper automatically detects language when not specified
             transcription = await client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                response_format="text"
+                response_format="verbose_json"  # Get language detection info
             )
             
-            return transcription
+            if hasattr(transcription, 'language'):
+                logger.info(f"Whisper detected language: {transcription.language}")
+            
+            return transcription.text if hasattr(transcription, 'text') else str(transcription)
             
         except Exception as e:
             logger.error(f"Whisper fallback error: {e}")
