@@ -26,6 +26,7 @@ from .routers import (
 from .routers.webhooks import router as webhooks_router
 from .routers.backup import router as backup_router
 from .routers.voice_platforms import router as voice_platforms_router
+from .routers.onboarding import router as onboarding_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
 from .middleware.compliance import ComplianceMiddleware
@@ -76,6 +77,7 @@ app.add_middleware(ComplianceMiddleware)
 register_exception_handlers(app)
 
 # Include routers
+app.include_router(onboarding_router)  # Easy registration - ALL channels
 app.include_router(auth_router)  # Authentication first
 app.include_router(session_router)
 app.include_router(message_router)
@@ -101,6 +103,7 @@ async def root():
         "version": "1.0.0",
         "status": "healthy",
         "endpoints": {
+            "onboarding": "/api/v1/onboarding/* (easy registration - email, phone, voice, social)",
             "auth": "/auth/register, /auth/login, /auth/me",
             "sessions": "/mew/session, /mew/confirm",
             "messages": "/mew/ingest",
@@ -112,7 +115,8 @@ async def root():
             "webhooks": "/webhooks/sms/incoming, /webhooks/whatsapp/incoming",
             "backup": "/api/backup/* (Azure cloud backups)",
             "docs": "/docs"
-        }
+        },
+        "registration": "No password needed! Register via email, phone, voice, or social login"
     }
 
 
