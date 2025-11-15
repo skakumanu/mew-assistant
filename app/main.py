@@ -19,7 +19,8 @@ from .routers import (
     auth_router,
     calendar_router,
     mobile_router,
-    kid_router
+    kid_router,
+    parent_approval_router
 )
 from .routers.webhooks import router as webhooks_router
 from .database import Base
@@ -79,6 +80,7 @@ app.include_router(summary_router)
 app.include_router(calendar_router)
 app.include_router(mobile_router)
 app.include_router(kid_router)  # Kid-friendly endpoints
+app.include_router(parent_approval_router)  # Parent approval workflow - CRITICAL for kid safety
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 
 

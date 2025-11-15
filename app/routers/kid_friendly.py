@@ -20,6 +20,8 @@ from ..schemas.kid_friendly import (
 )
 from ..services.kid_service import KidService
 from ..services.notification_service import NotificationService
+from ..services.approval_service import ApprovalService
+from ..database.models import RequestType
 from ..utils.auth import get_current_user, verify_kid_account
 from ..utils.content_filter import ContentFilter
 
@@ -35,7 +37,7 @@ async def suggest_activity(
     Kid suggests a new activity to parent
     - Uses simple, encouraging language
     - Returns emoji-based feedback
-    - Creates parent approval request
+    - Creates parent approval request (NO DIRECT CHANGES TO CALENDAR)
     """
     verify_kid_account(current_user)
     
@@ -49,32 +51,36 @@ async def suggest_activity(
         )
     
     kid_service = KidService(db)
-    notification_service = NotificationService(db)
+    approval_service = ApprovalService(db)
     
-    # Create suggestion
-    suggestion = kid_service.create_activity_suggestion(
+    # Get parent
+    parent = kid_service.get_parent(current_user.id)
+    if not parent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No parent account linked"
+        )
+    
+    # Create approval request - DOES NOT change calendar yet
+    approval_request = approval_service.create_approval_request(
         kid_id=current_user.id,
-        activity=request.activity_name,
-        description=request.activity_description,
-        preferred_time=request.when,
+        parent_id=parent.id,
+        request_type=RequestType.NEW_EVENT,
+        requested_activity=request.activity_name,
+        requested_time=request.when.value,
+        reason=request.activity_description,
         emoji=request.emoji
     )
-    
-    # Notify parent
-    parent = kid_service.get_parent(current_user.id)
-    if parent:
-        notification_service.notify_parent_of_kid_suggestion(
-            parent_id=parent.id,
-            kid_name=current_user.display_name or current_user.username,
-            activity=request.activity_name,
-            suggestion_id=suggestion.id
-        )
     
     return SimplifiedResponse(
         success=True,
         message=f"Great idea! 🎉 I'll ask {parent.display_name if parent else 'your parent'} about {request.activity_name}!",
         emoji="✅",
-        data={"suggestion_id": suggestion.id}
+        data={
+            "request_id": approval_request.id,
+            "status": "waiting_for_parent",
+            "note": "Your parent will review this soon!"
+        }
     )
 
 
@@ -165,37 +171,48 @@ async def request_schedule_change(
     Kid requests to change or skip an activity
     - Simple reason selection (tired, don't feel good, want different activity)
     - Sends request to parent for approval
+    - IMPORTANT: Changes are NOT made until parent approves
     - Uses encouraging, supportive language
     """
     verify_kid_account(current_user)
     
     kid_service = KidService(db)
-    notification_service = NotificationService(db)
+    approval_service = ApprovalService(db)
     
-    # Create change request
-    change_request = kid_service.create_change_request(
-        kid_id=current_user.id,
-        activity_id=request.activity_id,
-        reason=request.reason,
-        preferred_alternative=request.alternative
+    # Get parent
+    parent = kid_service.get_parent(current_user.id)
+    if not parent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No parent account linked"
+        )
+    
+    # Determine request type based on whether there's an alternative
+    request_type = (
+        RequestType.SCHEDULE_CHANGE if request.alternative 
+        else RequestType.SKIP_ACTIVITY
     )
     
-    # Notify parent
-    parent = kid_service.get_parent(current_user.id)
-    if parent:
-        notification_service.notify_parent_of_change_request(
-            parent_id=parent.id,
-            kid_name=current_user.display_name,
-            activity_id=request.activity_id,
-            reason=request.reason,
-            request_id=change_request.id
-        )
+    # Create approval request - DOES NOT change calendar yet
+    change_request = approval_service.create_approval_request(
+        kid_id=current_user.id,
+        parent_id=parent.id,
+        request_type=request_type,
+        activity_id=request.activity_id,
+        requested_activity=request.alternative,
+        reason=request.reason.value,
+        emoji="🤔"
+    )
     
     return SimplifiedResponse(
         success=True,
-        message=f"Got it! 👍 I'll ask {parent.display_name if parent else 'your parent'} about this.",
+        message=f"Got it! 👍 I'll ask {parent.display_name if parent else 'your parent'} about this. No changes yet!",
         emoji="📝",
-        data={"request_id": change_request.id}
+        data={
+            "request_id": change_request.id,
+            "status": "waiting_for_parent",
+            "note": "Your schedule won't change until your parent approves!"
+        }
     )
 
 

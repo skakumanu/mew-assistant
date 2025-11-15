@@ -213,3 +213,96 @@ class APIKey(Base):
     
     def __repr__(self):
         return f"<APIKey(id={self.id}, name={self.key_name}, prefix={self.key_prefix})>"
+
+
+class ApprovalStatus(str, enum.Enum):
+    """Status of approval request"""
+    PENDING = "pending"
+    APPROVED = "approved"
+    DENIED = "denied"
+    EXPIRED = "expired"
+
+
+class RequestType(str, enum.Enum):
+    """Types of requests that need approval"""
+    SCHEDULE_CHANGE = "schedule_change"
+    ACTIVITY_SUGGESTION = "activity_suggestion"
+    SKIP_ACTIVITY = "skip_activity"
+    TIME_CHANGE = "time_change"
+    NEW_EVENT = "new_event"
+
+
+class ApprovalRequest(Base):
+    """
+    Parent approval required for all kid requests.
+    CRITICAL: No schedule changes are applied until parent approves.
+    """
+    __tablename__ = "approval_requests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    kid_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    parent_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Request details
+    request_type = Column(Enum(RequestType), nullable=False)
+    status = Column(Enum(ApprovalStatus), default=ApprovalStatus.PENDING, nullable=False)
+    
+    # What the kid wants
+    original_activity_id = Column(Integer, nullable=True)
+    requested_activity = Column(String(200), nullable=True)
+    requested_time = Column(String(100), nullable=True)
+    kid_reason = Column(Text, nullable=True)
+    kid_emoji = Column(String(10), nullable=True)
+    
+    # Parent response
+    parent_approved = Column(Boolean, nullable=True)
+    parent_note = Column(Text, nullable=True)
+    parent_alternative = Column(Text, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    
+    # Tracking
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+    processed_at = Column(DateTime, nullable=True)
+    
+    # Applied to calendar - ONLY after parent approval
+    applied_to_calendar = Column(Boolean, default=False)
+    calendar_event_id = Column(String(255), nullable=True)
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_approval_kid_status', 'kid_id', 'status'),
+        Index('idx_approval_parent_status', 'parent_id', 'status'),
+    )
+    
+    def is_expired(self) -> bool:
+        """Check if request has expired"""
+        if self.expires_at and datetime.utcnow() > self.expires_at:
+            return True
+        return False
+    
+    def can_approve(self) -> bool:
+        """Check if request can still be approved"""
+        return (
+            self.status == ApprovalStatus.PENDING 
+            and not self.is_expired()
+            and not self.applied_to_calendar
+        )
+
+
+class ApprovalAuditLog(Base):
+    """Audit trail for all approval actions - compliance requirement"""
+    __tablename__ = "approval_audit_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    approval_request_id = Column(Integer, ForeignKey("approval_requests.id"), nullable=False)
+    
+    action = Column(String(50), nullable=False)
+    performed_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    old_status = Column(String(50), nullable=True)
+    new_status = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(String(255), nullable=True)
