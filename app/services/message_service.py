@@ -1,177 +1,107 @@
 """
-Message service layer for multi-channel ingestion.
-Handles email, SMS, and WhatsApp message processing.
+Message service for handling incoming messages from multiple channels.
 """
-from sqlalchemy.orm import Session
+
+from typing import Dict, Any, Optional
 from datetime import datetime
-from typing import List, Optional
-from ..database.models import Message as MessageModel, ChannelType
-from ..schemas.message import MessageIngest
+
+from app.integrations import AIIntegration
+from app.utils.logger import logger
 
 
 class MessageService:
-    """Service class for message ingestion and processing."""
-    
-    def __init__(self, db: Session):
-        """Initialize with database session."""
-        self.db = db
-    
-    def ingest_message(self, message_data: MessageIngest) -> MessageModel:
+    """Service for processing incoming messages."""
+
+    def __init__(self):
+        self.ai_integration = AIIntegration()
+
+    async def process_incoming_message(
+        self,
+        source: str,
+        from_contact: str,
+        message_body: str,
+        message_id: str,
+        profile_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Ingest a message from any supported channel.
-        
+        Process an incoming message from any channel.
+
         Args:
-            message_data: Message ingestion data
-            
+            source: Message source (sms, whatsapp, email)
+            from_contact: Contact identifier (phone/email)
+            message_body: Message content
+            message_id: Message identifier
+            profile_name: Optional sender name
+
         Returns:
-            Created message object
-            
-        Example:
-            >>> service = MessageService(db)
-            >>> message = service.ingest_message(message_data)
+            Dict with reply and processing info
         """
-        db_message = MessageModel(
-            channel=message_data.channel,
-            sender=message_data.sender,
-            recipient=message_data.recipient,
-            subject=message_data.subject,
-            body=message_data.body,
-            raw_content=message_data.raw_content,
-            session_id=message_data.session_id,
-            received_at=message_data.received_at or datetime.utcnow(),
-            processed=False
-        )
-        
-        self.db.add(db_message)
-        self.db.commit()
-        self.db.refresh(db_message)
-        
-        return db_message
-    
-    def ingest_batch(self, messages: List[MessageIngest]) -> List[MessageModel]:
-        """
-        Ingest multiple messages in a batch.
-        
-        Args:
-            messages: List of message data
-            
-        Returns:
-            List of created message objects
-        """
-        db_messages = []
-        
-        for message_data in messages:
-            db_message = MessageModel(
-                channel=message_data.channel,
-                sender=message_data.sender,
-                recipient=message_data.recipient,
-                subject=message_data.subject,
-                body=message_data.body,
-                raw_content=message_data.raw_content,
-                session_id=message_data.session_id,
-                received_at=message_data.received_at or datetime.utcnow(),
-                processed=False
+        try:
+            logger.info(f"Processing {source} message from {from_contact}")
+
+            # Analyze message intent
+            analysis = await self.ai_integration.analyze_message(
+                message=message_body,
+                context=f"Source: {source}, From: {profile_name or from_contact}"
             )
-            db_messages.append(db_message)
-        
-        self.db.add_all(db_messages)
-        self.db.commit()
-        
-        for msg in db_messages:
-            self.db.refresh(msg)
-        
-        return db_messages
-    
-    def mark_processed(self, message_id: int) -> MessageModel:
-        """
-        Mark a message as processed.
-        
-        Args:
-            message_id: Message ID to mark
-            
-        Returns:
-            Updated message object
-        """
-        message = self.db.query(MessageModel).filter(
-            MessageModel.id == message_id
-        ).first()
-        
-        if not message:
-            raise ValueError(f"Message {message_id} not found")
-        
-        message.processed = True
-        message.processed_at = datetime.utcnow()
-        
-        self.db.commit()
-        self.db.refresh(message)
-        
-        return message
-    
-    def get_unprocessed_messages(
-        self,
-        channel: Optional[ChannelType] = None,
-        limit: int = 100
-    ) -> List[MessageModel]:
-        """
-        Get unprocessed messages with optional channel filter.
-        
-        Args:
-            channel: Optional channel filter
-            limit: Maximum number of messages to return
-            
-        Returns:
-            List of unprocessed messages
-        """
-        query = self.db.query(MessageModel).filter(
-            MessageModel.processed == False
+
+            intent = "unknown"
+            if analysis.get("success") and analysis.get("analysis"):
+                intent = analysis["analysis"].get("intent", "unknown")
+
+            # Route based on intent
+            if intent == "schedule":
+                reply = await self._handle_schedule_request(message_body)
+            elif intent == "reminder":
+                reply = await self._handle_reminder_request(message_body)
+            elif intent == "question":
+                reply = await self._handle_question(message_body)
+            elif intent == "report":
+                reply = await self._handle_report_request(message_body)
+            else:
+                reply = await self._handle_general_message(message_body)
+
+            return {
+                "success": True,
+                "reply": reply,
+                "intent": intent,
+                "message_id": message_id,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            return {
+                "success": False,
+                "reply": "Sorry, I encountered an error processing your message. Please try again.",
+                "error": str(e),
+            }
+
+    async def _handle_schedule_request(self, message: str) -> str:
+        """Handle scheduling requests."""
+        return "I'll help you schedule that. Please provide the date, time, and activity details."
+
+    async def _handle_reminder_request(self, message: str) -> str:
+        """Handle reminder requests."""
+        return "I'll set up a reminder for you. When would you like to be reminded?"
+
+    async def _handle_question(self, message: str) -> str:
+        """Handle questions using AI."""
+        response = await self.ai_integration.generate_response(message)
+        if response.get("success"):
+            return response.get("text", "I'm here to help!")
+        return "I'm here to help! Could you please rephrase your question?"
+
+    async def _handle_report_request(self, message: str) -> str:
+        """Handle report/summary requests."""
+        return "I'll generate a report for you. What time period would you like covered?"
+
+    async def _handle_general_message(self, message: str) -> str:
+        """Handle general messages."""
+        response = await self.ai_integration.generate_response(
+            message=message,
+            conversation_history=[]
         )
-        
-        if channel:
-            query = query.filter(MessageModel.channel == channel)
-        
-        return query.order_by(MessageModel.received_at.asc()).limit(limit).all()
-    
-    def get_session_messages(
-        self,
-        session_id: int,
-        limit: int = 100
-    ) -> List[MessageModel]:
-        """
-        Get all messages for a specific session.
-        
-        Args:
-            session_id: Session ID
-            limit: Maximum number of messages to return
-            
-        Returns:
-            List of messages
-        """
-        return self.db.query(MessageModel).filter(
-            MessageModel.session_id == session_id
-        ).order_by(MessageModel.received_at.asc()).limit(limit).all()
-    
-    def get_user_messages(
-        self,
-        sender: str,
-        channel: Optional[ChannelType] = None,
-        limit: int = 100
-    ) -> List[MessageModel]:
-        """
-        Get messages from a specific sender.
-        
-        Args:
-            sender: Sender identifier
-            channel: Optional channel filter
-            limit: Maximum number of messages to return
-            
-        Returns:
-            List of messages
-        """
-        query = self.db.query(MessageModel).filter(
-            MessageModel.sender == sender
-        )
-        
-        if channel:
-            query = query.filter(MessageModel.channel == channel)
-        
-        return query.order_by(MessageModel.received_at.desc()).limit(limit).all()
+        if response.get("success"):
+            return response.get("text", "Thanks for your message!")
+        return "Thanks for your message! How can I assist you today?"

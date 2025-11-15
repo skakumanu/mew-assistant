@@ -854,3 +854,142 @@ Built with ❤️ for special needs families and caregivers.
 ## 🎉 Ready to Start!
 
 Visit http://localhost:8000/docs to explore the interactive API documentation and start building features for special needs families!
+
+---
+
+## 🔌 Phase 5: External Integrations
+
+Mew Assistant integrates with multiple external services for enhanced functionality:
+
+### Email Integration (SMTP/IMAP)
+- **Send notifications**: Reminders, summaries, alerts
+- **Receive messages**: Process incoming emails automatically
+- **Configuration**:
+  ```bash
+  SMTP_SERVER=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USER=your-email@gmail.com
+  SMTP_PASSWORD=your-app-password
+  ```
+
+### SMS Integration (Twilio)
+- **Send SMS**: Quick reminders and alerts
+- **Receive SMS**: Process incoming text messages via webhooks
+- **Configuration**:
+  ```bash
+  TWILIO_ACCOUNT_SID=your-account-sid
+  TWILIO_AUTH_TOKEN=your-auth-token
+  TWILIO_PHONE_NUMBER=+1234567890
+  ```
+- **Webhook Setup**: Configure in Twilio Console → Phone Numbers → Messaging
+  ```
+  Webhook URL: https://your-domain.com/webhooks/sms/incoming
+  HTTP Method: POST
+  ```
+
+### WhatsApp Integration (Twilio)
+- **Rich messaging**: Formatted messages with emojis
+- **Media support**: Send images and documents
+- **Configuration**:
+  ```bash
+  TWILIO_WHATSAPP_NUMBER=+1234567890
+  ```
+- **Webhook Setup**: Twilio Console → Programmable Messaging → WhatsApp
+  ```
+  Webhook URL: https://your-domain.com/webhooks/whatsapp/incoming
+  ```
+
+### AI Integration (OpenAI/Anthropic)
+- **Smart summaries**: Auto-generate caregiver reports
+- **Intent analysis**: Understand incoming messages
+- **Conversational responses**: Natural language interactions
+- **Configuration**:
+  ```bash
+  OPENAI_API_KEY=sk-your-key
+  ANTHROPIC_API_KEY=sk-ant-your-key
+  AI_MODEL=gpt-4
+  ```
+
+### Google Calendar Integration
+- **Event creation**: Auto-schedule appointments
+- **Reminders**: Sync with Google Calendar notifications
+- **Configuration**:
+  ```bash
+  GOOGLE_CREDENTIALS_FILE=path/to/credentials.json
+  GOOGLE_CALENDAR_ID=primary
+  ```
+- **Setup**: Create service account in Google Cloud Console
+
+### Integration Usage Examples
+
+**Send Email Reminder:**
+```python
+from app.integrations import EmailIntegration
+
+email_integration = EmailIntegration()
+await email_integration.send_notification(
+    to_email="caregiver@example.com",
+    notification_type="reminder",
+    data={
+        "title": "Tutoring Session",
+        "time": "3:00 PM",
+        "details": "Math homework help"
+    }
+)
+```
+
+**Send WhatsApp Summary:**
+```python
+from app.integrations import WhatsAppIntegration
+
+whatsapp = WhatsAppIntegration()
+await whatsapp.send_summary(
+    to_number="+1234567890",
+    summary_data={
+        "date": "2024-01-15",
+        "content": "Completed 3 activities today..."
+    }
+)
+```
+
+**Generate AI Summary:**
+```python
+from app.integrations import AIIntegration
+
+ai = AIIntegration()
+result = await ai.generate_summary(
+    content="Activity logs for the day...",
+    summary_type="daily"
+)
+```
+
+### Webhook Endpoints
+
+All webhook endpoints are available at `/webhooks/*`:
+
+- **POST** `/webhooks/sms/incoming` - Receive incoming SMS
+- **POST** `/webhooks/whatsapp/incoming` - Receive incoming WhatsApp messages
+- **GET** `/webhooks/sms/status` - SMS delivery status updates
+- **GET** `/webhooks/health` - Webhook health check
+
+### Testing Webhooks Locally
+
+Use ngrok or similar tool to expose localhost for webhook testing:
+
+```bash
+# Install ngrok
+brew install ngrok  # macOS
+# or download from https://ngrok.com/
+
+# Start your app
+uvicorn app.main:app --reload
+
+# In another terminal, expose port 8000
+ngrok http 8000
+
+# Use the ngrok URL in Twilio webhook configuration
+# Example: https://abc123.ngrok.io/webhooks/sms/incoming
+```
+
+---
+

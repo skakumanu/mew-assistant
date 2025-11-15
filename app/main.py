@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import time
 
 from .routers import session_router, message_router, summary_router, auth_router
+from .routers.webhooks import router as webhooks_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
 from .utils.logger import get_logger
@@ -59,6 +60,7 @@ app.include_router(auth_router)  # Authentication first
 app.include_router(session_router)
 app.include_router(message_router)
 app.include_router(summary_router)
+app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 
 
 @app.get("/", tags=["health"])
@@ -76,6 +78,7 @@ async def root():
             "sessions": "/mew/session, /mew/confirm",
             "messages": "/mew/ingest",
             "summaries": "/mew/summary",
+            "webhooks": "/webhooks/sms/incoming, /webhooks/whatsapp/incoming",
             "docs": "/docs"
         }
     }
