@@ -59,6 +59,7 @@ Key Components:
 
 ## 🌟 Features
 
+### Core Features
 - **Session Management**: Schedule and manage tutoring, scheduling, and caregiver sessions
 - **Multi-Channel Ingestion**: Accept messages via email, SMS, WhatsApp, and web forms
 - **Cooldown Protection**: Prevent overwhelming families with intelligent request throttling
@@ -67,7 +68,27 @@ Key Components:
 - **PostgreSQL/SQLite**: Flexible database support
 - **RESTful API**: Clean, documented endpoints with OpenAPI/Swagger support
 - **Podman Support**: Containerized PostgreSQL for easy deployment
-- **🔒 Privacy & Compliance**: HIPAA, FERPA, COPPA, GDPR, CCPA compliant (see [COMPLIANCE.md](COMPLIANCE.md))
+
+### 🧒 Kid-Friendly Features
+- **Kid Accounts**: Age-appropriate interface for children to interact with schedules
+- **Simple Communication**: Emoji-based reactions and simple language
+- **Voice in Schedule**: Kids can suggest activities and request changes
+
+### 👨‍👩‍👧 Parental Controls (NEW!)
+- **🚨 Parental Approval System**: ALL kid requests require parent approval before changes
+- **Safety First**: No schedule modifications happen without explicit parent authorization
+- **Complete Oversight**: Parents review, approve, or deny all kid-initiated requests
+- **Audit Trail**: Full compliance logging for accountability and safety
+- **Kind Communication**: System encourages thoughtful parent responses to kids
+
+### 🔒 Privacy & Compliance
+- **HIPAA Compliant**: Protected health information handling
+- **FERPA Compliant**: Educational records protection  
+- **COPPA Compliant**: Children's online privacy with parental controls
+- **GDPR/CCPA Ready**: Data privacy and user rights support
+- **Complete Audit Logging**: Track all actions for compliance
+
+See [PARENTAL_APPROVAL_SUMMARY.md](PARENTAL_APPROVAL_SUMMARY.md) for detailed implementation.
 
 ---
 
