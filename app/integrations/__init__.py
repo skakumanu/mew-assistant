@@ -14,6 +14,7 @@ from .sms_integration import SMSIntegration
 from .whatsapp_integration import WhatsAppIntegration
 from .ai_integration import AIIntegration
 from .calendar_integration import CalendarIntegration
+from .mobile_integration import MobileIntegration
 
 __all__ = [
     "EmailIntegration",
@@ -21,4 +22,5 @@ __all__ = [
     "WhatsAppIntegration",
     "AIIntegration",
     "CalendarIntegration",
+    "MobileIntegration",
 ]

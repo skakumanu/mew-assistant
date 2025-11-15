@@ -1005,3 +1005,190 @@ ngrok http 8000
 
 ---
 
+
+---
+
+## 📅 Calendar Integration
+
+Mew Assistant supports multiple calendar providers for managing appointments and schedules.
+
+### Supported Providers
+
+- **Google Calendar**: OAuth2-based integration
+- **Apple iCloud Calendar**: CalDAV protocol support
+- **Microsoft Outlook Calendar**: Microsoft Graph API integration
+
+### Calendar API Endpoints
+
+#### 1. Connect Calendar Provider
+
+```bash
+# Google Calendar
+curl -X POST "http://localhost:8000/calendar/connect/google" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credentials": {
+      "token": "your_oauth2_token"
+    }
+  }'
+
+# Apple iCloud Calendar
+curl -X POST "http://localhost:8000/calendar/connect/apple" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "credentials": {
+      "username": "your@icloud.com",
+      "app_specific_password": "xxxx-xxxx-xxxx-xxxx",
+      "server": "https://caldav.icloud.com"
+    }
+  }'
+```
+
+#### 2. Create Calendar Event
+
+```bash
+curl -X POST "http://localhost:8000/calendar/events" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "google",
+    "title": "Therapy Session with Emma",
+    "start_time": "2024-01-15T14:00:00Z",
+    "end_time": "2024-01-15T15:00:00Z",
+    "description": "Weekly therapy session",
+    "location": "123 Main St, Suite 200",
+    "attendees": ["therapist@example.com"],
+    "reminder_minutes": 30
+  }'
+```
+
+#### 3. Get Upcoming Events
+
+```bash
+curl -X POST "http://localhost:8000/calendar/events/upcoming" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "google",
+    "days_ahead": 7
+  }'
+```
+
+---
+
+## 📱 Mobile Device Integration
+
+Support for iOS and Android mobile devices with push notifications and deep linking.
+
+### Supported Platforms
+
+- **iOS**: Apple Push Notification Service (APNs)
+- **Android**: Firebase Cloud Messaging (FCM)
+
+### Mobile API Endpoints
+
+#### 1. Register Device
+
+```bash
+curl -X POST "http://localhost:8000/mobile/register" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "ios",
+    "device_token": "your_device_token_here",
+    "device_info": {
+      "model": "iPhone 14 Pro",
+      "os_version": "17.1",
+      "app_version": "1.0.0"
+    }
+  }'
+```
+
+#### 2. Send Push Notification
+
+```bash
+curl -X POST "http://localhost:8000/mobile/notifications/send" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "ios",
+    "device_token": "your_device_token_here",
+    "title": "Upcoming Therapy Session",
+    "body": "Your therapy session starts in 30 minutes",
+    "data": {
+      "session_id": "12345",
+      "type": "reminder"
+    },
+    "badge": 1,
+    "sound": "default"
+  }'
+```
+
+#### 3. Generate Deep Link
+
+```bash
+curl -X POST "http://localhost:8000/mobile/deeplink" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "screen": "session/details",
+    "params": {
+      "session_id": "12345"
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "ios_link": "mewassistant://session/details?session_id=12345",
+  "android_link": "mewassistant://session/details?session_id=12345",
+  "universal_link": "https://app.mewassistant.com/session/details?session_id=12345",
+  "success": true
+}
+```
+
+#### 4. Schedule Reminder
+
+```bash
+curl -X POST "http://localhost:8000/mobile/reminders/schedule" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "ios",
+    "device_token": "your_device_token_here",
+    "title": "Daily Medication Reminder",
+    "body": "Time to take your morning medication",
+    "scheduled_time": "2024-01-15T08:00:00Z",
+    "data": {
+      "medication_id": "med_123"
+    }
+  }'
+```
+
+### Mobile Setup Requirements
+
+#### iOS (APNs)
+1. Apple Developer Account
+2. APNs Authentication Key (.p8 file)
+3. Key ID, Team ID, and Bundle ID
+
+**Configuration:**
+```bash
+export APNS_KEY_PATH="/path/to/AuthKey_KEYID.p8"
+export APNS_KEY_ID="YOUR_KEY_ID"
+export APNS_TEAM_ID="YOUR_TEAM_ID"
+export APNS_TOPIC="com.mewassistant.app"
+```
+
+#### Android (FCM)
+1. Firebase project with Cloud Messaging enabled
+2. Service account JSON file
+
+**Configuration:**
+```bash
+export FCM_SERVICE_ACCOUNT="/path/to/firebase-service-account.json"
+```
+

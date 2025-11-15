@@ -12,7 +12,14 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import time
 
-from .routers import session_router, message_router, summary_router, auth_router
+from .routers import (
+    session_router, 
+    message_router, 
+    summary_router, 
+    auth_router,
+    calendar_router,
+    mobile_router
+)
 from .routers.webhooks import router as webhooks_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
@@ -68,6 +75,8 @@ app.include_router(auth_router)  # Authentication first
 app.include_router(session_router)
 app.include_router(message_router)
 app.include_router(summary_router)
+app.include_router(calendar_router)
+app.include_router(mobile_router)
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 
 
