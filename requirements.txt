@@ -10,7 +10,7 @@ psycopg2-binary==2.9.10
 alembic==1.14.0
 
 # Environment and configuration
-python-dotenv==1.0.1
+python-dotenv==1.2.1
 PyYAML==6.0.2
 
 # Utilities
