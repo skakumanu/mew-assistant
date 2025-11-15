@@ -21,19 +21,22 @@ def test_ingest_message(client):
 
 def test_batch_ingest(client):
     """Test batch message ingestion"""
-    messages = [
-        {
-            "channel": "email",
-            "sender": f"user{i}@example.com",
-            "body": f"Message {i}"
-        }
-        for i in range(5)
-    ]
+    batch_data = {
+        "messages": [
+            {
+                "channel": "email",
+                "sender": f"user{i}@example.com",
+                "subject": f"Subject {i}",
+                "body": f"Message {i}"
+            }
+            for i in range(5)
+        ]
+    }
     
-    response = client.post("/mew/ingest/batch", json=messages)
+    response = client.post("/mew/ingest/batch", json=batch_data)
     assert response.status_code == 201
     data = response.json()
-    assert data["ingested"] == 5
+    assert len(data) == 5
 
 
 def test_get_unprocessed_messages(client):
