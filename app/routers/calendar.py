@@ -14,7 +14,8 @@ from app.schemas.calendar import (
     CalendarConnectionRequest,
     CalendarConnectionResponse,
     UpcomingEventsRequest,
-    UpcomingEventsResponse
+    UpcomingEventsResponse,
+    CalendarProvider
 )
 from app.integrations.calendar_integration import CalendarIntegration
 from app.utils.auth import get_current_user

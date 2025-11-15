@@ -66,3 +66,10 @@ class SupportedLanguagesResponse(BaseModel):
     """Supported languages list"""
     languages: Dict[str, str]
     count: int
+
+
+class VoiceTranscription(BaseModel):
+    """Voice transcription result"""
+    text: str
+    language: str
+    confidence: float = 1.0
