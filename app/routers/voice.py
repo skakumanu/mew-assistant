@@ -1,0 +1,159 @@
+"""Voice command API endpoints"""
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from sqlalchemy.orm import Session
+from typing import Optional
+import logging
+
+from app.database import get_db
+from app.models.user import User
+from app.schemas.voice import (
+    VoiceCommandResponse,
+    VoiceSessionCreate,
+    VoiceSessionResponse,
+    SupportedLanguagesResponse
+)
+from app.voice import VoiceProcessor
+from app.middleware.auth import get_current_user
+
+router = APIRouter(prefix="/voice", tags=["voice"])
+logger = logging.getLogger(__name__)
+
+voice_processor = VoiceProcessor()
+
+
+@router.post("/command", response_model=VoiceCommandResponse)
+async def process_voice_command(
+    audio: UploadFile = File(..., description="Audio file (WAV, MP3, OGG)"),
+    session_id: Optional[str] = Form(None),
+    preferred_language: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Process voice command with multilingual support
+    
+    Supports 20+ languages including:
+    - English, Spanish, French, German, Italian
+    - Portuguese, Chinese, Japanese, Korean
+    - Arabic, Hindi, Russian, and more
+    
+    The system will:
+    1. Convert speech to text
+    2. Detect language automatically (if not specified)
+    3. Parse natural language command
+    4. Return structured intent and entities
+    
+    Perfect for hands-free scheduling and family assistance!
+    """
+    try:
+        # Read audio data
+        audio_data = await audio.read()
+        
+        if len(audio_data) == 0:
+            raise HTTPException(status_code=400, detail="Empty audio file")
+        
+        # Process voice command
+        result = await voice_processor.process_voice_input(
+            audio_data=audio_data,
+            user_id=current_user.id,
+            session_id=session_id,
+            preferred_language=preferred_language
+        )
+        
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.error)
+        
+        logger.info(f"Voice command processed: {result.transcription}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Voice command error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/languages", response_model=SupportedLanguagesResponse)
+async def get_supported_languages():
+    """
+    Get list of supported languages for voice recognition
+    
+    Returns language codes and names for all supported languages.
+    Use these codes in the preferred_language parameter.
+    """
+    languages = await voice_processor.get_supported_languages()
+    return SupportedLanguagesResponse(
+        languages=languages,
+        count=len(languages)
+    )
+
+
+@router.post("/session/start", response_model=VoiceSessionResponse)
+async def start_voice_session(
+    session_data: VoiceSessionCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Start a continuous voice session for natural conversation
+    
+    Use this for hands-free operation where multiple commands
+    will be issued in sequence without repeated authentication.
+    """
+    try:
+        from app.models.voice import VoiceSession
+        import uuid
+        
+        session_id = str(uuid.uuid4())
+        
+        voice_session = VoiceSession(
+            session_id=session_id,
+            user_id=current_user.id,
+            language=session_data.language
+        )
+        
+        db.add(voice_session)
+        db.commit()
+        db.refresh(voice_session)
+        
+        return VoiceSessionResponse(
+            session_id=voice_session.session_id,
+            user_id=voice_session.user_id,
+            language=voice_session.language,
+            started_at=voice_session.started_at,
+            command_count=voice_session.command_count
+        )
+        
+    except Exception as e:
+        logger.error(f"Session start error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/session/{session_id}/end")
+async def end_voice_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """End a voice session"""
+    try:
+        from app.models.voice import VoiceSession
+        from datetime import datetime
+        
+        session = db.query(VoiceSession).filter(
+            VoiceSession.session_id == session_id,
+            VoiceSession.user_id == current_user.id
+        ).first()
+        
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session.ended_at = datetime.utcnow()
+        db.commit()
+        
+        return {"message": "Session ended", "session_id": session_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Session end error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

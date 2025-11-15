@@ -7,6 +7,7 @@ from .calendar import router as calendar_router
 from .mobile import router as mobile_router
 from .kid_friendly import router as kid_router
 from .parent_approval import router as parent_approval_router
+from .voice import router as voice_router
 
 __all__ = [
     "auth_router", 
@@ -16,5 +17,6 @@ __all__ = [
     "calendar_router", 
     "mobile_router", 
     "kid_router",
-    "parent_approval_router"
+    "parent_approval_router",
+    "voice_router"
 ]

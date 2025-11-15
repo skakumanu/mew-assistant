@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     
+    # Azure Cognitive Services
+    AZURE_SPEECH_KEY: Optional[str] = None
+    AZURE_SPEECH_REGION: Optional[str] = None
+    AZURE_KEYVAULT_URL: Optional[str] = None
+    AZURE_STORAGE_ACCOUNT: Optional[str] = None
+    AZURE_STORAGE_KEY: Optional[str] = None
+    AZURE_STORAGE_CONTAINER: Optional[str] = "mew-backups"
+    
     # Email Integration
     SMTP_HOST: Optional[str] = "smtp.gmail.com"
     SMTP_PORT: int = 587

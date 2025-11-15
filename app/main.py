@@ -20,7 +20,8 @@ from .routers import (
     calendar_router,
     mobile_router,
     kid_router,
-    parent_approval_router
+    parent_approval_router,
+    voice_router
 )
 from .routers.webhooks import router as webhooks_router
 from .routers.backup import router as backup_router
@@ -82,6 +83,7 @@ app.include_router(calendar_router)
 app.include_router(mobile_router)
 app.include_router(kid_router)  # Kid-friendly endpoints
 app.include_router(parent_approval_router)  # Parent approval workflow - CRITICAL for kid safety
+app.include_router(voice_router)  # Voice commands with multilingual support
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 app.include_router(backup_router)  # Cloud backup and restore - Azure integration
 
@@ -104,6 +106,7 @@ async def root():
             "calendar": "/calendar/*",
             "mobile": "/mobile/*",
             "kid": "/kid/* (kid-friendly endpoints)",
+            "voice": "/voice/* (multilingual voice commands - 20+ languages)",
             "webhooks": "/webhooks/sms/incoming, /webhooks/whatsapp/incoming",
             "backup": "/api/backup/* (Azure cloud backups)",
             "docs": "/docs"

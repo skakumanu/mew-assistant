@@ -62,6 +62,7 @@ Key Components:
 ### Core Features
 - **Session Management**: Schedule and manage tutoring, scheduling, and caregiver sessions
 - **Multi-Channel Ingestion**: Accept messages via email, SMS, WhatsApp, and web forms
+- **🎤 Voice Commands**: Multilingual voice recognition supporting 20+ languages (English, Spanish, French, German, Chinese, Japanese, Korean, Arabic, Hindi, and more)
 - **Cooldown Protection**: Prevent overwhelming families with intelligent request throttling
 - **Priority Period Overrides**: Automatically escalate priority during peak times (7-9am, 3-6pm, 7-9pm)
 - **Caregiver Summaries**: Generate actionable insights and recommendations
@@ -193,6 +194,17 @@ uvicorn app.main:app --reload
 | POST | `/mew/summary` | Generate summary |
 | GET | `/mew/summary/{id}` | Get summary |
 | GET | `/mew/summaries/user/{user_id}` | List summaries |
+
+### 🎤 Voice Commands (Multilingual)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/voice/command` | Process voice command (audio file) |
+| GET | `/voice/languages` | Get supported languages (20+) |
+| POST | `/voice/session/start` | Start continuous voice session |
+| POST | `/voice/session/{id}/end` | End voice session |
+
+**Supported Languages**: English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Hindi, Russian, Dutch, Polish, Turkish, Vietnamese, Thai, and more!
 
 **Full API Documentation**: http://localhost:8000/docs
 
@@ -432,6 +444,11 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 EMAIL_ENABLED=false
 SMS_ENABLED=false
 WHATSAPP_ENABLED=false
+
+# Voice Commands (Multilingual Support)
+AZURE_SPEECH_KEY=your-azure-speech-key
+AZURE_SPEECH_REGION=eastus
+OPENAI_API_KEY=your-openai-api-key  # For Whisper fallback and NLU
 ```
 
 ### Authentication & Security

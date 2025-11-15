@@ -3,6 +3,7 @@ from .auth import *
 from .session import *
 from .message import *
 from .summary import *
+from .voice import *
 
 __all__ = [
     "UserCreate",
@@ -19,4 +20,7 @@ __all__ = [
     "MessageResponse",
     "SummaryRequest",
     "SummaryResponse",
+    "VoiceCommandResponse",
+    "VoiceSessionResponse",
+    "SupportedLanguagesResponse",
 ]
