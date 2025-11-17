@@ -8,7 +8,7 @@ from typing import List
 from datetime import datetime, timedelta
 
 from ..database import get_db
-from ..models.user import User
+from ..database.models import User
 from ..schemas.kid_friendly import (
     KidScheduleRequest,
     KidScheduleResponse,

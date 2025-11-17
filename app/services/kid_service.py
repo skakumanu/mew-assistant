@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 import random
 
-from ..models.user import User
+from ..database.models import User
 from ..schemas.kid_friendly import TimeOfDay, ActivityItem, ChangeReason
 
 
