@@ -5,6 +5,15 @@ Pydantic models for calendar integration
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from enum import Enum
+
+
+class CalendarProvider(str, Enum):
+    """Supported calendar providers"""
+    GOOGLE = "google"
+    APPLE = "apple"
+    MICROSOFT = "microsoft"
+    CALDAV = "caldav"
 
 
 class CalendarConnectionRequest(BaseModel):
