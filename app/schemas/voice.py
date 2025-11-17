@@ -104,3 +104,23 @@ class VoiceTranscription(BaseModel):
     text: str
     language: str
     confidence: float = 1.0
+
+
+class VoiceStatisticsResponse(BaseModel):
+    """Voice command statistics"""
+    total_commands: int = 0
+    successful_commands: int = 0
+    failed_commands: int = 0
+    languages_used: Dict[str, int] = {}
+    avg_confidence: float = 0.0
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "total_commands": 150,
+                "successful_commands": 145,
+                "failed_commands": 5,
+                "languages_used": {"en-US": 100, "es-ES": 50},
+                "avg_confidence": 0.92
+            }
+        }

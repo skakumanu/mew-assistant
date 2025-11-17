@@ -4,11 +4,19 @@ Google Calendar integration for scheduling.
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from enum import Enum
 
 from app.utils.config import settings
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+class CalendarProvider(str, Enum):
+    """Supported calendar providers"""
+    GOOGLE = "google"
+    APPLE = "apple"
+    OUTLOOK = "outlook"
 
 
 class CalendarIntegration:

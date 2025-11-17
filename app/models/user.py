@@ -48,6 +48,7 @@ class User(Base):
     # Relationships
     family_id = Column(Integer, ForeignKey("families.id"), nullable=True)
     family = relationship("Family", back_populates="members")
+    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
