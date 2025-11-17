@@ -49,6 +49,7 @@ class User(Base):
     Supports parents, caregivers, and tutors using Mew Assistant.
     """
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -96,6 +97,7 @@ class Session(Base):
     Tracks tutoring, scheduling, and caregiver sessions.
     """
     __tablename__ = "sessions"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
@@ -132,6 +134,7 @@ class Message(Base):
     Stores messages from email, SMS, WhatsApp, etc.
     """
     __tablename__ = "messages"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
@@ -169,6 +172,7 @@ class CaregiverSummary(Base):
     Provides insights for special needs families.
     """
     __tablename__ = "caregiver_summaries"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
@@ -191,6 +195,7 @@ class CaregiverSummary(Base):
 class APIKey(Base):
     """API Key model for external integrations"""
     __tablename__ = "api_keys"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -273,6 +278,7 @@ class ApprovalRequest(Base):
     __table_args__ = (
         Index('idx_approval_kid_status', 'kid_id', 'status'),
         Index('idx_approval_parent_status', 'parent_id', 'status'),
+        {'extend_existing': True}
     )
     
     def is_expired(self) -> bool:
@@ -293,6 +299,7 @@ class ApprovalRequest(Base):
 class ApprovalAuditLog(Base):
     """Audit trail for all approval actions - compliance requirement"""
     __tablename__ = "approval_audit_logs"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     approval_request_id = Column(Integer, ForeignKey("approval_requests.id"), nullable=False)

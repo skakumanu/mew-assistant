@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 import random
 
 from ..models.user import User
-from ..models.message import Message
 from ..schemas.kid_friendly import TimeOfDay, ActivityItem, ChangeReason
 
 
