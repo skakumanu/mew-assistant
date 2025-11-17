@@ -4,7 +4,7 @@ Endpoints for parents to review and approve/deny kid requests
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from ..database import get_db
@@ -19,23 +19,23 @@ router = APIRouter(prefix="/parent/approvals", tags=["Parent Approvals"])
 class ApprovalResponse(BaseModel):
     """Parent's response to kid request"""
     approved: bool = Field(..., description="Approve or deny the request")
-    parent_note: str | None = Field(None, max_length=500, description="Message for your kid")
-    alternative_suggestion: str | None = Field(None, max_length=300, description="Alternative suggestion")
+    parent_note: Optional[str] = Field(None, max_length=500, description="Message for your kid")
+    alternative_suggestion: Optional[str] = Field(None, max_length=300, description="Alternative suggestion")
 
 
 class ApprovalRequestDetail(BaseModel):
     """Detailed approval request for display"""
     id: int
     kid_name: str
-    kid_emoji: str | None
+    kid_emoji: Optional[str]
     request_type: str
-    requested_activity: str | None
-    requested_time: str | None
-    kid_reason: str | None
+    requested_activity: Optional[str]
+    requested_time: Optional[str]
+    kid_reason: Optional[str]
     status: str
     created_at: str
-    expires_at: str | None
-    original_activity_name: str | None
+    expires_at: Optional[str]
+    original_activity_name: Optional[str]
     
     class Config:
         from_attributes = True

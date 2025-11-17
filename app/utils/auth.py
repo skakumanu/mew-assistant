@@ -66,6 +66,24 @@ def verify_kid_account(user: User) -> None:
         )
 
 
+def verify_parent_account(user: User) -> None:
+    """
+    Verify that the user is a parent account (not a kid account).
+    Raises HTTPException if user is a kid account.
+    
+    Args:
+        user: User object to verify
+        
+    Raises:
+        HTTPException: If user is a kid account
+    """
+    if user.is_kid_account:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is only available for parent/caregiver accounts"
+        )
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create JWT access token.
