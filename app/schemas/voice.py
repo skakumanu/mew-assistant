@@ -62,10 +62,41 @@ class VoiceSessionResponse(BaseModel):
         from_attributes = True
 
 
+class VoiceLanguageInfo(BaseModel):
+    """Information about a supported language"""
+    code: str = Field(..., description="Language code (e.g., en-US, es-ES)")
+    name: str = Field(..., description="Language name (e.g., English, Spanish)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "code": "en-US",
+                "name": "English (United States)"
+            }
+        }
+
+
 class SupportedLanguagesResponse(BaseModel):
     """Supported languages list"""
     languages: Dict[str, str]
     count: int
+
+
+class VoiceCommandRequest(BaseModel):
+    """Request model for voice command processing"""
+    audio_base64: Optional[str] = Field(None, description="Base64 encoded audio data")
+    audio_url: Optional[str] = Field(None, description="URL to audio file")
+    session_id: Optional[str] = Field(None, description="Session ID for context")
+    language: Optional[str] = Field(None, description="Expected language code")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "audio_base64": "UklGRiQAAABXQVZFZm10...",
+                "session_id": "session_123",
+                "language": "en-US"
+            }
+        }
 
 
 class VoiceTranscription(BaseModel):
