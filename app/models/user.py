@@ -15,6 +15,7 @@ class User(Base):
     Supports: email, phone, social login, voice registration
     """
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     

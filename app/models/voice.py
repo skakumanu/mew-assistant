@@ -9,6 +9,7 @@ from app.database import Base
 class VoiceCommand(Base):
     """Voice command history"""
     __tablename__ = "voice_commands"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -28,6 +29,7 @@ class VoiceCommand(Base):
 class VoiceSession(Base):
     """Continuous voice conversation session"""
     __tablename__ = "voice_sessions"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(255), unique=True, nullable=False)

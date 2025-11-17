@@ -30,6 +30,7 @@ class RequestType(str, enum.Enum):
 class ApprovalRequest(Base):
     """Parent approval required for all kid requests"""
     __tablename__ = "approval_requests"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     kid_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -83,6 +84,7 @@ class ApprovalRequest(Base):
 class ApprovalAuditLog(Base):
     """Audit trail for all approval actions"""
     __tablename__ = "approval_audit_logs"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     approval_request_id = Column(Integer, ForeignKey("approval_requests.id"), nullable=False)
