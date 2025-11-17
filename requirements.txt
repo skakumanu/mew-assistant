@@ -41,7 +41,7 @@ httpx==0.28.1
 # External Service Integrations
 twilio==9.3.7
 google-auth==2.37.0
-google-auth-oauthlib==1.2.1
+google-auth-oauthlib==1.2.3
 google-auth-httplib2==0.2.0
 google-api-python-client==2.154.0
 openai==1.57.4
