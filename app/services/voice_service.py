@@ -9,7 +9,7 @@ from datetime import datetime
 import logging
 from sqlalchemy.orm import Session
 
-from app.models.session import VoiceCommand
+from app.models.voice import VoiceCommand
 from app.schemas.voice import VoiceCommandRequest, VoiceCommandResponse, VoiceTranscription
 from app.integrations.voice_integration import VoiceIntegration
 from app.services.session_service import SessionService
