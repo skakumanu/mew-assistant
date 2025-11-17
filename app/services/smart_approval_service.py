@@ -6,7 +6,7 @@ and batching others for efficient review.
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from app.models import ApprovalRequest, User, ApprovalRule
+from app.database.models import ApprovalRequest, User, ApprovalRule
 from app.schemas.approval import ApprovalStatus, RequestPriority
 
 

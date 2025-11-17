@@ -7,7 +7,7 @@ from typing import Optional
 import jwt
 
 from app.database import get_db
-from app.models.user import User
+from app.database.models import User
 from app.utils.config import settings
 
 security = HTTPBearer()

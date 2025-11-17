@@ -14,7 +14,7 @@ from app.schemas.approval import (
 )
 from app.services.smart_approval_service import SmartApprovalService
 from app.utils.auth import get_current_user
-from app.models import User
+from app.database.models import User
 
 router = APIRouter(prefix="/api/v1/smart-approval", tags=["Smart Approval"])
 
@@ -63,7 +63,7 @@ async def get_auto_approval_rules(
     db: Session = Depends(get_db)
 ):
     """Get all active auto-approval rules."""
-    from app.models import ApprovalRule
+    from app.database.models import ApprovalRule
     rules = db.query(ApprovalRule).filter(
         ApprovalRule.user_id == current_user.id,
         ApprovalRule.is_active == True
@@ -78,7 +78,7 @@ async def delete_auto_approval_rule(
     db: Session = Depends(get_db)
 ):
     """Disable an auto-approval rule."""
-    from app.models import ApprovalRule
+    from app.database.models import ApprovalRule
     rule = db.query(ApprovalRule).filter(
         ApprovalRule.id == rule_id,
         ApprovalRule.user_id == current_user.id

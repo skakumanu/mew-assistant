@@ -313,3 +313,77 @@ class ApprovalAuditLog(Base):
     notes = Column(Text, nullable=True)
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(String(255), nullable=True)
+
+
+class VoiceCommand(Base):
+    """Voice command tracking for multi-language voice interactions"""
+    __tablename__ = "voice_commands"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    session_id = Column(String(255), nullable=True)
+    
+    audio_file_path = Column(String(500), nullable=True)
+    transcribed_text = Column(Text, nullable=True)
+    detected_language = Column(String(10), nullable=True)
+    confidence_score = Column(Integer, nullable=True)
+    
+    intent = Column(String(100), nullable=True)
+    response_text = Column(Text, nullable=True)
+    response_audio_path = Column(String(500), nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    processed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+
+
+class VoiceSession(Base):
+    """Voice session management for continuous conversations"""
+    __tablename__ = "voice_sessions"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(255), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    platform = Column(String(50), nullable=True)
+    preferred_language = Column(String(10), nullable=True)
+    
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    ended_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+
+class Family(Base):
+    """Family unit for grouping users"""
+    __tablename__ = "families"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    primary_contact_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    timezone = Column(String(50), default="UTC", nullable=False)
+    language_preference = Column(String(10), default="en", nullable=False)
+
+
+class ApprovalRule(Base):
+    """Smart approval rules for automated decision making"""
+    __tablename__ = "approval_rules"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    family_id = Column(Integer, ForeignKey("families.id"), nullable=False)
+    
+    rule_name = Column(String(255), nullable=False)
+    rule_type = Column(String(50), nullable=False)
+    conditions = Column(Text, nullable=False)
+    
+    is_active = Column(Boolean, default=True, nullable=False)
+    priority = Column(Integer, default=100, nullable=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)

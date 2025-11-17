@@ -9,7 +9,7 @@ from sqlalchemy import select
 import secrets
 import re
 
-from app.models import User, Family
+from app.database.models import User, Family
 from app.schemas.auth import UserCreate
 from app.utils.logger import get_logger
 from app.utils.notifications import NotificationService

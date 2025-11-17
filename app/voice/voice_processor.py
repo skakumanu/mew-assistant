@@ -14,7 +14,7 @@ except ImportError:
     speechsdk = None
 
 from app.database import get_db
-from app.models.voice import VoiceCommand, VoiceSession
+from app.database.models import VoiceCommand, VoiceSession
 from app.schemas.voice import VoiceCommandCreate, VoiceCommandResponse
 from app.utils.config import settings
 from .language_detector import LanguageDetector

@@ -9,7 +9,7 @@ from typing import Optional, List
 import logging
 
 from app.database import get_db
-from app.models.user import User
+from app.database.models import User
 from app.schemas.voice import (
     VoiceCommandResponse,
     VoiceSessionCreate,
@@ -191,7 +191,7 @@ async def end_voice_session(
 ):
     """End a voice session"""
     try:
-        from app.models.voice import VoiceSession
+        from app.database.models import VoiceSession
         from datetime import datetime
         
         session = db.query(VoiceSession).filter(

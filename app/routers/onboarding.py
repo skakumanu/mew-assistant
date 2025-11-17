@@ -160,7 +160,7 @@ async def onboarding_status(
     
     Returns what steps are remaining
     """
-    from app.models import User
+    from app.database.models import User
     from sqlalchemy import select
     
     result = await db.execute(select(User).where(User.id == user_id))

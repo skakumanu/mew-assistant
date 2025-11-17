@@ -10,7 +10,7 @@ from datetime import datetime
 from app.database import get_db
 from app.schemas.backup import BackupResponse, BackupListResponse, RestoreRequest
 from app.utils.auth import get_current_user
-from app.models import User
+from app.database.models import User
 from app.cloud.azure_storage import azure_storage
 from app.utils.logging import get_logger
 
