@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 
 from ..database import get_db
 from ..models.user import User
-from ..models.session import Session as ChatSession
 from ..schemas.kid_friendly import (
     KidScheduleRequest,
     KidScheduleResponse,
