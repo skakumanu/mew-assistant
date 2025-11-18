@@ -13,6 +13,13 @@ class AzureKeyVaultClient:
     """Manages secrets in Azure Key Vault"""
     
     def __init__(self):
+        # Check if Azure is enabled
+        azure_enabled = os.getenv("AZURE_ENABLED", "false").lower() == "true"
+        if not azure_enabled:
+            logger.info("Azure Key Vault disabled, using local .env")
+            self.client = None
+            return
+            
         vault_url = os.getenv("AZURE_KEY_VAULT_URL")
         if not vault_url:
             logger.warning("AZURE_KEY_VAULT_URL not set, using local .env fallback")

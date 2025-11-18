@@ -15,6 +15,13 @@ class AzureStorageClient:
     """Manages encrypted backups in Azure Blob Storage"""
     
     def __init__(self):
+        # Check if Azure is enabled
+        azure_enabled = os.getenv("AZURE_ENABLED", "false").lower() == "true"
+        if not azure_enabled:
+            logger.info("Azure Storage disabled, cloud backups disabled")
+            self.client = None
+            return
+            
         connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
         self.container_name = os.getenv("AZURE_STORAGE_CONTAINER", "mew-backups")
         

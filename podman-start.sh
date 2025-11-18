@@ -28,18 +28,30 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "✅ PostgreSQL is running!"
     echo ""
-    echo "📋 Connection details:"
+    
+    # Start the app container
+    echo "Starting Mew Assistant app..."
+    podman run -d \
+      --name mew-app \
+      -p 8888:8000 \
+      -e DATABASE_URL="postgresql://mew_user:mew_password@host.containers.internal:5432/mew_assistant" \
+      localhost/mew-assistant:latest
+    
+    sleep 3
+    
+    echo ""
+    echo "✅ Mew Assistant is starting!"
+    echo ""
+    echo "📋 Access the app:"
+    echo "   API Docs: http://localhost:8888/docs"
+    echo "   Health: http://localhost:8888/health"
+    echo ""
+    echo "📋 Database Connection details:"
     echo "   Host: 127.0.0.1"
     echo "   Port: 5432"
     echo "   Database: mew_assistant"
     echo "   User: mew_user"
     echo "   Password: mew_password"
-    echo ""
-    echo "🔧 Update your .env file:"
-    echo "   DATABASE_URL=postgresql://mew_user:mew_password@127.0.0.1:5432/mew_assistant"
-    echo ""
-    echo "🚀 Start your app:"
-    echo "   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
     echo ""
 else
     echo "⚠️  PostgreSQL not ready yet. Wait a few seconds and check:"

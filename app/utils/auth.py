@@ -24,8 +24,11 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing using Argon2 (more modern and secure than bcrypt)
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto"
+)
 
 # Security scheme
 security = HTTPBearer()
@@ -37,7 +40,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Generate password hash."""
+    """Generate password hash using Argon2."""
     return pwd_context.hash(password)
 
 

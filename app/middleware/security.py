@@ -174,6 +174,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.headers.get('Authorization', '').startswith('Bearer '):
             return
         
+        # Skip CSRF for public registration/login endpoints
+        public_endpoints = ['/auth/register', '/auth/login', '/auth/magic-link', '/voice/webhook']
+        if any(request.url.path.startswith(endpoint) for endpoint in public_endpoints):
+            return
+        
         csrf_token = request.headers.get('X-CSRF-Token')
         if not csrf_token:
             logger.warning(f"Missing CSRF token from {request.client.host}")
