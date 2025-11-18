@@ -2,10 +2,12 @@
 Webhook endpoints for receiving external messages (SMS, WhatsApp, Email).
 """
 
-from fastapi import APIRouter, Request, Form, HTTPException
+from fastapi import APIRouter, Request, Form, HTTPException, Depends
+from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 
+from app.database import get_db
 from app.integrations import SMSIntegration, WhatsAppIntegration
 from app.services.message_service import MessageService
 from app.utils.logger import get_logger
@@ -16,7 +18,6 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 sms_integration = SMSIntegration()
 whatsapp_integration = WhatsAppIntegration()
-message_service = MessageService()
 
 
 @router.post("/sms/incoming")
@@ -27,6 +28,7 @@ async def receive_sms(
     To: str = Form(...),
     Body: str = Form(...),
     NumMedia: Optional[str] = Form("0"),
+    db: Session = Depends(get_db)
 ):
     """
     Webhook endpoint for receiving incoming SMS from Twilio.
@@ -34,6 +36,7 @@ async def receive_sms(
     This endpoint is called by Twilio when an SMS is received.
     Configure in Twilio Console: Account > Phone Numbers > Your Number > Messaging > Webhook
     """
+    message_service = MessageService(db)
     try:
         webhook_data = {
             "MessageSid": MessageSid,
@@ -74,12 +77,14 @@ async def receive_whatsapp(
     Body: str = Form(...),
     NumMedia: Optional[str] = Form("0"),
     ProfileName: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
 ):
     """
     Webhook endpoint for receiving incoming WhatsApp messages from Twilio.
     
     Configure in Twilio Console: Programmable Messaging > WhatsApp > Sandbox Settings
     """
+    message_service = MessageService(db)
     try:
         webhook_data = {
             "MessageSid": MessageSid,

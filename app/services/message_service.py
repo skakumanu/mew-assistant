@@ -2,9 +2,12 @@
 Message service for handling incoming messages from multiple channels.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
+from sqlalchemy.orm import Session
 
+from app.database.models import Message
+from app.schemas.message import MessageIngest, MessageBatchIngest
 from app.integrations import AIIntegration
 from app.utils.logger import get_logger
 
@@ -14,8 +17,55 @@ logger = get_logger(__name__)
 class MessageService:
     """Service for processing incoming messages."""
 
-    def __init__(self):
+    def __init__(self, db: Session):
+        self.db = db
         self.ai_integration = AIIntegration()
+
+    def ingest_message(self, message_data: MessageIngest) -> Message:
+        """
+        Ingest a new message and store in database.
+        
+        Args:
+            message_data: MessageIngest schema with message details
+            
+        Returns:
+            Message: Created message record
+        """
+        message = Message(
+            channel=message_data.channel.value,
+            sender=message_data.sender,
+            recipient=message_data.recipient,
+            subject=message_data.subject,
+            body=message_data.body,
+            raw_content=message_data.raw_content,
+            session_id=message_data.session_id,
+            received_at=message_data.received_at or datetime.utcnow(),
+            processed=False
+        )
+        
+        self.db.add(message)
+        self.db.commit()
+        self.db.refresh(message)
+        
+        logger.info(f"Ingested message {message.id} from {message_data.sender} via {message_data.channel}")
+        return message
+    
+    def ingest_batch(self, batch_data: MessageBatchIngest) -> List[Message]:
+        """
+        Ingest multiple messages in batch.
+        
+        Args:
+            batch_data: MessageBatchIngest with list of messages
+            
+        Returns:
+            List[Message]: Created message records
+        """
+        messages = []
+        for msg_data in batch_data.messages:
+            message = self.ingest_message(msg_data)
+            messages.append(message)
+        
+        return messages
 
     async def process_incoming_message(
         self,

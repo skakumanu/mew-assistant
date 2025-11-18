@@ -17,11 +17,12 @@ def test_health_check(client):
 def test_ingest_endpoint(client, sample_ingest_data):
     """Test message ingestion endpoint."""
     response = client.post("/mew/ingest", json=sample_ingest_data)
-    assert response.status_code == status.HTTP_200_OK
+    assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
-    assert "session_id" in data
-    assert data["status"] == "processed"
+    assert "id" in data
+    assert "channel" in data
     assert data["channel"] == "email"
+    assert data["sender"] == "parent@example.com"
 
 
 def test_ingest_invalid_channel(client):
