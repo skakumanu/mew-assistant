@@ -1,516 +1,303 @@
-# 🚀 Deployment Guide
+# 🚀 Quick Start Deployment Guide
 
-Complete deployment documentation for the Mew Assistant application.
+## Phase 0: Immediate Deployment (Start Using Today!)
 
-## Table of Contents
-- [Azure Cloud Setup](#azure-cloud-setup)
-- [CI/CD Pipeline](#cicd-pipeline)
-- [Deployment Guardrails](#deployment-guardrails)
-- [Infrastructure as Code](#infrastructure-as-code)
+**Goal**: Get Mew Assistant running in Azure within 2-4 hours for ~$15-25/month
+
+### Prerequisites Checklist
+- [ ] Azure account (free tier available)
+- [ ] Azure CLI installed
+- [ ] GitHub account connected
+- [ ] Phone number for SMS testing
+- [ ] Email account for testing
 
 ---
 
-## Azure Cloud Setup
+## Option A: Azure Free Tier (Best for Getting Started)
 
-### Prerequisites
-- Azure subscription
-- Azure CLI installed
-- Terraform installed
-- kubectl installed
+### Total Cost: $0-5/month for first 12 months
 
-### Infrastructure Components
+**What You Get Free:**
+- App Service: B1 tier free for 12 months
+- PostgreSQL: B1 tier free for 12 months  
+- 5GB storage
+- 750 hours/month compute
 
-#### 1. Azure Kubernetes Service (AKS)
-- **Purpose**: Container orchestration for scalable deployments
-- **Configuration**: Multi-zone deployment for high availability
-- **Auto-scaling**: Enabled for dynamic workload management
+### Quick Deploy Steps
 
-#### 2. Azure Database for PostgreSQL
-- **Type**: Flexible Server
-- **Features**:
-  - Automated backups (7-day retention)
-  - Point-in-time restore
-  - Encryption at rest using customer-managed keys
-  - Private endpoint connectivity
-
-#### 3. Azure Key Vault
-- **Purpose**: Secrets and certificate management
-- **Stored Secrets**:
-  - Database connection strings
-  - API keys (OpenAI, Twilio, SendGrid)
-  - JWT signing keys
-  - OAuth credentials
-
-#### 4. Azure Blob Storage
-- **Purpose**: 
-  - Voice recordings storage
-  - Daily database backups
-  - Log archives
-- **Features**:
-  - Lifecycle management (30-day retention)
-  - Encryption at rest
-  - Geo-redundant storage (GRS)
-
-#### 5. Azure API Management
-- **Purpose**: API gateway and rate limiting
-- **Features**:
-  - OAuth2 authentication
-  - Rate limiting per user/plan
-  - Request/response transformation
-  - Analytics and monitoring
-
-#### 6. Azure Application Insights
-- **Purpose**: Application performance monitoring
-- **Metrics**:
-  - Request rates and latencies
-  - Error rates and exceptions
-  - Custom events and traces
-  - User behavior analytics
-
-### Quick Setup
-
+#### 1. Install Azure CLI (if not already installed)
 ```bash
-# Login to Azure
+# On Linux/WSL
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# Verify installation
+az --version
+```
+
+#### 2. Login to Azure
+```bash
 az login
-
-# Set subscription
-az account set --subscription "Your-Subscription-ID"
-
-# Create resource group
-az group create --name mew-assistant-rg --location eastus
-
-# Deploy infrastructure using Terraform
-cd infrastructure/terraform
-terraform init
-terraform plan
-terraform apply
 ```
 
-### Environment Variables for Azure
+#### 3. Run Automated Setup Script
+```bash
+# This script will:
+# - Create resource group
+# - Deploy PostgreSQL database
+# - Deploy App Service
+# - Configure environment variables
+# - Deploy the application
+
+./infrastructure/azure/quick-deploy.sh
+```
+
+#### 4. Configure Your Environment
+After deployment, the script will output your app URL. Update these settings:
 
 ```bash
-# Azure Configuration
-AZURE_SUBSCRIPTION_ID=your-subscription-id
-AZURE_TENANT_ID=your-tenant-id
-AZURE_CLIENT_ID=your-client-id
-AZURE_CLIENT_SECRET=your-client-secret
-
-# Key Vault
-AZURE_KEY_VAULT_NAME=mew-assistant-kv
-AZURE_KEY_VAULT_URI=https://mew-assistant-kv.vault.azure.net/
-
-# Storage
-AZURE_STORAGE_ACCOUNT=mewassistantstorage
-AZURE_STORAGE_CONTAINER=backups
-
-# Database
-AZURE_POSTGRES_SERVER=mew-assistant-db.postgres.database.azure.com
-AZURE_POSTGRES_DATABASE=mewdb
-```
-
----
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflows
-
-#### 1. Main CI/CD Pipeline (`.github/workflows/ci-cd.yml`)
-
-**Triggers:**
-- Push to `main` or `develop` branches
-- Pull requests to `main`
-
-**Jobs:**
-
-##### Security & Compliance Checks
-```yaml
-- Dependency vulnerability scan (Snyk)
-- SAST with Bandit
-- Secret scanning
-- License compliance check
-```
-
-##### Code Quality
-```yaml
-- Linting (flake8, black)
-- Type checking (mypy)
-- Code complexity analysis
-```
-
-##### Testing
-```yaml
-- Unit tests (pytest)
-- Integration tests
-- API contract tests
-- Code coverage (minimum 80%)
-```
-
-##### Privacy & Security Guardrails
-```yaml
-- PII detection tests
-- COPPA compliance validation
-- GDPR data protection checks
-- Security headers validation
-```
-
-##### Build & Deploy
-```yaml
-- Build Docker image
-- Push to Azure Container Registry
-- Deploy to AKS (staging/production)
-- Smoke tests
-```
-
-#### 2. Dependency Update Workflow
-
-**Schedule:** Weekly on Monday
-**Actions:**
-- Check for dependency updates
-- Create PRs for safe updates
-- Run full test suite
-
-#### 3. Backup Workflow
-
-**Schedule:** Daily at 2 AM UTC
-**Actions:**
-- Database backup to Azure Blob Storage
-- Verify backup integrity
-- Clean old backups (30-day retention)
-
-### Deployment Environments
-
-#### Staging
-- **Purpose**: Pre-production testing
-- **URL**: `https://staging.mew-assistant.example.com`
-- **Database**: Separate staging database
-- **Deployment**: Automatic on merge to `develop`
-
-#### Production
-- **Purpose**: Live environment
-- **URL**: `https://api.mew-assistant.example.com`
-- **Database**: Production database with backups
-- **Deployment**: Manual approval required
-- **Rollback**: Automatic on failure
-
-### Deployment Process
-
-```bash
-# 1. Code is pushed to branch
-git push origin feature/new-feature
-
-# 2. PR is created
-gh pr create --title "Add new feature" --body "Description"
-
-# 3. CI checks run automatically
-# - Security scans
-# - Tests
-# - Guardrails
-
-# 4. Code review and approval
-
-# 5. Merge to develop
-# - Deploys to staging automatically
-
-# 6. Create release PR to main
-gh pr create --base main --head develop
-
-# 7. Approval required for production
-# - Manual approval in GitHub Actions
-# - Deploys to production
-
-# 8. Monitor deployment
-kubectl get pods -n mew-assistant
-kubectl logs -f deployment/mew-assistant -n mew-assistant
-```
-
----
-
-## Deployment Guardrails
-
-### Pre-Deployment Checks
-
-All checks must pass before production deployment:
-
-#### 1. Security Guardrails ✓
-- No high/critical vulnerabilities
-- All secrets in Azure Key Vault
-- HTTPS enforced
-- Security headers configured
-- Rate limiting enabled
-
-#### 2. Privacy Guardrails ✓
-- PII encryption enabled
-- Data retention policies configured
-- User consent mechanisms in place
-- Privacy policy up-to-date
-
-#### 3. Compliance Guardrails ✓
-- COPPA compliance validated
-- GDPR requirements met
-- Parental consent workflows active
-- Audit logging enabled
-
-#### 4. Code Quality Guardrails ✓
-- Code coverage ≥ 80%
-- All tests passing
-- No critical code smells
-- Documentation updated
-
-#### 5. Performance Guardrails ✓
-- API response time < 500ms (p95)
-- Database query optimization
-- Caching configured
-- Auto-scaling enabled
-
-### Deployment Gates
-
-```yaml
-# Example deployment gate in Azure DevOps
-gates:
-  - task: SecurityCheck
-    timeout: 30m
-    conditions:
-      - vulnerabilities: none
-      - secrets_exposed: false
-  
-  - task: ComplianceCheck
-    timeout: 15m
-    conditions:
-      - coppa_compliant: true
-      - gdpr_compliant: true
-      - privacy_tests: passed
-  
-  - task: PerformanceTest
-    timeout: 20m
-    conditions:
-      - response_time_p95: < 500ms
-      - error_rate: < 0.1%
-```
-
-### Rollback Strategy
-
-**Automatic Rollback Triggers:**
-- Error rate > 5%
-- Response time > 2s (p95)
-- Health check failures
-- Database connection issues
-
-**Manual Rollback:**
-```bash
-# Rollback to previous version
-kubectl rollout undo deployment/mew-assistant -n mew-assistant
-
-# Rollback to specific revision
-kubectl rollout undo deployment/mew-assistant --to-revision=3 -n mew-assistant
-
-# Check rollout status
-kubectl rollout status deployment/mew-assistant -n mew-assistant
-```
-
----
-
-## Infrastructure as Code
-
-### Terraform Structure
-
-```
-infrastructure/terraform/
-├── main.tf              # Main configuration
-├── variables.tf         # Input variables
-├── outputs.tf           # Output values
-├── modules/
-│   ├── aks/            # AKS cluster
-│   ├── database/       # PostgreSQL
-│   ├── storage/        # Blob storage
-│   ├── keyvault/       # Key Vault
-│   └── monitoring/     # Application Insights
-└── environments/
-    ├── staging.tfvars
-    └── production.tfvars
-```
-
-### Kubernetes Manifests
-
-```
-infrastructure/k8s/
-├── namespace.yaml
-├── deployment.yaml
-├── service.yaml
-├── ingress.yaml
-├── configmap.yaml
-├── secrets.yaml (sealed)
-├── hpa.yaml (Horizontal Pod Autoscaler)
-└── networkpolicy.yaml
-```
-
-### Helm Charts
-
-```bash
-# Install using Helm
-helm install mew-assistant ./infrastructure/helm/mew-assistant \
-  --namespace mew-assistant \
-  --values values-production.yaml
-```
-
----
-
-## Monitoring & Alerts
-
-### Application Insights Dashboards
-
-1. **Overview Dashboard**
-   - Request rates
-   - Response times
-   - Error rates
-   - Active users
-
-2. **Performance Dashboard**
-   - Database query performance
-   - API endpoint latencies
-   - Cache hit rates
-   - Queue processing times
-
-3. **Security Dashboard**
-   - Failed authentication attempts
-   - Rate limit violations
-   - Suspicious activity patterns
-   - PII access logs
-
-### Alert Rules
-
-```yaml
-alerts:
-  - name: HighErrorRate
-    condition: error_rate > 5%
-    window: 5m
-    severity: critical
-    action: page_on_call
-  
-  - name: SlowResponseTime
-    condition: response_time_p95 > 1s
-    window: 10m
-    severity: warning
-    action: notify_team
-  
-  - name: DatabaseConnectionIssues
-    condition: db_connection_errors > 10
-    window: 5m
-    severity: critical
-    action: auto_scale_and_alert
-```
-
----
-
-## Disaster Recovery
-
-### Backup Strategy
-
-1. **Database Backups**
-   - Automated daily backups
-   - 7-day retention
-   - Point-in-time restore available
-
-2. **Configuration Backups**
-   - Terraform state in Azure Storage
-   - Kubernetes manifests in Git
-   - Secrets in Key Vault
-
-3. **Data Backups**
-   - Voice recordings: Geo-redundant storage
-   - User data: Daily exports to Blob Storage
-
-### Recovery Procedures
-
-```bash
-# 1. Restore database from backup
-az postgres flexible-server restore \
+# Set your personal info
+az webapp config appsettings set \
   --resource-group mew-assistant-rg \
-  --name mew-assistant-db-restored \
-  --source-server mew-assistant-db \
-  --restore-time "2024-01-15T10:30:00Z"
-
-# 2. Redeploy application
-kubectl apply -f infrastructure/k8s/
-
-# 3. Verify health
-kubectl get pods -n mew-assistant
-curl https://api.mew-assistant.example.com/health
+  --name mew-assistant-app \
+  --settings \
+    SMTP_HOST="smtp.gmail.com" \
+    SMTP_USER="your-email@gmail.com" \
+    SMTP_PASSWORD="your-app-password" \
+    TWILIO_PHONE_NUMBER="your-twilio-number"
 ```
 
 ---
 
-## Scaling Strategy
+## Option B: Pay-As-You-Go (Most Economical Long-Term)
 
-### Horizontal Scaling
-- Kubernetes HPA based on CPU/memory
-- Scale from 2 to 10 pods
-- Custom metrics: Request rate, queue depth
+### Total Cost: ~$15-25/month
 
-### Vertical Scaling
-- Database: Resize as needed
-- Storage: Auto-expand enabled
+**Services & Costs:**
+- App Service (B1): ~$13/month
+- PostgreSQL (B1): ~$5/month
+- Blob Storage: ~$1/month
+- Bandwidth: ~$1/month
+- Key Vault: $0.03/month
+- **Total: ~$20/month**
 
-### Cost Optimization
-- Reserved instances for baseline load
-- Spot instances for burst capacity
-- Auto-shutdown for non-prod environments
+### Deploy with Terraform
+
+```bash
+cd infrastructure/azure/terraform
+
+# Initialize Terraform
+terraform init
+
+# Review what will be created
+terraform plan
+
+# Deploy (takes 5-10 minutes)
+terraform apply
+
+# Get your app URL
+terraform output app_url
+```
 
 ---
 
-## Security Best Practices
+## Option C: Container-Based (Most Flexible)
 
-1. **Network Security**
-   - Private endpoints for database
-   - Network policies in Kubernetes
-   - WAF for public endpoints
+### Total Cost: ~$25-35/month
 
-2. **Identity & Access**
-   - Managed identities for Azure resources
-   - RBAC for Kubernetes
-   - Least privilege principle
+```bash
+# Build and push to Azure Container Registry
+az acr create --resource-group mew-assistant-rg \
+  --name mewassistantacr --sku Basic
 
-3. **Data Protection**
-   - Encryption at rest (AES-256)
-   - Encryption in transit (TLS 1.3)
-   - Customer-managed keys in Key Vault
+az acr build --registry mewassistantacr \
+  --image mew-assistant:latest .
 
-4. **Compliance**
-   - Regular security audits
-   - Penetration testing
-   - Compliance reports (SOC 2, HIPAA-ready)
+# Deploy to Container Instances
+az container create \
+  --resource-group mew-assistant-rg \
+  --name mew-assistant \
+  --image mewassistantacr.azurecr.io/mew-assistant:latest \
+  --dns-name-label mew-assistant \
+  --ports 8000
+```
+
+---
+
+## Post-Deployment Setup (15 minutes)
+
+### 1. Create Your Admin Account
+```bash
+curl -X POST https://your-app.azurewebsites.net/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "your-email@example.com",
+    "password": "YourSecurePassword123!",
+    "full_name": "Your Name",
+    "role": "parent"
+  }'
+```
+
+### 2. Set Up Voice Assistant Integration
+
+**For Siri/iOS:**
+1. Open Shortcuts app
+2. Create new shortcut: "Talk to Mew"
+3. Add action: "Get contents of URL"
+4. URL: `https://your-app.azurewebsites.net/voice/webhook`
+5. Method: POST
+6. Request Body: Ask Siri
+
+**For Alexa:**
+```bash
+# Deploy Alexa skill (automated)
+./scripts/deploy-alexa-skill.sh
+```
+
+### 3. Configure Calendar Integration
+
+```bash
+# Google Calendar
+curl -X POST https://your-app.azurewebsites.net/integrations/calendar/google/setup \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Follow OAuth flow in browser
+```
+
+### 4. Test Your Setup
+
+```bash
+# Send test message
+curl -X POST https://your-app.azurewebsites.net/mew/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channel": "sms",
+    "from": "+1234567890",
+    "content": "Schedule dentist appointment for Tommy next Tuesday at 2pm"
+  }'
+
+# Check response
+curl https://your-app.azurewebsites.net/mew/summary
+```
+
+---
+
+## Scaling Options (As You Grow)
+
+### When You Hit 100 Users (~$50/month)
+```bash
+# Upgrade to S1 tier
+az appservice plan update \
+  --name mew-assistant-plan \
+  --resource-group mew-assistant-rg \
+  --sku S1
+```
+
+### When You Hit 1,000 Users (~$200/month)
+- Move to Azure Kubernetes Service (AKS)
+- Add Azure Cache for Redis
+- Use Azure Front Door for CDN
+
+### When You Hit 10,000 Users (~$1,000/month)
+- Multi-region deployment
+- Azure Cosmos DB for global distribution
+- Azure Cognitive Services at scale
+
+---
+
+## Cost Monitoring
+
+### Set Up Budget Alerts
+```bash
+az consumption budget create \
+  --budget-name mew-assistant-budget \
+  --amount 30 \
+  --time-grain Monthly \
+  --start-date 2024-01-01 \
+  --end-date 2025-12-31
+```
+
+### View Current Costs
+```bash
+# Check daily costs
+az consumption usage list \
+  --start-date $(date -d '7 days ago' +%Y-%m-%d) \
+  --end-date $(date +%Y-%m-%d)
+```
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### App won't start?
+```bash
+# Check logs
+az webapp log tail \
+  --resource-group mew-assistant-rg \
+  --name mew-assistant-app
 
-1. **Pod not starting**
-   ```bash
-   kubectl describe pod <pod-name> -n mew-assistant
-   kubectl logs <pod-name> -n mew-assistant
-   ```
+# Restart app
+az webapp restart \
+  --resource-group mew-assistant-rg \
+  --name mew-assistant-app
+```
 
-2. **Database connection issues**
-   ```bash
-   # Test connection from pod
-   kubectl exec -it <pod-name> -n mew-assistant -- psql $DATABASE_URL
-   ```
+### Database connection issues?
+```bash
+# Test database connection
+az postgres flexible-server connect \
+  --name mew-assistant-db \
+  --admin-user mewadmin
+```
 
-3. **High latency**
-   ```bash
-   # Check Application Insights
-   az monitor app-insights metrics show \
-     --app mew-assistant-insights \
-     --metrics requests/duration
-   ```
+### Out of memory?
+```bash
+# Scale up temporarily
+az webapp config set \
+  --resource-group mew-assistant-rg \
+  --name mew-assistant-app \
+  --always-on true \
+  --http20-enabled true
+```
 
 ---
 
-## Support & Documentation
+## Backup & Recovery
 
-- **Azure Support**: https://portal.azure.com/#blade/Microsoft_Azure_Support
-- **Kubernetes Docs**: https://kubernetes.io/docs/
-- **Terraform Registry**: https://registry.terraform.io/providers/hashicorp/azurerm/latest
+### Automated Backups (Already Configured)
+- Database: Daily backups, 7-day retention
+- App Config: Stored in Key Vault
+- User Data: Encrypted in PostgreSQL
 
-**Last Updated**: 2024-11-15
+### Manual Backup
+```bash
+# Backup database
+az postgres flexible-server backup create \
+  --name mew-assistant-db \
+  --resource-group mew-assistant-rg \
+  --backup-name manual-backup-$(date +%Y%m%d)
+```
+
+---
+
+## Security Checklist
+
+- [ ] Enable Azure AD authentication
+- [ ] Rotate all secrets in Key Vault
+- [ ] Enable SSL/TLS only
+- [ ] Configure firewall rules
+- [ ] Enable audit logging
+- [ ] Set up Azure Security Center
+
+---
+
+## Next Steps
+
+1. **Week 1**: Use it yourself, gather feedback
+2. **Week 2**: Invite 2-3 trusted families to test
+3. **Week 3**: Refine based on feedback
+4. **Month 2**: Soft launch to 10-20 families
+5. **Month 3**: Public beta launch
+
+**Support**: Issues? Check `/docs/TROUBLESHOOTING.md` or open a GitHub issue.
+
+**Cost Questions**: See `/docs/COST_OPTIMIZATION.md` for detailed breakdown.
