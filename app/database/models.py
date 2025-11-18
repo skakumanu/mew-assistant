@@ -48,6 +48,12 @@ class User(Base):
     User authentication and profile management.
     Supports parents, caregivers, and tutors using Mew Assistant.
     """
+    
+    def __init__(self, **kwargs):
+        """Allow initialization with keyword arguments"""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
     __tablename__ = "users"
     __table_args__ = {'extend_existing': True}
 

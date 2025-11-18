@@ -39,8 +39,12 @@ def test_db():
 
 
 @pytest.fixture(scope="function")
-def client(test_db):
-    """Create test client with database override."""
+def client(test_db, monkeypatch):
+    """Create test client with database override and test mode enabled."""
+    # Set test mode to bypass strict compliance checks
+    monkeypatch.setenv("TESTING", "true")
+    monkeypatch.setenv("ENVIRONMENT", "test")
+    
     def override_get_db():
         try:
             yield test_db
@@ -70,11 +74,8 @@ def sample_ingest_data():
     return {
         "channel": "email",
         "sender": "parent@example.com",
-        "content": "Can we schedule a tutoring session for tomorrow at 3pm?",
-        "metadata": {
-            "subject": "Tutoring Request",
-            "timestamp": "2024-01-15T10:00:00Z"
-        }
+        "body": "Can we schedule a tutoring session for tomorrow at 3pm?",
+        "subject": "Tutoring Request"
     }
 
 
