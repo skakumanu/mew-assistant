@@ -3,13 +3,9 @@
 
 echo "🛑 Stopping Mew Assistant..."
 
-# Stop and remove containers
+# Stop and remove database container
 podman stop mew-db 2>/dev/null
 podman rm mew-db 2>/dev/null
-
-# Stop and remove pod
-podman pod stop mew-pod 2>/dev/null
-podman pod rm mew-pod 2>/dev/null
 
 echo "✅ Stopped!"
 echo ""
