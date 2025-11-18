@@ -60,7 +60,7 @@ azure-identity==1.19.0
 azure-keyvault-secrets==4.9.0
 azure-storage-blob==12.24.0
 azure-cognitiveservices-speech==1.40.0
-cryptography==43.0.3
+cryptography==46.0.3
 
 # Voice and Language Processing
 langdetect==1.0.9
