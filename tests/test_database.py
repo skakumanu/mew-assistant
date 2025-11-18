@@ -3,7 +3,7 @@ Tests for database models and operations.
 """
 import pytest
 from datetime import datetime
-from app.models import Session, User, Message
+from app.database.models import Session, User, Message
 
 
 def test_create_user(test_db):

@@ -3,8 +3,45 @@ Cooldown detection logic for Mew Assistant.
 Prevents overwhelming families with too many requests.
 """
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 from ..database.models import Session, PriorityLevel
+
+
+class CooldownManager:
+    """Manages cooldown periods for users."""
+    
+    def __init__(self, default_cooldown_hours: int = 24):
+        """Initialize cooldown manager."""
+        self.default_cooldown_hours = default_cooldown_hours
+        self.cooldowns: Dict[str, datetime] = {}
+    
+    def is_in_cooldown(self, user_id: str) -> bool:
+        """Check if user is in cooldown period."""
+        if user_id not in self.cooldowns:
+            return False
+        return datetime.utcnow() < self.cooldowns[user_id]
+    
+    def record_request(self, user_id: str):
+        """Record a request and start cooldown period."""
+        self.cooldowns[user_id] = datetime.utcnow() + timedelta(hours=self.default_cooldown_hours)
+    
+    def get_cooldown_until(self, user_id: str) -> Optional[datetime]:
+        """Get when cooldown ends for user."""
+        return self.cooldowns.get(user_id)
+
+
+class CooldownDetector:
+    """Detects and manages cooldown periods."""
+    
+    def __init__(self):
+        """Initialize cooldown detector."""
+        self.manager = CooldownManager()
+    
+    def check(self, user_id: str) -> Tuple[bool, Optional[datetime]]:
+        """Check if user is in cooldown."""
+        in_cooldown = self.manager.is_in_cooldown(user_id)
+        until = self.manager.get_cooldown_until(user_id) if in_cooldown else None
+        return in_cooldown, until
 
 
 def check_cooldown(session: Session) -> Tuple[bool, Optional[datetime]]:

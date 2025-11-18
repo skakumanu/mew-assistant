@@ -7,6 +7,27 @@ from typing import List, Tuple
 from ..database.models import PriorityLevel
 
 
+class PriorityManager:
+    """Manages priority levels and overrides."""
+    
+    def __init__(self):
+        """Initialize priority manager."""
+        self.priority_overrides = {}
+    
+    def set_priority(self, session_id: str, priority: PriorityLevel):
+        """Set priority level for a session."""
+        self.priority_overrides[session_id] = priority
+    
+    def get_priority(self, session_id: str) -> PriorityLevel:
+        """Get priority level for a session."""
+        return self.priority_overrides.get(session_id, PriorityLevel.NORMAL)
+    
+    def can_override_cooldown(self, session_id: str) -> bool:
+        """Check if session can override cooldown."""
+        priority = self.get_priority(session_id)
+        return priority in [PriorityLevel.HIGH, PriorityLevel.URGENT]
+
+
 # Priority time windows (start_time, end_time) in 24-hour format
 PRIORITY_PERIODS = [
     (time(7, 0), time(9, 0)),    # Morning school prep: 7am-9am
