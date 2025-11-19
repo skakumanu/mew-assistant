@@ -1,0 +1,29 @@
+name: GitFlow Workflow
+
+on:
+  push:
+    branches: [ main, develop, 'release/**', 'hotfix/**' ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate branch naming
+        run: |
+          BRANCH=${GITHUB_REF#refs/heads/}
+          echo "Current branch: $BRANCH"
+          
+          if [[ "$BRANCH" =~ ^(main|develop|feature/.+|release/.+|hotfix/.+)$ ]]; then
+            echo "✅ Valid GitFlow branch name"
+          else
+            echo "❌ Invalid branch name. Must follow GitFlow conventions:"
+            echo "  - main, develop"
+            echo "  - feature/* (for features)"
+            echo "  - release/* (for releases)"
+            echo "  - hotfix/* (for hotfixes)"
+            exit 1
+          fi

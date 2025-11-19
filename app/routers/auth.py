@@ -28,22 +28,33 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user account.
     
-    Creates a new user with hashed password. Email and username must be unique.
+    Creates a new user with hashed password. Email must be unique.
+    Username is auto-generated from email if not provided.
     
     **Example Request:**
     ```json
     {
         "email": "parent@example.com",
-        "username": "john_doe",
         "password": "SecureP@ssw0rd",
         "full_name": "John Doe",
-        "user_type": "parent"
+        "role": "parent"
     }
     ```
     """
+    # Auto-generate username from email if not provided
+    username = user_data.username
+    if not username:
+        username = user_data.email.split('@')[0]
+        # Ensure uniqueness by appending number if needed
+        base_username = username
+        counter = 1
+        while db.query(User).filter(User.username == username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+    
     # Check if user already exists
     existing_user = db.query(User).filter(
-        (User.email == user_data.email) | (User.username == user_data.username)
+        (User.email == user_data.email) | (User.username == username)
     ).first()
     
     if existing_user:
@@ -61,7 +72,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # Create new user
     db_user = User(
         email=user_data.email,
-        username=user_data.username,
+        username=username,
         hashed_password=get_password_hash(user_data.password),
         full_name=user_data.full_name,
         role=user_data.role,

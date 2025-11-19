@@ -85,3 +85,18 @@ credentials.json
 # Package signing keys
 *.gpg
 packages.microsoft.gpg
+
+# Deployment credentials
+deployment-credentials.txt
+deployment.log
+
+# Credentials and secrets (NEVER commit these!)
+deployment-credentials.txt
+*credentials*.txt
+*secret*.txt
+*.pem
+*.key
+*.pfx
+*.p12
+.env.local
+.env.*.local

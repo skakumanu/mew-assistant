@@ -36,6 +36,18 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         'diagnosis_code': re.compile(r'\b[A-Z]\d{2}\.\d{1,2}\b'),  # ICD-10 codes
     }
     
+    # Endpoints exempt from all compliance checks
+    EXEMPT_ENDPOINTS: Set[str] = {
+        '/auth/register',
+        '/auth/login',
+        '/auth/refresh',
+        '/health',
+        '/docs',
+        '/openapi.json',
+        '/redoc',
+        '/'
+    }
+    
     # Endpoints that require consent verification
     CONSENT_REQUIRED_ENDPOINTS: Set[str] = {
         '/mew/ingest',
@@ -56,6 +68,11 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         Process each request for compliance checks
         """
         start_time = datetime.utcnow()
+        
+        # Skip all compliance checks for exempt endpoints
+        if any(request.url.path.startswith(endpoint) for endpoint in self.EXEMPT_ENDPOINTS):
+            response = await call_next(request)
+            return response
         
         # 1. Check for required consent headers
         await self._verify_consent(request)

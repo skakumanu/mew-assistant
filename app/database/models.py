@@ -59,7 +59,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    username = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=True)
     
@@ -393,3 +393,141 @@ class ApprovalRule(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+
+class ActivityType(str, enum.Enum):
+    """Types of activities for scheduling"""
+    THERAPY = "therapy"
+    TUTORING = "tutoring"
+    MEDICAL = "medical"
+    SOCIAL = "social"
+    EXERCISE = "exercise"
+    MEAL = "meal"
+    SLEEP = "sleep"
+    OTHER = "other"
+
+
+class ScheduleEntry(Base):
+    """
+    Schedule entries for calendar management and AI scheduling.
+    Supports conflict detection, pattern learning, and optimization.
+    """
+    __tablename__ = "schedule_entries"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Entry details
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    activity_type = Column(Enum(ActivityType), default=ActivityType.OTHER, nullable=False)
+    
+    # Time
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    all_day = Column(Boolean, default=False)
+    
+    # Priority and status
+    priority = Column(Enum(PriorityLevel), default=PriorityLevel.NORMAL, nullable=False)
+    status = Column(Enum(SessionStatus), default=SessionStatus.PENDING, nullable=False)
+    
+    # Location and participants
+    location = Column(String(255), nullable=True)
+    participants = Column(Text, nullable=True)  # JSON array
+    
+    # External calendar integration
+    external_calendar_id = Column(String(255), nullable=True)
+    external_event_id = Column(String(255), nullable=True)
+    calendar_provider = Column(String(50), nullable=True)  # google, apple, outlook
+    
+    # Completion tracking for pattern learning
+    completed_successfully = Column(Boolean, nullable=True)
+    completion_notes = Column(Text, nullable=True)
+    
+    # Recurrence
+    is_recurring = Column(Boolean, default=False)
+    recurrence_rule = Column(Text, nullable=True)  # iCal RRULE format
+    parent_recurrence_id = Column(Integer, ForeignKey("schedule_entries.id"), nullable=True)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_schedule_user_time', 'user_id', 'start_time'),
+        Index('idx_schedule_type_status', 'activity_type', 'status'),
+        {'extend_existing': True}
+    )
+    
+    def requires_same_location(self, other) -> bool:
+        """Check if entry requires same location as another"""
+        return self.location and other.get('location') == self.location
+    
+    def involves_same_person(self, other) -> bool:
+        """Check if entry involves same person as another"""
+        # Placeholder - would parse participants JSON
+        return False
+
+
+class UserPreference(Base):
+    """
+    User preferences for AI scheduling and pattern learning
+    """
+    __tablename__ = "user_preferences"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    
+    # Scheduling preferences
+    allow_overlap_for_therapy = Column(Boolean, default=False)
+    buffer_minutes = Column(Integer, default=15)
+    earliest_schedule_hour = Column(Integer, default=7)
+    latest_schedule_hour = Column(Integer, default=22)
+    
+    # Energy patterns
+    peak_energy_hours = Column(Text, nullable=True)  # JSON array of hours
+    low_energy_hours = Column(Text, nullable=True)   # JSON array of hours
+    
+    # Activity preferences
+    preferred_therapy_days = Column(Text, nullable=True)  # JSON array of weekdays
+    preferred_tutoring_times = Column(Text, nullable=True)  # JSON object
+    
+    # Optimization goals
+    minimize_transitions = Column(Boolean, default=True)
+    respect_energy_levels = Column(Boolean, default=True)
+    balance_activities = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UserProfile(Base):
+    """
+    Extended user profile for AI personalization
+    """
+    __tablename__ = "user_profiles"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    
+    # Demographics
+    date_of_birth = Column(DateTime, nullable=True)
+    special_needs_info = Column(Text, nullable=True)  # Encrypted sensitive data
+    
+    # Contacts
+    emergency_contact_name = Column(String(200), nullable=True)
+    emergency_contact_phone = Column(String(50), nullable=True)
+    
+    # Preferences
+    communication_preferences = Column(Text, nullable=True)  # JSON
+    notification_preferences = Column(Text, nullable=True)   # JSON
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
