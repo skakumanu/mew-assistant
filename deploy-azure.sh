@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Configuration
 ENVIRONMENT=${1:-dev}
 RESOURCE_GROUP="mew-assistant-${ENVIRONMENT}-rg"
-LOCATION="eastus"
+LOCATION="westus2"
 APP_NAME="mew-assistant-${ENVIRONMENT}"
 ACR_NAME="mewassistant${ENVIRONMENT}acr"
 DB_NAME="mew-db-${ENVIRONMENT}"
