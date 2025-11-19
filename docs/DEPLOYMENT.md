@@ -1,303 +1,262 @@
-# 🚀 Quick Start Deployment Guide
+# Mew Assistant - Azure Deployment Guide
 
-## Phase 0: Immediate Deployment (Start Using Today!)
+## Current Situation
 
-**Goal**: Get Mew Assistant running in Azure within 2-4 hours for ~$15-25/month
+Your Azure subscription has **0 quota for App Services**. You have two options:
 
-### Prerequisites Checklist
-- [ ] Azure account (free tier available)
-- [ ] Azure CLI installed
-- [ ] GitHub account connected
-- [ ] Phone number for SMS testing
-- [ ] Email account for testing
+### Option 1: Request Azure Quota Increase (Recommended for Cloud Deployment)
 
----
+1. Go to Azure Portal: https://portal.azure.com
+2. Search for "Quotas" in the top search bar
+3. Select "App Service"
+4. Click "+ New Quota Request"
+5. Request:
+   - **Basic App Service Plan**: 1 instance minimum
+   - **Region**: East US (or your preferred region)
+   - **Reason**: "Running Mew Assistant - a FastAPI application for special needs family scheduling"
 
-## Option A: Azure Free Tier (Best for Getting Started)
+**Processing time**: Usually 1-3 business days for small quota increases.
 
-### Total Cost: $0-5/month for first 12 months
+### Option 2: Deploy Locally with Podman (Available NOW - $0/month)
 
-**What You Get Free:**
-- App Service: B1 tier free for 12 months
-- PostgreSQL: B1 tier free for 12 months  
-- 5GB storage
-- 750 hours/month compute
+You can start using Mew Assistant immediately on your local machine:
 
-### Quick Deploy Steps
-
-#### 1. Install Azure CLI (if not already installed)
 ```bash
-# On Linux/WSL
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+# Start the app with PostgreSQL
+./podman-start.sh
 
-# Verify installation
-az --version
+# Access the app at:
+# http://localhost:8000
+# API docs: http://localhost:8000/docs
 ```
 
-#### 2. Login to Azure
+**Advantages**:
+- ✅ Start using immediately
+- ✅ No Azure costs
+- ✅ Full control over data
+- ✅ Can migrate to cloud later
+
+**Disadvantages**:
+- ⚠️ Only accessible from your computer
+- ⚠️ Requires your computer to be running
+- ⚠️ No automatic backups (you manage manually)
+
+## Cost Comparison
+
+### Local Deployment (Podman)
+- **Cost**: $0/month
+- **Setup time**: 5 minutes
+- **Access**: Local only
+
+### Azure Basic Tier (When quota approved)
+- **Cost**: ~$13-15/month
+  - App Service Basic B1: ~$13/month
+  - Storage Account: ~$0.02/month
+  - Optional PostgreSQL: ~$15/month (can use SQLite initially)
+- **Setup time**: 30 minutes
+- **Access**: Internet-accessible
+
+### Azure Container Instances (When quota approved)
+- **Cost**: ~$10-15/month (pay only when running)
+  - Container: ~$0.014/hour = ~$10/month
+  - Storage: ~$1/month
+- **Setup time**: 20 minutes
+- **Access**: Internet-accessible
+
+## Recommended Deployment Path
+
+### Phase 1: Start Now (Week 1)
 ```bash
-az login
+# Deploy locally with Podman
+./podman-start.sh
+
+# Start using the app for your family
+# Test features, provide feedback, iterate
 ```
 
-#### 3. Run Automated Setup Script
+### Phase 2: Request Azure Quota (Week 1)
+1. Request Basic App Service quota in Azure Portal
+2. Continue using local deployment
+3. Document any issues or feature requests
+
+### Phase 3: Deploy to Azure (Week 2-3, after quota approved)
 ```bash
-# This script will:
-# - Create resource group
-# - Deploy PostgreSQL database
-# - Deploy App Service
-# - Configure environment variables
-# - Deploy the application
-
-./infrastructure/azure/quick-deploy.sh
-```
-
-#### 4. Configure Your Environment
-After deployment, the script will output your app URL. Update these settings:
-
-```bash
-# Set your personal info
-az webapp config appsettings set \
+# Once quota is approved, deploy to Azure
+az deployment group create \
   --resource-group mew-assistant-rg \
-  --name mew-assistant-app \
-  --settings \
-    SMTP_HOST="smtp.gmail.com" \
-    SMTP_USER="your-email@gmail.com" \
-    SMTP_PASSWORD="your-app-password" \
-    TWILIO_PHONE_NUMBER="your-twilio-number"
+  --template-file main-simple.bicep \
+  --parameters appName=mew-assistant location=eastus
 ```
 
----
+### Phase 4: Transition to Non-Profit (Month 3-6)
+Once the app is stable and useful:
+1. Form non-profit organization
+2. Apply for Azure credits ($3,500/year for non-profits)
+3. Transfer repository
+4. Invite contributors
 
-## Option B: Pay-As-You-Go (Most Economical Long-Term)
+## Quick Start Guide (Local Deployment)
 
-### Total Cost: ~$15-25/month
-
-**Services & Costs:**
-- App Service (B1): ~$13/month
-- PostgreSQL (B1): ~$5/month
-- Blob Storage: ~$1/month
-- Bandwidth: ~$1/month
-- Key Vault: $0.03/month
-- **Total: ~$20/month**
-
-### Deploy with Terraform
-
+### 1. Install Prerequisites
 ```bash
-cd infrastructure/azure/terraform
-
-# Initialize Terraform
-terraform init
-
-# Review what will be created
-terraform plan
-
-# Deploy (takes 5-10 minutes)
-terraform apply
-
-# Get your app URL
-terraform output app_url
+# Already installed: Podman, Python 3.11+, PostgreSQL client
 ```
 
----
-
-## Option C: Container-Based (Most Flexible)
-
-### Total Cost: ~$25-35/month
-
+### 2. Configure Environment
 ```bash
-# Build and push to Azure Container Registry
-az acr create --resource-group mew-assistant-rg \
-  --name mewassistantacr --sku Basic
+# Copy example environment file
+cp .env.example .env
 
-az acr build --registry mewassistantacr \
-  --image mew-assistant:latest .
-
-# Deploy to Container Instances
-az container create \
-  --resource-group mew-assistant-rg \
-  --name mew-assistant \
-  --image mewassistantacr.azurecr.io/mew-assistant:latest \
-  --dns-name-label mew-assistant \
-  --ports 8000
+# Edit .env with your preferences
+nano .env
 ```
 
----
-
-## Post-Deployment Setup (15 minutes)
-
-### 1. Create Your Admin Account
+### 3. Start the Application
 ```bash
-curl -X POST https://your-app.azurewebsites.net/auth/register \
+# Start all services (API + Database)
+./podman-start.sh
+
+# Verify it's running
+curl http://localhost:8000/health
+
+# Open API documentation
+# Visit: http://localhost:8000/docs
+```
+
+### 4. Create Your First User
+```bash
+# Use the API to register
+curl -X POST http://localhost:8000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "your-email@example.com",
-    "password": "YourSecurePassword123!",
+    "password": "your-secure-password",
     "full_name": "Your Name",
     "role": "parent"
   }'
 ```
 
-### 2. Set Up Voice Assistant Integration
+### 5. Start Scheduling!
+Visit http://localhost:8000/docs and explore:
+- `/api/v1/sessions` - Create chat sessions
+- `/api/v1/messages` - Send messages to Mew
+- `/api/v1/confirm` - Confirm scheduling changes
+- `/api/v1/summary` - Get daily summaries
 
-**For Siri/iOS:**
-1. Open Shortcuts app
-2. Create new shortcut: "Talk to Mew"
-3. Add action: "Get contents of URL"
-4. URL: `https://your-app.azurewebsites.net/voice/webhook`
-5. Method: POST
-6. Request Body: Ask Siri
+## Mobile Access (While Running Locally)
 
-**For Alexa:**
+### Option A: Local Network Access
 ```bash
-# Deploy Alexa skill (automated)
-./scripts/deploy-alexa-skill.sh
+# Find your local IP
+ip addr show | grep "inet " | grep -v 127.0.0.1
+
+# Update .env to bind to all interfaces
+# Then access from phone: http://192.168.x.x:8000
 ```
 
-### 3. Configure Calendar Integration
-
+### Option B: Tailscale (Recommended)
 ```bash
-# Google Calendar
-curl -X POST https://your-app.azurewebsites.net/integrations/calendar/google/setup \
-  -H "Authorization: Bearer YOUR_TOKEN"
+# Install Tailscale for secure remote access
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
 
-# Follow OAuth flow in browser
+# Access from anywhere on your Tailscale network
+# https://tailscale-hostname:8000
 ```
 
-### 4. Test Your Setup
+## Backup Strategy (Local Deployment)
 
+### Automatic Backups
 ```bash
-# Send test message
-curl -X POST https://your-app.azurewebsites.net/mew/ingest \
-  -H "Content-Type: application/json" \
-  -d '{
-    "channel": "sms",
-    "from": "+1234567890",
-    "content": "Schedule dentist appointment for Tommy next Tuesday at 2pm"
-  }'
+# Add to crontab for daily backups
+crontab -e
 
-# Check response
-curl https://your-app.azurewebsites.net/mew/summary
+# Add this line for daily 2 AM backups:
+0 2 * * * /home/srinu/mew-assistant/scripts/backup-database.sh
 ```
-
----
-
-## Scaling Options (As You Grow)
-
-### When You Hit 100 Users (~$50/month)
-```bash
-# Upgrade to S1 tier
-az appservice plan update \
-  --name mew-assistant-plan \
-  --resource-group mew-assistant-rg \
-  --sku S1
-```
-
-### When You Hit 1,000 Users (~$200/month)
-- Move to Azure Kubernetes Service (AKS)
-- Add Azure Cache for Redis
-- Use Azure Front Door for CDN
-
-### When You Hit 10,000 Users (~$1,000/month)
-- Multi-region deployment
-- Azure Cosmos DB for global distribution
-- Azure Cognitive Services at scale
-
----
-
-## Cost Monitoring
-
-### Set Up Budget Alerts
-```bash
-az consumption budget create \
-  --budget-name mew-assistant-budget \
-  --amount 30 \
-  --time-grain Monthly \
-  --start-date 2024-01-01 \
-  --end-date 2025-12-31
-```
-
-### View Current Costs
-```bash
-# Check daily costs
-az consumption usage list \
-  --start-date $(date -d '7 days ago' +%Y-%m-%d) \
-  --end-date $(date +%Y-%m-%d)
-```
-
----
-
-## Troubleshooting
-
-### App won't start?
-```bash
-# Check logs
-az webapp log tail \
-  --resource-group mew-assistant-rg \
-  --name mew-assistant-app
-
-# Restart app
-az webapp restart \
-  --resource-group mew-assistant-rg \
-  --name mew-assistant-app
-```
-
-### Database connection issues?
-```bash
-# Test database connection
-az postgres flexible-server connect \
-  --name mew-assistant-db \
-  --admin-user mewadmin
-```
-
-### Out of memory?
-```bash
-# Scale up temporarily
-az webapp config set \
-  --resource-group mew-assistant-rg \
-  --name mew-assistant-app \
-  --always-on true \
-  --http20-enabled true
-```
-
----
-
-## Backup & Recovery
-
-### Automated Backups (Already Configured)
-- Database: Daily backups, 7-day retention
-- App Config: Stored in Key Vault
-- User Data: Encrypted in PostgreSQL
 
 ### Manual Backup
 ```bash
 # Backup database
-az postgres flexible-server backup create \
-  --name mew-assistant-db \
-  --resource-group mew-assistant-rg \
-  --backup-name manual-backup-$(date +%Y%m%d)
+./scripts/backup-database.sh
+
+# Backups stored in: ./backups/
 ```
 
----
+## Monitoring
 
-## Security Checklist
+### View Logs
+```bash
+# API logs
+podman logs mew-assistant-api
 
-- [ ] Enable Azure AD authentication
-- [ ] Rotate all secrets in Key Vault
-- [ ] Enable SSL/TLS only
-- [ ] Configure firewall rules
-- [ ] Enable audit logging
-- [ ] Set up Azure Security Center
+# Database logs
+podman logs mew-assistant-db
 
----
+# Follow logs in real-time
+podman logs -f mew-assistant-api
+```
+
+### Health Checks
+```bash
+# Check if services are running
+./podman-stop.sh --status
+
+# Check API health
+curl http://localhost:8000/health
+```
+
+## Troubleshooting
+
+### Port Already in Use
+```bash
+# Stop existing containers
+./podman-stop.sh
+
+# Check what's using port 8000
+sudo lsof -i :8000
+
+# Kill the process
+sudo kill -9 <PID>
+```
+
+### Database Connection Issues
+```bash
+# Restart database container
+podman restart mew-assistant-db
+
+# Check database logs
+podman logs mew-assistant-db
+```
+
+### Reset Everything
+```bash
+# Stop and remove all containers
+./podman-stop.sh
+
+# Remove volumes (WARNING: deletes data)
+podman volume rm mew-postgres-data
+
+# Start fresh
+./podman-start.sh
+```
 
 ## Next Steps
 
-1. **Week 1**: Use it yourself, gather feedback
-2. **Week 2**: Invite 2-3 trusted families to test
-3. **Week 3**: Refine based on feedback
-4. **Month 2**: Soft launch to 10-20 families
-5. **Month 3**: Public beta launch
+1. **Start using locally** - Begin testing with your family
+2. **Request Azure quota** - Submit quota increase request today
+3. **Document feedback** - Note features that work well and need improvement
+4. **Plan migration** - Once quota approved, we'll deploy to Azure
+5. **Build community** - Share with other special needs families
 
-**Support**: Issues? Check `/docs/TROUBLESHOOTING.md` or open a GitHub issue.
+## Support
 
-**Cost Questions**: See `/docs/COST_OPTIMIZATION.md` for detailed breakdown.
+- GitHub Issues: https://github.com/skakumanu/mew-assistant/issues
+- Email: (add your email)
+- Discord: (create if community grows)
+
+---
+
+**Current Status**: ✅ Ready for local deployment
+**Next Milestone**: Azure quota approval for cloud deployment
+**Estimated Timeline**: Cloud-ready in 1-3 business days
