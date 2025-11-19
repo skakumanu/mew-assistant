@@ -85,3 +85,7 @@ credentials.json
 # Package signing keys
 *.gpg
 packages.microsoft.gpg
+
+# Deployment credentials
+deployment-credentials.txt
+deployment.log
