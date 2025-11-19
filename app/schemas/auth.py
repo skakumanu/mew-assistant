@@ -22,7 +22,7 @@ class UserRole(str, Enum):
 class UserBase(BaseModel):
     """Base user schema with common fields."""
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50)
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
     full_name: Optional[str] = Field(None, max_length=100)
     role: UserRole = Field(default=UserRole.PARENT, description="User role")
     phone: Optional[str] = Field(None, max_length=20)

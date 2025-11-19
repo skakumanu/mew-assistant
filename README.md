@@ -117,6 +117,7 @@ See [docs/SECURITY_PRIVACY_COMPLIANCE.md](docs/SECURITY_PRIVACY_COMPLIANCE.md) f
   - Infrastructure as Code
   - Monitoring & Alerts
   - Disaster Recovery
+- **[docs/SECURE_CREDENTIALS.md](docs/SECURE_CREDENTIALS.md)** - **Secure credential management with Azure Key Vault**
 
 ### Security & Compliance
 - **[docs/SECURITY_PRIVACY_COMPLIANCE.md](docs/SECURITY_PRIVACY_COMPLIANCE.md)** - Security, privacy, and compliance including:
