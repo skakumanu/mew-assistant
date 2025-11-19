@@ -4,16 +4,32 @@ from typing import List, Optional, Dict
 from datetime import datetime
 
 
+class ScheduleCreate(BaseModel):
+    """Create a new schedule entry"""
+    title: str
+    start_time: datetime
+    end_time: datetime
+    user_id: int
+    location: Optional[str] = None
+    activity_type: Optional[str] = None
+    priority: Optional[str] = "normal"
+
+
 class ScheduleConflict(BaseModel):
     """Detected schedule conflict"""
-    conflicting_entry_id: int
-    conflicting_title: str
-    conflict_type: str = Field(
+    type: str = Field(
         ...,
-        description="Type of conflict: time_overlap, duplicate_activity, location_conflict, person_unavailable"
+        description="Type of conflict: time_overlap, insufficient_break, insufficient_travel_time"
     )
+    schedule1_id: int
+    schedule2_id: int
+    message: str
     severity: str = Field(..., description="Conflict severity: low, medium, high")
-    overlap_minutes: int
+    suggested_resolution: str
+    conflicting_entry_id: Optional[int] = None
+    conflicting_title: Optional[str] = None
+    conflict_type: Optional[str] = None
+    overlap_minutes: Optional[int] = None
     suggestions: List[str] = Field(default_factory=list)
 
 
@@ -22,7 +38,8 @@ class ScheduleSuggestion(BaseModel):
     start_time: datetime
     end_time: datetime
     confidence_score: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
-    reasoning: str
+    reason: str
+    reasoning: Optional[str] = None
     factors: List[str] = Field(default_factory=list)
 
 
