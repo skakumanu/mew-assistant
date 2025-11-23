@@ -28,6 +28,7 @@ from .routers.webhooks import router as webhooks_router
 from .routers.backup import router as backup_router
 from .routers.voice_platforms import router as voice_platforms_router
 from .routers.onboarding import router as onboarding_router
+from .routers.password_reset import router as password_reset_router
 from .routers.ai_scheduler import router as ai_scheduler_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
@@ -94,6 +95,7 @@ app.include_router(voice_platforms_router)  # Multi-platform voice assistants (S
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 app.include_router(backup_router)  # Cloud backup and restore - Azure integration
 app.include_router(ai_scheduler_router)  # AI-powered scheduling with conflict detection and optimization
+app.include_router(password_reset_router)  # Password reset endpoint
 
 
 @app.get("/", tags=["health"])
