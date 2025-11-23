@@ -533,3 +533,37 @@ class UserProfile(Base):
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class OAuthProvider(Base):
+    """
+    OAuth provider links for federated authentication
+    Tracks Google, Apple, Microsoft, Facebook login connections
+    """
+    __tablename__ = "oauth_providers"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Provider information
+    provider = Column(String(50), nullable=False)  # google, apple, microsoft, facebook
+    provider_user_id = Column(String(255), nullable=False)  # User ID from provider
+    
+    # OAuth tokens (encrypted in production)
+    access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", backref="oauth_providers")
+    
+    __table_args__ = (
+        Index('idx_oauth_user_provider', 'user_id', 'provider'),
+        Index('idx_oauth_provider_user', 'provider', 'provider_user_id'),
+        {'extend_existing': True}
+    )

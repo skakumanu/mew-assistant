@@ -29,6 +29,7 @@ from .routers.backup import router as backup_router
 from .routers.voice_platforms import router as voice_platforms_router
 from .routers.onboarding import router as onboarding_router
 from .routers.ai_scheduler import router as ai_scheduler_router
+from .routers.oauth import router as oauth_router
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
 from .middleware.compliance import ComplianceMiddleware
@@ -98,6 +99,7 @@ app.include_router(voice_platforms_router)  # Multi-platform voice assistants (S
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 app.include_router(backup_router)  # Cloud backup and restore - Azure integration
 app.include_router(ai_scheduler_router)  # AI-powered scheduling with conflict detection and optimization
+app.include_router(oauth_router)  # OAuth federated authentication (Google, Apple, Microsoft, Facebook)
 
 
 @app.get("/", tags=["health"])
@@ -113,6 +115,7 @@ async def root():
         "endpoints": {
             "onboarding": "/api/v1/onboarding/* (easy registration - email, phone, voice, social)",
             "auth": "/auth/register, /auth/login, /auth/me",
+            "oauth": "/auth/oauth/* (Google, Apple, Microsoft, Facebook login)",
             "sessions": "/mew/session, /mew/confirm",
             "messages": "/mew/ingest",
             "summaries": "/mew/summary",
@@ -125,7 +128,7 @@ async def root():
             "ai_scheduler": "/ai-scheduler/* (AI-powered scheduling with conflict detection)",
             "docs": "/docs"
         },
-        "registration": "No password needed! Register via email, phone, voice, or social login"
+        "registration": "No password needed! Register via email, phone, voice, or social login (Google/Apple/Microsoft/Facebook)"
     }
 
 

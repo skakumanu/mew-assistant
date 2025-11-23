@@ -63,6 +63,7 @@ Key Components:
 - **Session Management**: Schedule and manage tutoring, scheduling, and caregiver sessions
 - **Multi-Channel Ingestion**: Accept messages via email, SMS, WhatsApp, and web forms
 - **🎤 Voice Commands**: Multilingual voice recognition supporting 20+ languages (English, Spanish, French, German, Chinese, Japanese, Korean, Arabic, Hindi, and more)
+- **🔐 Federated Authentication**: Sign in with Google, Apple, Microsoft, or Facebook (OAuth 2.0/OIDC)
 - **Cooldown Protection**: Prevent overwhelming families with intelligent request throttling
 - **Priority Period Overrides**: Automatically escalate priority during peak times (7-9am, 3-6pm, 7-9pm)
 - **Caregiver Summaries**: Generate actionable insights and recommendations
@@ -108,6 +109,11 @@ See [docs/SECURITY_PRIVACY_COMPLIANCE.md](docs/SECURITY_PRIVACY_COMPLIANCE.md) f
   - Voice Platform Integration (Siri, Alexa, Google Assistant, Tesla)
   - Kid-Friendly Features
   - Parental Approval System
+- **[docs/OAUTH_SETUP.md](docs/OAUTH_SETUP.md)** - Federated authentication setup:
+  - Google, Apple, Microsoft, Facebook OAuth
+  - Production configuration
+  - Mobile integration
+  - Security best practices
 
 ### Deployment Documentation
 - **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Complete deployment guide including:
