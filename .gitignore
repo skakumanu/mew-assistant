@@ -100,3 +100,4 @@ deployment-credentials.txt
 *.p12
 .env.local
 .env.*.local
+CUSTOMER_ZERO_SETUP.md
