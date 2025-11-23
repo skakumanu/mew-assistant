@@ -1,174 +1,197 @@
-# Mew Assistant - Quick Start Guide
+# 🚀 Quick Start Guide - Customer Zero
 
-## 🚀 Your App is Live!
+Welcome! This guide will help you get started with Mew Assistant as our first user.
 
-**Production URL**: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+## 📱 Access Your Mew Assistant
 
-## 📱 Access Points
+**Live Azure Deployment:**
+- **API URL:** https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io
+- **Docs:** https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/docs
 
-### 1. Web Interface
-- **API Docs**: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/docs
-- **ReDoc**: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/redoc
+## 1️⃣ Quick Account Setup
 
-### 2. Voice Assistants
-- **Alexa**: "Alexa, ask Mew to schedule therapy"
-- **Siri**: "Hey Siri, schedule with Mew"
-- **Google**: "Hey Google, talk to Mew Assistant"
+You're already registered! Just login:
 
-### 3. Messaging
-- **Email**: Send to your configured email
-- **SMS**: Text your scheduled number
-- **WhatsApp**: Message your WhatsApp Business number
-
-## 🔑 Quick Test
-
-### 1. Register an Account
 ```bash
-curl -X POST https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/register \
+curl -X POST https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "your@email.com",
-    "password": "YourSecurePassword123!",
-    "full_name": "Your Name",
-    "role": "parent"
+    "email": "your-email@example.com",
+    "password": "your-password"
   }'
 ```
 
-### 2. Login
+Save your access token from the response!
+
+## 2️⃣ Connect Your Calendar (Apple/Google)
+
+### Option A: Apple Calendar (iCloud)
+
+1. **Get App-Specific Password:**
+   - Go to https://appleid.apple.com
+   - Sign in → Security → App-Specific Passwords
+   - Click "Generate Password"
+   - Name it "Mew Assistant"
+   - Copy the generated password
+
+2. **Connect to Mew:**
+   ```bash
+   curl -X POST https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/calendar/connect \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "provider": "apple",
+       "credentials": {
+         "apple_id": "your-apple-id@icloud.com",
+         "app_password": "xxxx-xxxx-xxxx-xxxx"
+       }
+     }'
+   ```
+
+### Option B: Google Calendar
+
+1. **Enable Google Calendar API:**
+   - Go to https://console.cloud.google.com
+   - Create a new project or select existing
+   - Enable "Google Calendar API"
+   - Create OAuth 2.0 credentials
+   - Download credentials JSON
+
+2. **Connect to Mew:**
+   ```bash
+   curl -X POST https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/calendar/connect \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "provider": "google",
+       "credentials": {
+         "client_id": "your-client-id",
+         "client_secret": "your-client-secret",
+         "refresh_token": "your-refresh-token"
+       }
+     }'
+   ```
+
+## 3️⃣ Mobile Access (From Your Phone)
+
+### iOS (Safari/Chrome)
+
+1. Open Safari or Chrome on your iPhone
+2. Visit: https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/docs
+3. Bookmark this page for quick access
+4. Use the API endpoints directly or wait for our mobile app
+
+### Android (Chrome)
+
+1. Open Chrome on your Android device
+2. Visit: https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/docs
+3. Add to Home Screen for app-like experience
+4. Use the API endpoints
+
+### Quick Mobile Testing
+
+Save this as a bookmark or use a mobile API client like "HTTP Client" (iOS) or "HTTP Request Maker" (Android):
+
+```
+POST https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/auth/login
+Content-Type: application/json
+
+{
+  "email": "your-email@example.com",
+  "password": "your-password"
+}
+```
+
+## 4️⃣ Voice Integration Setup
+
+### Siri Shortcuts (iOS)
+
+1. Open **Shortcuts** app on iPhone
+2. Tap **+** to create new shortcut
+3. Add "Get Contents of URL" action
+4. Configure:
+   - URL: `https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/voice/siri`
+   - Method: POST
+   - Headers: 
+     - `Authorization: Bearer YOUR_TOKEN`
+     - `Content-Type: application/json`
+   - Body: `{"text": "Shortcut Input"}`
+5. Name it "Ask Mew"
+6. Test: "Hey Siri, Ask Mew to schedule dentist appointment tomorrow"
+
+### Amazon Alexa
+
+1. Coming soon - We'll publish the Alexa Skill
+2. Enable "Mew Assistant" skill in Alexa app
+3. Link your account
+4. Say: "Alexa, ask Mew to show my schedule"
+
+### Google Assistant
+
+1. Coming soon - We'll publish Google Action
+2. Enable "Mew Assistant" in Google Home app
+3. Link your account
+4. Say: "Hey Google, talk to Mew about my calendar"
+
+## 5️⃣ Test Your Setup
+
+### Check Calendar Connection
 ```bash
-curl -X POST https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/login \
+curl -X GET https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/calendar/events \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Create a Schedule Event
+```bash
+curl -X POST https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/mew/ingest \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "your@email.com",
-    "password": "YourSecurePassword123!"
+    "channel": "api",
+    "content": "Schedule dentist appointment tomorrow at 3pm"
   }'
 ```
 
-### 3. Test Voice Command
+### Get Daily Summary
 ```bash
-TOKEN="your_jwt_token_here"
-
-curl -X POST https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/voice/generic \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Schedule therapy for tomorrow at 3pm",
-    "language": "en"
-  }'
+curl -X GET https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/mew/summary \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-## �� Common Tasks
+## 6️⃣ Common Commands
 
-### Schedule an Event
-Use voice or text:
-- "Schedule therapy tomorrow at 3pm"
-- "Add dentist appointment next Tuesday 10am"
-- "Create pickup reminder for 2:30pm today"
+| What You Want | Voice/Text Command |
+|--------------|-------------------|
+| Schedule appointment | "Schedule [activity] [when]" |
+| Check schedule | "What's on my calendar?" |
+| Daily summary | "Give me today's summary" |
+| Add reminder | "Remind me to [task] at [time]" |
+| Check conflicts | "Any conflicts today?" |
 
-### Check Schedule
-- "What's on my schedule today?"
-- "Show me tomorrow's appointments"
-- "List this week's events"
+## 🆘 Need Help?
 
-### Get Summary
-- "Give me a daily summary"
-- "What did I miss?"
-- "Summarize today's activities"
+- **API Docs:** https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/docs
+- **GitHub Issues:** https://github.com/skakumanu/mew-assistant/issues
+- **Email Support:** Open an issue for now
 
-## 💡 Features Ready to Use
+## 📊 Monitor Your Usage
 
-✅ Multi-language voice commands (100+ languages)  
-✅ Smart scheduling with conflict detection  
-✅ Calendar integration (Google, Apple)  
-✅ SMS/Email/WhatsApp ingestion  
-✅ Mobile push notifications  
-✅ AI-powered suggestions  
-✅ Parental approval workflow  
-✅ Kid-friendly interface  
-
-## 📊 Monitor Your App
-
-### Azure Portal
-1. Go to: https://portal.azure.com
-2. Navigate to: Resource Groups → mew-assistant-dev-rg
-3. Check: Container App health, logs, metrics
-
-### View Logs
+Check logs and usage:
 ```bash
-az containerapp logs show \
-  --name mew-assistant-dev \
-  --resource-group mew-assistant-dev-rg \
-  --follow
+curl -X GET https://mew-app.politecoast-f8c6a8e3.eastus.azurecontainerapps.io/health \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-### Check Health
-```bash
-curl https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/
-```
+## 🎯 Next Steps
 
-## 🔒 Security Notes
-
-- JWT tokens expire in 30 minutes
-- Use HTTPS for all requests
-- Secrets stored in Azure Key Vault
-- Database encrypted at rest
-- Rate limiting enabled
-
-## 💰 Current Costs
-
-Estimated: **$45-75/month**
-- Monitor via Azure Cost Management
-- Auto-scaling enabled (0-2 instances)
-- Scales down when not in use
-
-## 🆘 Troubleshooting
-
-### App Not Responding
-```bash
-az containerapp revision restart \
-  --name mew-assistant-dev \
-  --resource-group mew-assistant-dev-rg \
-  --revision $(az containerapp revision list \
-    --name mew-assistant-dev \
-    --resource-group mew-assistant-dev-rg \
-    --query "[0].name" -o tsv)
-```
-
-### View Error Logs
-```bash
-az containerapp logs show \
-  --name mew-assistant-dev \
-  --resource-group mew-assistant-dev-rg \
-  --tail 100
-```
-
-### Redeploy Latest Version
-```bash
-./deploy-azure.sh
-```
-
-## 📞 Next Steps
-
-1. **Test the app** - Try all features
-2. **Invite users** - Share with family/testers
-3. **Setup voice** - Configure Alexa/Siri/Google
-4. **Connect calendars** - Link Google/Apple calendars
-5. **Configure mobile** - Setup push notifications
-
-## 🎉 You're All Set!
-
-Your Mew Assistant is:
-- ✅ Deployed to production
-- ✅ Secure and compliant
-- ✅ Ready for real users
-- ✅ Cost-optimized
-- ✅ Fully documented
-
-**Have fun and make life easier for special needs families!** 🌟
+1. ✅ Connect your calendar (Apple or Google)
+2. ✅ Test from mobile device
+3. ✅ Set up Siri Shortcut
+4. ✅ Try voice commands
+5. ✅ Share feedback!
 
 ---
 
-**Need Help?**
-- Documentation: `/docs/` folder
-- Issues: https://github.com/skakumanu/mew-assistant/issues
-- Live App: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+**Welcome to Mew Assistant - Your AI family scheduler!** 🎉
+
+*Last Updated: 2025-01-23*
