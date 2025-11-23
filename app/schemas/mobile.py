@@ -146,3 +146,76 @@ class ScheduledReminderResponse(BaseModel):
     success: bool
     scheduled_time: str
     message: str
+
+
+# Additional schemas for enhanced mobile API
+from enum import Enum
+from datetime import datetime
+
+
+class MobilePlatform(str, Enum):
+    IOS = "ios"
+    ANDROID = "android"
+
+
+class NotificationType(str, Enum):
+    REMINDER = "reminder"
+    APPROVAL_REQUEST = "approval_request"
+    EMERGENCY = "emergency"
+    SYSTEM = "system"
+    MESSAGE = "message"
+
+
+class MobileDeviceRegister(BaseModel):
+    device_id: str = Field(..., description="Unique device identifier")
+    platform: MobilePlatform
+    push_token: str = Field(..., description="FCM or APNS token")
+    device_name: Optional[str] = None
+    app_version: str
+    os_version: str
+    timezone: str = "UTC"
+
+
+class MobileDeviceResponse(BaseModel):
+    device_id: str
+    registered_at: datetime
+    last_sync: Optional[datetime]
+    push_enabled: bool
+    
+    class Config:
+        from_attributes = True
+
+
+class AppConfigResponse(BaseModel):
+    api_version: str
+    features: Dict[str, bool]
+    sync_interval_seconds: int
+    min_app_version: str
+    update_required: bool
+    endpoints: Dict[str, str]
+
+
+class OfflineAction(BaseModel):
+    action_id: str
+    action_type: str  # "schedule", "message", "voice_command"
+    timestamp: datetime
+    data: Dict[str, Any]
+
+
+class OfflineSyncRequest(BaseModel):
+    device_id: str
+    last_sync: Optional[datetime]
+    actions: List[OfflineAction]
+
+
+class OfflineSyncResponse(BaseModel):
+    synced_count: int
+    conflicts: List[Dict[str, Any]]
+    server_timestamp: datetime
+    next_sync_recommended: datetime
+
+
+class MobileSessionSync(BaseModel):
+    session_id: str
+    last_modified: datetime
+    data: Dict[str, Any]

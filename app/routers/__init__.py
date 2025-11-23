@@ -5,6 +5,7 @@ from .message import router as message_router
 from .summary import router as summary_router
 from .calendar import router as calendar_router
 from .mobile import router as mobile_router
+from .mobile_api import router as mobile_api_router
 from .kid_friendly import router as kid_router
 from .parent_approval import router as parent_approval_router
 from .voice import router as voice_router
@@ -15,7 +16,8 @@ __all__ = [
     "message_router", 
     "summary_router", 
     "calendar_router", 
-    "mobile_router", 
+    "mobile_router",
+    "mobile_api_router", 
     "kid_router",
     "parent_approval_router",
     "voice_router"
