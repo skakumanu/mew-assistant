@@ -62,7 +62,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=True)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)  # Nullable for federated auth users
     full_name = Column(String, nullable=True)
     
     # User type and status
@@ -91,11 +91,42 @@ class User(Base):
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    federated_identities = relationship("FederatedIdentity", back_populates="user", cascade="all, delete-orphan")
     kids = relationship("User", backref="parent", remote_side=[id])
     
     __table_args__ = (
         Index('idx_user_email', 'email'),
         Index('idx_user_username', 'username'),
+    )
+
+
+class FederatedIdentity(Base):
+    """
+    Federated authentication identities (Google, Apple, Microsoft, etc.)
+    Allows users to login with their existing accounts.
+    """
+    __tablename__ = "federated_identities"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(String, primary_key=True)  # UUID
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider = Column(String, nullable=False)  # google, apple, microsoft, etc.
+    provider_user_id = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    
+    # Optional profile data from provider
+    name = Column(String, nullable=True)
+    picture = Column(String, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_used_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="federated_identities")
+    
+    __table_args__ = (
+        Index('idx_provider_user', 'provider', 'provider_user_id', unique=True),
     )
 
 
