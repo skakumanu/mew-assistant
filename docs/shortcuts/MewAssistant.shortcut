@@ -1,0 +1,197 @@
+{
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 4282601983,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowClientVersion": "2605.0.5",
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.comment",
+      "WFWorkflowActionParameters": {
+        "WFCommentActionText": "Mew Assistant - Voice Interface for Special Needs Families"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.getvariable",
+      "WFWorkflowActionParameters": {
+        "WFVariable": {
+          "Value": {
+            "Type": "Variable",
+            "Variable": {
+              "Value": "ShortcutInput",
+              "WFSerializationType": "WFTextTokenAttachment"
+            }
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.dictionary",
+      "WFWorkflowActionParameters": {
+        "WFItems": {
+          "Value": {
+            "WFDictionaryFieldValueItems": [
+              {
+                "WFItemType": 0,
+                "WFKey": {
+                  "Value": {
+                    "string": "command",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                },
+                "WFValue": {
+                  "Value": {
+                    "string": "￼",
+                    "attachmentsByRange": {
+                      "{0, 1}": {
+                        "Type": "Variable",
+                        "Variable": {
+                          "Value": "ShortcutInput",
+                          "WFSerializationType": "WFTextTokenAttachment"
+                        }
+                      }
+                    }
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                }
+              },
+              {
+                "WFItemType": 0,
+                "WFKey": {
+                  "Value": {
+                    "string": "language",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                },
+                "WFValue": {
+                  "Value": {
+                    "string": "auto",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                }
+              },
+              {
+                "WFItemType": 0,
+                "WFKey": {
+                  "Value": {
+                    "string": "platform",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                },
+                "WFValue": {
+                  "Value": {
+                    "string": "siri",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                }
+              }
+            ]
+          },
+          "WFSerializationType": "WFDictionaryFieldValue"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
+      "WFWorkflowActionParameters": {
+        "WFURL": "https://mew-app.azurewebsites.net/voice/siri",
+        "WFHTTPMethod": "POST",
+        "WFHTTPBodyType": "JSON",
+        "WFJSONValues": "￼",
+        "Advanced": true,
+        "WFHTTPHeaders": {
+          "Value": {
+            "WFDictionaryFieldValueItems": [
+              {
+                "WFItemType": 0,
+                "WFKey": {
+                  "Value": {
+                    "string": "Content-Type",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                },
+                "WFValue": {
+                  "Value": {
+                    "string": "application/json",
+                    "attachmentsByRange": {}
+                  },
+                  "WFSerializationType": "WFTextTokenString"
+                }
+              }
+            ]
+          },
+          "WFSerializationType": "WFDictionaryFieldValue"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.getvalueforkey",
+      "WFWorkflowActionParameters": {
+        "WFDictionaryKey": "response"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.conditional",
+      "WFWorkflowActionParameters": {
+        "WFInput": {
+          "Type": "Variable",
+          "Variable": {
+            "Value": "response",
+            "WFSerializationType": "WFTextTokenAttachment"
+          }
+        },
+        "WFControlFlowMode": 0,
+        "WFConditionalActionString": "",
+        "WFCondition": 4
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.speaktext",
+      "WFWorkflowActionParameters": {
+        "WFText": "￼",
+        "WFSpeakTextRate": 0.5,
+        "WFSpeakTextLanguage": "auto",
+        "WFSpeakTextVoice": "com.apple.ttsbundle.siri_female_en-US_compact"
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.conditional",
+      "WFWorkflowActionParameters": {
+        "WFControlFlowMode": 1
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.speaktext",
+      "WFWorkflowActionParameters": {
+        "WFText": "Sorry, I couldn't process that request. Please try again.",
+        "WFSpeakTextRate": 0.5
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.conditional",
+      "WFWorkflowActionParameters": {
+        "WFControlFlowMode": 2
+      }
+    }
+  ],
+  "WFWorkflowInputContentItemClasses": [
+    "WFStringContentItem"
+  ],
+  "WFWorkflowImportQuestions": [],
+  "WFWorkflowTypes": [
+    "Watch"
+  ],
+  "WFQuickActionSurfaces": [],
+  "WFWorkflowHasShortcutInputVariables": true
+}
