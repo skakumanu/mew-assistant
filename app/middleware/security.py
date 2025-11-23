@@ -174,8 +174,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if request.headers.get('Authorization', '').startswith('Bearer '):
             return
         
-        # Skip CSRF for public registration/login endpoints
-        public_endpoints = ['/auth/register', '/auth/login', '/auth/magic-link', '/voice/webhook']
+        # Skip CSRF for public registration/login/voice endpoints
+        public_endpoints = [
+            '/auth/register', '/auth/login', '/auth/magic-link', 
+            '/voice/webhook', '/voice/alexa', '/voice/google', 
+            '/voice/siri', '/voice/grok', '/voice/process',
+            '/voice/transcribe', '/voice/tts'
+        ]
         if any(request.url.path.startswith(endpoint) for endpoint in public_endpoints):
             return
         
