@@ -35,12 +35,14 @@ class PriorityLevel(str, enum.Enum):
 
 
 class UserRole(str, enum.Enum):
-    """User roles for access control"""
-    ADMIN = "admin"
-    CAREGIVER = "caregiver"
-    PARENT = "parent"
-    THERAPIST = "therapist"
-    EDUCATOR = "educator"
+    """User roles for access control with RBAC hierarchy"""
+    SUPERUSER = "SUPERUSER"  # Full system access
+    ADMIN = "ADMIN"          # Organization-level access
+    PARENT = "PARENT"        # Family-level access
+    CAREGIVER = "CAREGIVER"  # Limited family access
+    KID = "KID"              # Minimal access with approval requirements
+    THERAPIST = "THERAPIST"  # Professional access
+    EDUCATOR = "EDUCATOR"    # Educational access
 
 
 class User(Base):
