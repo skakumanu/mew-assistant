@@ -12,11 +12,11 @@
 
 # Mew Assistant - Complete System Architecture
 
-> **Version:** 2.0.0 - Enhanced Edition with Compliance, Security & Multi-Platform Support
+> **Version:** 3.0.0 - Production Edition with AI Scheduler, Voice Integration & Complete Azure Deployment
 > 
-> **Last Updated:** December 2024
+> **Last Updated:** November 2024
 > 
-> **Coverage:** Authentication, Privacy Guardrails, Mobile Support, Voice Platforms, Azure Cloud, Parental Controls
+> **Coverage:** Voice Assistants (Siri/Alexa/Grok), AI-Powered Scheduling, Mobile Apps (iOS/Android), Calendar Integration, Parental Controls, Azure Cloud Infrastructure, Complete Compliance & Security
 
 ## 🏗️ High-Level Architecture
 
@@ -928,9 +928,368 @@ Manual approval for production
 
 ---
 
-**Last Updated**: December 2024  
-**Version**: 2.0.0  
-**Phase**: All guardrails, compliance, voice platforms, and Azure cloud complete
+**Last Updated**: November 2024  
+**Version**: 3.0.0  
+**Phase**: Production-ready with AI Scheduler, Voice Integration, Mobile Apps, and Azure Cloud
+
+---
+
+## 🤖 AI Scheduler - Smart Schedule Management
+
+The AI Scheduler is the core intelligence of Mew Assistant, providing automated conflict detection, pattern learning, and smart suggestions for special needs families.
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    AI Scheduler Engine                        │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  1. Pattern Learning & Analysis                      │   │
+│  │  ─────────────────────────────────────────────       │   │
+│  │  • Historical schedule data                          │   │
+│  │  • User preferences & behaviors                      │   │
+│  │  • Success/failure tracking                          │   │
+│  │  • Seasonal/weekly patterns                          │   │
+│  │  • Family member availability                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                        ↓                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  2. Conflict Detection Engine                        │   │
+│  │  ────────────────────────────────────────           │   │
+│  │  • Time overlaps detection                           │   │
+│  │  • Resource conflicts (therapist, room, etc.)        │   │
+│  │  • Transportation logistics                          │   │
+│  │  • Caregiver availability                            │   │
+│  │  • Energy/fatigue level considerations               │   │
+│  │  • Special needs requirements                        │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                        ↓                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  3. Smart Suggestion Generator                       │   │
+│  │  ──────────────────────────────────────────         │   │
+│  │  • Optimal time slot suggestions                     │   │
+│  │  • Alternative scheduling options                    │   │
+│  │  • Priority-based recommendations                    │   │
+│  │  • Buffer time calculations                          │   │
+│  │  • Travel time estimation                            │   │
+│  │  • Energy management suggestions                     │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                        ↓                                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  4. Auto-Optimization (with Parental Controls)       │   │
+│  │  ────────────────────────────────────────────────   │   │
+│  │  • Auto-approve low-risk changes                     │   │
+│  │  • Batch requests for parent review                  │   │
+│  │  • Emergency/urgent handling                         │   │
+│  │  • Learning from approval/denial patterns            │   │
+│  └─────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Core Features
+
+#### 1. **Pattern Learning**
+
+The AI learns from historical data:
+
+```python
+# Example: Learning preferred therapy times
+{
+  "occupational_therapy": {
+    "preferred_times": ["10:00 AM - 11:00 AM", "2:00 PM - 3:00 PM"],
+    "avoid_times": ["early morning", "late evening"],
+    "optimal_days": ["Tuesday", "Thursday"],
+    "success_rate": 0.92,
+    "energy_correlation": "high in morning, moderate afternoon"
+  },
+  "speech_therapy": {
+    "preferred_times": ["11:00 AM - 12:00 PM"],
+    "buffer_after_other_activities": 30,  # minutes
+    "success_rate": 0.88
+  }
+}
+```
+
+#### 2. **Conflict Detection**
+
+Multi-dimensional conflict analysis:
+
+```python
+conflict_types = [
+    "time_overlap",           # Direct time conflicts
+    "resource_conflict",      # Same therapist/room needed
+    "transportation",         # Travel time conflicts
+    "caregiver_unavailable",  # Parent/caregiver not available
+    "energy_level",           # Too many activities in one day
+    "meal_time",              # Conflicts with meal schedules
+    "medication_time",        # Conflicts with medication schedule
+    "sensory_overload",       # Too many high-stimulation activities
+    "routine_disruption"      # Changes to established routines
+]
+```
+
+#### 3. **Smart Suggestions**
+
+Context-aware recommendations:
+
+```python
+{
+  "suggestion_id": "sug_abc123",
+  "type": "reschedule",
+  "current_slot": "2024-11-25 09:00 AM",
+  "suggested_slots": [
+    {
+      "time": "2024-11-25 10:30 AM",
+      "score": 0.95,
+      "reasoning": [
+        "No conflicts detected",
+        "Historically successful time",
+        "Good energy level expected",
+        "Preferred therapist available",
+        "15-min buffer after breakfast"
+      ],
+      "impact": "low"  # low/medium/high
+    },
+    {
+      "time": "2024-11-26 10:00 AM",
+      "score": 0.87,
+      "reasoning": [
+        "Different day, better spacing",
+        "Consistent with weekly pattern"
+      ],
+      "impact": "medium"
+    }
+  ],
+  "confidence": 0.92
+}
+```
+
+#### 4. **Auto-Approval Logic**
+
+Smart parental control system:
+
+```python
+# Auto-approval rules (customizable per family)
+auto_approve_rules = {
+    "time_shift": {
+        "max_minutes": 30,        # Auto-approve shifts ≤ 30 min
+        "same_day_only": True
+    },
+    "low_priority_activities": {
+        "auto_approve": True,
+        "notify_parent": True
+    },
+    "minor_adjustments": {
+        "therapist_change": False,  # Always require approval
+        "location_change": False,   # Always require approval
+        "duration_change": 15       # ≤15 min auto-approve
+    },
+    "emergency_override": {
+        "enabled": True,
+        "notify_immediately": True
+    }
+}
+
+# Batching rules (reduce approval fatigue)
+batching_rules = {
+    "batch_window": "24_hours",      # Collect for 24h
+    "max_batch_size": 5,             # Max 5 items per batch
+    "priority_threshold": "medium",  # High priority → immediate
+    "digest_time": "8:00 PM"        # Send daily digest
+}
+```
+
+### Implementation Details
+
+#### Database Schema
+
+```python
+# app/database/models.py additions
+
+class SchedulePattern(Base):
+    __tablename__ = "schedule_patterns"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    activity_type = Column(String(100))
+    preferred_times = Column(JSON)  # List of time slots
+    success_rate = Column(Float)
+    energy_correlation = Column(JSON)
+    last_updated = Column(DateTime, default=datetime.utcnow)
+
+class ConflictDetection(Base):
+    __tablename__ = "conflict_detections"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    event_1_id = Column(String(100))
+    event_2_id = Column(String(100))
+    conflict_type = Column(String(50))
+    severity = Column(String(20))  # low, medium, high, critical
+    detected_at = Column(DateTime, default=datetime.utcnow)
+    resolved = Column(Boolean, default=False)
+    resolution = Column(JSON)
+
+class ScheduleSuggestion(Base):
+    __tablename__ = "schedule_suggestions"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    original_event = Column(JSON)
+    suggested_slots = Column(JSON)
+    confidence_score = Column(Float)
+    reasoning = Column(JSON)
+    status = Column(String(20))  # pending, accepted, rejected
+    created_at = Column(DateTime, default=datetime.utcnow)
+```
+
+#### API Endpoints
+
+```python
+# app/services/ai_scheduler_service.py
+
+class AISchedulerService:
+    """AI-powered schedule optimization service"""
+    
+    async def detect_conflicts(self, user_id: int, new_event: dict) -> List[Conflict]:
+        """Detect all potential conflicts"""
+        
+    async def generate_suggestions(self, conflict: Conflict) -> List[Suggestion]:
+        """Generate smart suggestions to resolve conflicts"""
+        
+    async def learn_from_patterns(self, user_id: int):
+        """Learn from historical scheduling patterns"""
+        
+    async def should_auto_approve(self, suggestion: Suggestion) -> bool:
+        """Determine if suggestion can be auto-approved"""
+        
+    async def create_approval_batch(self, user_id: int) -> ApprovalBatch:
+        """Create a batch of pending approvals"""
+```
+
+### Integration with Calendar Systems
+
+```python
+# Unified calendar operations with AI enhancement
+
+async def add_event_with_ai(
+    user_id: int,
+    event: CalendarEvent
+) -> ScheduleResult:
+    """Add event with AI conflict detection and suggestions"""
+    
+    # 1. Detect conflicts
+    conflicts = await ai_scheduler.detect_conflicts(user_id, event)
+    
+    if conflicts:
+        # 2. Generate suggestions
+        suggestions = await ai_scheduler.generate_suggestions(conflicts[0])
+        
+        # 3. Check auto-approval
+        if await ai_scheduler.should_auto_approve(suggestions[0]):
+            # Auto-apply best suggestion
+            return await apply_suggestion(suggestions[0])
+        else:
+            # Request parental approval
+            return await create_approval_request(suggestions)
+    
+    # No conflicts, proceed
+    return await calendar_service.add_event(event)
+```
+
+### Performance Optimization
+
+- **Caching**: Pattern data cached for 1 hour
+- **Async Processing**: All AI operations run asynchronously
+- **Batch Processing**: Conflict detection runs in batches
+- **Lazy Loading**: Learn patterns only when needed
+- **Database Indexes**: Optimized queries on user_id, event times
+
+### Future Enhancements
+
+- [ ] ML model for more accurate predictions (scikit-learn/TensorFlow)
+- [ ] Integration with wearable devices (energy/stress tracking)
+- [ ] Predictive scheduling (suggest appointments proactively)
+- [ ] Multi-family coordination (shared therapists/resources)
+- [ ] Weather-aware scheduling
+- [ ] School schedule integration
+
+---
+
+## 📱 Technology Stack
+
+### Backend
+- **Framework**: FastAPI 0.109.0
+- **Language**: Python 3.11+
+- **ORM**: SQLAlchemy 2.0+ with async support
+- **Database**: PostgreSQL 15 (Azure Flexible Server)
+- **Authentication**: JWT with bcrypt password hashing
+- **API Documentation**: OpenAPI 3.0 (Swagger UI + ReDoc)
+
+### AI & ML
+- **AI Integration**: OpenAI GPT-4 / Azure OpenAI
+- **Speech Services**: Azure Speech (speech-to-text, text-to-speech)
+- **Language Detection**: Azure Cognitive Services (150+ languages)
+- **NLU**: Custom intent recognition + GPT-4
+
+### Cloud Infrastructure (Azure)
+- **Compute**: Azure Container Apps (auto-scaling 2-10 instances)
+- **Database**: PostgreSQL Flexible Server (encrypted at rest)
+- **Storage**: Azure Blob Storage (backups, file uploads)
+- **Secrets**: Azure Key Vault (API keys, certificates)
+- **Monitoring**: Azure Monitor + Application Insights
+- **CDN**: Azure Front Door (global load balancing)
+- **IaC**: Bicep templates
+
+### Voice Platforms
+- **Apple**: Siri Shortcuts, SiriKit
+- **Amazon**: Alexa Skills Kit
+- **Google**: Google Assistant Actions (optional)
+- **Tesla**: Grok API integration
+
+### Communication Integrations
+- **Email**: Gmail API, SMTP
+- **SMS**: Twilio SMS API
+- **WhatsApp**: Twilio WhatsApp Business API
+- **Push Notifications**: Firebase Cloud Messaging (iOS/Android)
+
+### Calendar Integrations
+- **Google Calendar**: Google Calendar API
+- **Apple Calendar**: CalDAV + EventKit
+- **Microsoft Outlook**: Microsoft Graph API
+
+### Mobile
+- **iOS**: Native SwiftUI app + Siri Shortcuts
+- **Android**: Native Kotlin app + Google Assistant
+
+### Security & Compliance
+- **Encryption**: AES-256 (data at rest), TLS 1.3 (in transit)
+- **Secrets Management**: Azure Key Vault + environment variables
+- **PII Protection**: Field-level encryption, audit logging
+- **Compliance**: COPPA, HIPAA, GDPR guardrails built-in
+
+### Testing
+- **Unit/Integration**: Pytest with async support
+- **Coverage**: pytest-cov (target >80%)
+- **Mocking**: pytest-mock, responses
+- **Security**: Bandit, Safety
+- **Load Testing**: Locust (optional)
+
+### DevOps & CI/CD
+- **Version Control**: Git with Git Flow
+- **CI/CD**: GitHub Actions (multi-stage pipeline)
+- **Container Registry**: Azure Container Registry
+- **Linting**: Black, isort, Flake8, MyPy
+- **Pre-commit**: Automated code quality checks
+- **Secrets Scanning**: git-secrets, detect-secrets
+
+### Development Tools
+- **Package Manager**: pip with requirements.txt
+- **Container Runtime**: Podman/Docker
+- **API Testing**: cURL, Postman, HTTPie
+- **Database Migrations**: Alembic (future)
 
 ---
 
