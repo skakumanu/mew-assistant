@@ -66,16 +66,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. Request ID tracking
+# 2. Bot protection (rate limiting, suspicious content detection)
+from app.middleware.bot_protection import BotProtectionMiddleware
+app.add_middleware(BotProtectionMiddleware, rate_limit=100, window_seconds=60)
+
+# 3. Request ID tracking
 app.add_middleware(RequestIDMiddleware)
 
-# 3. Security middleware (rate limiting, XSS, SQL injection prevention)
+# 4. Security middleware (rate limiting, XSS, SQL injection prevention)
 app.add_middleware(SecurityMiddleware)
 
-# 4. Compliance middleware (HIPAA, COPPA, FERPA)
+# 5. Compliance middleware (HIPAA, COPPA, FERPA)
 app.add_middleware(ComplianceMiddleware)
 
-# 5. Register exception handlers
+# 6. Register exception handlers
 register_exception_handlers(app)
 
 # Include routers

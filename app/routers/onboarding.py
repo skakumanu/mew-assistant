@@ -10,10 +10,12 @@ import base64
 from datetime import datetime, timedelta
 
 from ..database.connection import get_db
-from ..database.models import User, UserSession, FamilyMember
+from ..database.models import User, Session
 from ..schemas.auth import UserCreate
 from ..services.auth_service import AuthService
-from ..utils.notifications import send_email, send_sms
+from ..utils.notifications import NotificationService
+
+notification_service = NotificationService()
 
 router = APIRouter(prefix="/onboard", tags=["onboarding"])
 
@@ -87,13 +89,13 @@ async def quick_onboard(
     # Send magic link based on channel
     if data.channel in ["sms", "whatsapp"]:
         background_tasks.add_task(
-            send_sms,
+            notification_service.send_sms,
             data.contact,
             f"Welcome to Mew! 🐱 Click to finish setup: {magic_link}"
         )
     else:
         background_tasks.add_task(
-            send_email,
+            notification_service.send_email,
             data.contact,
             "Welcome to Mew Assistant! 🐱",
             f"""

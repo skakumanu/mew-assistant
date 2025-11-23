@@ -322,3 +322,23 @@ async def logout(current_user: User = Depends(get_current_user)):
     Clients should delete their stored tokens.
     """
     return {"message": "Logged out successfully. Please delete your tokens on the client side."}
+
+# CAPTCHA endpoints for bot protection
+from app.middleware.bot_protection import captcha_verifier
+
+@router.get("/captcha/challenge")
+async def get_captcha_challenge(user_id: str = None):
+    """Generate a CAPTCHA challenge for critical operations"""
+    challenge = captcha_verifier.generate_challenge(user_id or "anonymous")
+    return challenge
+
+@router.post("/captcha/verify")
+async def verify_captcha(challenge_id: str, response: str):
+    """Verify CAPTCHA response"""
+    is_valid = captcha_verifier.verify_response(challenge_id, response)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired CAPTCHA"
+        )
+    return {"verified": True}
