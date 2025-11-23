@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mew Assistant - Your AI Family Scheduler</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 100px 20px; text-align: center; }
+        .hero h1 { font-size: 48px; margin-bottom: 20px; }
+        .cta-button { background: white; color: #667eea; padding: 18px 40px; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .onboard-form { max-width: 500px; margin: 40px auto; background: white; padding: 40px; border-radius: 12px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>🐱 Mew Assistant</h1>
+        <p>Your AI-Powered Family Scheduler</p>
+    </div>
+    <div class="onboard-form">
+        <h2>Get Started in 2 Minutes</h2>
+        <form action="/onboard/quick" method="post">
+            <div class="form-group">
+                <input type="text" name="name" placeholder="Your Name" required>
+            </div>
+            <div class="form-group">
+                <input type="text" name="contact" placeholder="Email or Phone" required>
+            </div>
+            <button type="submit" class="cta-button">Start Now</button>
+        </form>
+    </div>
+</body>
+</html>

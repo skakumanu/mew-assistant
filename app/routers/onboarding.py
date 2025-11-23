@@ -1,193 +1,315 @@
-"""
-Onboarding Router - Easy Registration Endpoints
-All channels lead to simple, unified registration
-"""
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, EmailStr
 from typing import Optional
+import secrets
+import qrcode
+import io
+import base64
+from datetime import datetime, timedelta
 
-from app.database import get_db
-from app.services.onboarding_service import OnboardingService
-from app.schemas.onboarding import (
-    QuickRegistrationRequest,
-    MagicLinkRequest,
-    VoiceRegistrationRequest,
-    SocialLoginRequest,
-    FamilySetupRequest,
-    OnboardingResponse
-)
-from app.utils.logger import get_logger
+from ..database.connection import get_db
+from ..database.models import User, UserSession, FamilyMember
+from ..schemas.auth import UserCreate
+from ..services.auth_service import AuthService
+from ..utils.notifications import send_email, send_sms
 
-router = APIRouter(prefix="/api/v1/onboarding", tags=["onboarding"])
-logger = get_logger(__name__)
+router = APIRouter(prefix="/onboard", tags=["onboarding"])
 
+class QuickOnboard(BaseModel):
+    """Minimal info needed - we'll guide the rest"""
+    contact: EmailStr  # Can be email or phone
+    name: str
+    preferred_language: str = "en"
+    channel: str = "web"  # web, sms, whatsapp, voice, alexa, siri, google
 
-@router.post("/quick-register", response_model=OnboardingResponse)
-async def quick_register(
-    request: QuickRegistrationRequest,
+class OnboardingStatus(BaseModel):
+    onboarding_token: str
+    user_id: int
+    step: str
+    next_action: str
+    magic_link: Optional[str] = None
+    qr_code: Optional[str] = None
+    simple_instructions: str
+
+@router.post("/quick", response_model=OnboardingStatus)
+async def quick_onboard(
+    data: QuickOnboard,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
-    🚀 Quick registration from any channel
-    
-    Examples:
-    - Email: "user@example.com"
-    - Phone: "+1234567890"
-    - Voice: Device ID from Siri/Alexa
-    
-    No password needed! We'll send a magic link/code.
+    One-click onboarding - user just provides name and email/phone
+    System handles everything else automatically
     """
-    service = OnboardingService(db)
     
-    result = await service.initiate_quick_registration(
-        channel=request.channel,
-        identifier=request.identifier,
-        name=request.name,
-        metadata=request.metadata
+    # Generate secure tokens
+    temp_password = secrets.token_urlsafe(12)
+    onboarding_token = secrets.token_urlsafe(32)
+    magic_token = secrets.token_urlsafe(32)
+    
+    # Create user account automatically
+    user_data = UserCreate(
+        email=data.contact if "@" in data.contact else f"{data.contact}@temp.mew",
+        password=temp_password,
+        full_name=data.name,
+        role="parent",
+        phone=data.contact if "@" not in data.contact else None
     )
     
-    return OnboardingResponse(**result)
-
-
-@router.post("/magic-link/verify", response_model=OnboardingResponse)
-async def verify_magic_link(
-    request: MagicLinkRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    ✨ Complete registration with magic link/code
+    auth_service = AuthService(db)
+    user = await auth_service.register_user(user_data)
     
-    User clicks link from email or enters code from SMS
-    """
-    service = OnboardingService(db)
+    # Create magic link for passwordless login
+    magic_link = f"https://mew-app-eastus2.azurewebsites.net/onboard/magic/{magic_token}"
     
-    try:
-        result = await service.complete_magic_link_registration(
-            magic_token=request.magic_token,
-            additional_info=request.additional_info
+    # Generate QR code for mobile setup
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(magic_link)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    # Store onboarding session
+    session = UserSession(
+        user_id=user.id,
+        session_token=onboarding_token,
+        device_info=f"Onboarding via {data.channel}",
+        expires_at=datetime.utcnow() + timedelta(hours=24)
+    )
+    db.add(session)
+    db.commit()
+    
+    # Send magic link based on channel
+    if data.channel in ["sms", "whatsapp"]:
+        background_tasks.add_task(
+            send_sms,
+            data.contact,
+            f"Welcome to Mew! 🐱 Click to finish setup: {magic_link}"
         )
-        return OnboardingResponse(**result)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/voice-register", response_model=OnboardingResponse)
-async def voice_register(
-    request: VoiceRegistrationRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    🎤 Voice-initiated registration
+    else:
+        background_tasks.add_task(
+            send_email,
+            data.contact,
+            "Welcome to Mew Assistant! 🐱",
+            f"""
+            <h2>Welcome {data.name}!</h2>
+            <p>Your Mew Assistant is ready! Click the button below to complete setup:</p>
+            <a href="{magic_link}" style="background: #4CAF50; color: white; padding: 15px 32px; 
+               text-decoration: none; display: inline-block; margin: 4px 2px; cursor: pointer; 
+               border-radius: 4px;">Complete Setup</a>
+            <p>Or scan this QR code with your phone:</p>
+            <img src="data:image/png;base64,{qr_base64}" alt="Setup QR Code" />
+            <p>Questions? Just reply to this email or text "help" to get started!</p>
+            """
+        )
     
-    Example: "Hey Siri, set up Mew Assistant"
-    
-    Supports:
-    - Apple Siri
-    - Amazon Alexa
-    - Tesla Grok
-    - Google Assistant
-    - Any voice platform
-    """
-    service = OnboardingService(db)
-    
-    result = await service.voice_initiated_registration(
-        platform=request.platform,
-        device_id=request.device_id,
-        voice_print=request.voice_print,
-        detected_language=request.language
+    return OnboardingStatus(
+        onboarding_token=onboarding_token,
+        user_id=user.id,
+        step="magic_link_sent",
+        next_action="check_email_or_sms",
+        magic_link=magic_link,
+        qr_code=f"data:image/png;base64,{qr_base64}",
+        simple_instructions=f"""
+        🎉 You're almost there, {data.name}!
+        
+        We sent you a magic link to {data.contact}
+        
+        ✅ Just click the link or scan the QR code
+        ✅ Connect your calendar (optional - takes 2 clicks)
+        ✅ Start using Mew!
+        
+        No passwords to remember. No complicated setup.
+        """
     )
-    
-    return OnboardingResponse(**result)
 
-
-@router.post("/social-login", response_model=OnboardingResponse)
-async def social_login(
-    request: SocialLoginRequest,
+@router.get("/magic/{token}")
+async def magic_link_login(
+    token: str,
     db: Session = Depends(get_db)
 ):
-    """
-    👤 One-tap social login
+    """Magic link that logs user in and completes onboarding"""
     
-    Supported providers:
-    - Google (Sign in with Google)
-    - Apple (Sign in with Apple)
-    - Microsoft (Microsoft Account)
-    - Facebook (optional)
-    """
-    service = OnboardingService(db)
+    # Verify token (simplified - in production use proper token validation)
+    session = db.query(UserSession).filter(
+        UserSession.session_token == token,
+        UserSession.expires_at > datetime.utcnow()
+    ).first()
     
-    result = await service.social_login_registration(
-        provider=request.provider,
-        provider_user_id=request.provider_user_id,
-        email=request.email,
-        name=request.name,
-        profile_data=request.profile_data
-    )
+    if not session:
+        return HTMLResponse("""
+        <html>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h2>⚠️ This link has expired</h2>
+                <p>Please request a new one at <a href="/">mew-assistant.org</a></p>
+            </body>
+        </html>
+        """)
     
-    return OnboardingResponse(**result)
+    user = db.query(User).filter(User.id == session.user_id).first()
+    
+    return HTMLResponse(f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Welcome to Mew Assistant</title>
+        <style>
+            body {{ font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }}
+            .button {{ background: #4CAF50; color: white; padding: 15px 32px; 
+                      text-decoration: none; display: inline-block; margin: 10px 0; 
+                      cursor: pointer; border: none; border-radius: 4px; font-size: 16px; }}
+            .option {{ border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 8px; }}
+            h1 {{ color: #333; }}
+        </style>
+    </head>
+    <body>
+        <h1>🎉 Welcome {user.full_name}!</h1>
+        <p>Your Mew Assistant is ready to help with scheduling and caregiving tasks!</p>
+        
+        <h2>Quick Setup (Optional)</h2>
+        
+        <div class="option">
+            <h3>📅 Connect Your Calendar</h3>
+            <p>Let Mew help you manage schedules automatically</p>
+            <button class="button" onclick="connectGoogle()">Connect Google Calendar</button>
+            <button class="button" onclick="connectApple()">Connect Apple Calendar</button>
+            <button class="button" onclick="skip()">Skip for now</button>
+        </div>
+        
+        <div class="option">
+            <h3>🗣️ Enable Voice Commands</h3>
+            <p>Talk to Mew through Siri, Alexa, or Google Assistant</p>
+            <button class="button" onclick="setupVoice()">Setup Voice</button>
+            <button class="button" onclick="skip()">Skip for now</button>
+        </div>
+        
+        <div class="option">
+            <h3>👨‍👩‍👧‍👦 Add Family Members</h3>
+            <p>Add kids, caregivers, or other family members</p>
+            <button class="button" onclick="addFamily()">Add Family</button>
+            <button class="button" onclick="skip()">Skip for now</button>
+        </div>
+        
+        <br><br>
+        <button class="button" style="background: #2196F3; font-size: 20px;" 
+                onclick="startUsing()">🚀 Start Using Mew Now!</button>
+        
+        <script>
+            const apiUrl = window.location.origin;
+            const token = "{token}";
+            
+            function connectGoogle() {{
+                window.location.href = `${{apiUrl}}/calendar/google/auth?token=${{token}}`;
+            }}
+            
+            function connectApple() {{
+                window.location.href = `${{apiUrl}}/calendar/apple/auth?token=${{token}}`;
+            }}
+            
+            function setupVoice() {{
+                window.location.href = `${{apiUrl}}/voice/setup?token=${{token}}`;
+            }}
+            
+            function addFamily() {{
+                window.location.href = `${{apiUrl}}/family/setup?token=${{token}}`;
+            }}
+            
+            function skip() {{
+                alert('No problem! You can set this up anytime from Settings.');
+            }}
+            
+            function startUsing() {{
+                window.location.href = `${{apiUrl}}/dashboard?token=${{token}}`;
+            }}
+        </script>
+    </body>
+    </html>
+    """)
 
-
-@router.post("/family-setup", response_model=OnboardingResponse)
-async def family_setup(
-    request: FamilySetupRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    👨‍👩‍👧‍👦 Quick family setup (takes < 2 minutes)
-    
-    Minimal info needed:
-    - Family name (optional, defaults to "My Family")
-    - Timezone
-    - Language preference
-    """
-    service = OnboardingService(db)
-    
-    result = await service.complete_family_setup(
-        user_id=request.user_id,
-        family_data=request.family_data
-    )
-    
-    return OnboardingResponse(**result)
-
-
-@router.get("/status/{user_id}")
-async def onboarding_status(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    """
-    📊 Check onboarding completion status
-    
-    Returns what steps are remaining
-    """
-    from app.database.models import User
-    from sqlalchemy import select
-    
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+@router.get("/sms-setup")
+async def sms_onboard_flow():
+    """SMS-based onboarding instructions"""
     return {
-        "user_id": user.id,
-        "onboarding_completed": user.onboarding_completed,
-        "steps_remaining": _get_remaining_steps(user),
-        "estimated_time": "2 minutes"
+        "instructions": """
+        SMS Onboarding (Super Simple!):
+        
+        1. Text: "START <your name>" to +1-XXX-MEW-HELP
+        2. Reply with your preferred language (or skip)
+        3. Done! You'll get a link to connect your calendar
+        
+        Example:
+        You: "START John Smith"
+        Mew: "Hi John! 👋 Reply with your language (English/Spanish/French) or say SKIP"
+        You: "English"
+        Mew: "Perfect! Click here to connect your calendar: [link] Or text HELP for voice commands!"
+        """
     }
 
+@router.get("/voice-setup")
+async def voice_onboard_flow():
+    """Voice-based onboarding instructions"""
+    return {
+        "alexa": {
+            "steps": [
+                "Open Alexa app",
+                "Search for 'Mew Assistant' skill",
+                "Tap 'Enable to Use'",
+                "Say 'Alexa, open Mew Assistant'",
+                "Follow voice prompts to link account"
+            ],
+            "first_command": "Alexa, ask Mew to schedule therapy for tomorrow at 3pm"
+        },
+        "siri": {
+            "steps": [
+                "Open Safari on iPhone",
+                "Visit: mew-assistant.org/siri",
+                "Tap 'Add to Siri'",
+                "Say 'Hey Siri, setup Mew'",
+                "Follow prompts to complete"
+            ],
+            "first_command": "Hey Siri, ask Mew to show my schedule"
+        },
+        "google": {
+            "steps": [
+                "Say 'Hey Google, talk to Mew Assistant'",
+                "Follow prompts to link your account",
+                "Grant calendar permissions",
+                "You're ready!"
+            ],
+            "first_command": "Hey Google, ask Mew to reschedule today's appointment"
+        }
+    }
 
-def _get_remaining_steps(user) -> list:
-    """Determine what setup steps remain"""
-    steps = []
+@router.post("/complete")
+async def complete_onboarding(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """Mark onboarding as complete"""
     
-    if not user.email_verified and not user.phone_verified:
-        steps.append("verify_contact")
+    session = db.query(UserSession).filter(
+        UserSession.session_token == token
+    ).first()
     
-    if not user.family_id:
-        steps.append("family_setup")
+    if not session:
+        raise HTTPException(status_code=404, detail="Invalid onboarding token")
     
-    if not user.timezone:
-        steps.append("set_timezone")
+    user = db.query(User).filter(User.id == session.user_id).first()
+    user.is_active = True
+    db.commit()
     
-    return steps
+    return {
+        "success": True,
+        "message": f"Welcome aboard, {user.full_name}! 🎉",
+        "next_steps": [
+            "Try: 'Schedule therapy appointment for tomorrow at 2pm'",
+            "Try: 'What's on my schedule today?'",
+            "Try: 'Add a reminder to give medication at 8am'",
+            "Need help? Just say 'Help' or text HELP anytime!"
+        ]
+    }
