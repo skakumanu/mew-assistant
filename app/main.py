@@ -19,6 +19,7 @@ from .routers import (
     auth_router,
     calendar_router,
     mobile_router,
+    mobile_api_router,
     kid_router,
     parent_approval_router,
     voice_router
@@ -85,6 +86,7 @@ app.include_router(message_router)
 app.include_router(summary_router)
 app.include_router(calendar_router)
 app.include_router(mobile_router)
+app.include_router(mobile_api_router)  # Enhanced mobile API with widgets and shortcuts
 app.include_router(kid_router)  # Kid-friendly endpoints
 app.include_router(parent_approval_router)  # Parent approval workflow - CRITICAL for kid safety
 app.include_router(voice_router)  # Voice commands with multilingual support
