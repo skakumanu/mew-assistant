@@ -71,7 +71,8 @@ async def oauth_login(
         redirect_uri = str(request.url_for('oauth_callback', provider=provider))
     
     try:
-        auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
+        oauth_service = OAuthService()
+        auth_url = await oauth_service.get_authorization_url(provider, redirect_uri)
         return RedirectResponse(auth_url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OAuth initialization failed: {str(e)}")
@@ -96,7 +97,8 @@ async def oauth_callback(
     redirect_uri = str(request.url_for('oauth_callback', provider=provider))
     
     try:
-        result = await OAuthService.handle_callback(
+        oauth_service = OAuthService()
+        result = await oauth_service.handle_callback(
             provider=provider,
             code=code,
             redirect_uri=redirect_uri,
