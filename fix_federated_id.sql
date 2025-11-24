@@ -1,13 +1,25 @@
--- Fix federated_identities table to have auto-generated ID
-ALTER TABLE federated_identities ALTER COLUMN id SET DEFAULT nextval('federated_identities_id_seq');
-
--- Check if sequence exists, if not create it
-DO $$ 
+-- Drop primary key first if it exists
+DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'federated_identities_id_seq') THEN
-        CREATE SEQUENCE federated_identities_id_seq;
-        ALTER TABLE federated_identities ALTER COLUMN id SET DEFAULT nextval('federated_identities_id_seq');
-        -- Set sequence to start after current max id
-        PERFORM setval('federated_identities_id_seq', COALESCE((SELECT MAX(id) FROM federated_identities), 0) + 1, false);
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'federated_identities_pkey') THEN
+        ALTER TABLE federated_identities DROP CONSTRAINT federated_identities_pkey;
     END IF;
 END $$;
+
+-- Create a sequence for the ID
+CREATE SEQUENCE IF NOT EXISTS federated_identities_id_seq;
+
+-- Set the default value for id column
+ALTER TABLE federated_identities ALTER COLUMN id SET DEFAULT nextval('federated_identities_id_seq');
+
+-- Associate the sequence with the column
+ALTER SEQUENCE federated_identities_id_seq OWNED BY federated_identities.id;
+
+-- Update existing rows that have null id
+UPDATE federated_identities SET id = nextval('federated_identities_id_seq') WHERE id IS NULL;
+
+-- Now make it NOT NULL
+ALTER TABLE federated_identities ALTER COLUMN id SET NOT NULL;
+
+-- Add primary key
+ALTER TABLE federated_identities ADD PRIMARY KEY (id);
