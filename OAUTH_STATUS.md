@@ -1,5 +1,25 @@
 # OAuth Integration Status
 
+## ⚠️ Current Issue: App Not Responding
+
+**Problem**: The Azure Container App is timing out and not responding to HTTP requests (browser shows spinning wheel).
+
+**Root Cause Analysis**:
+- Cold start issue with minReplicas=0 (now fixed to minReplicas=1)
+- OAuth router had incorrect import paths (now fixed)
+- Missing BASE_URL configuration (now added)
+- Container may be crashlooping or stuck in startup
+
+**Recent Fixes Applied**:
+- ✅ Fixed OAuth router imports (`app.database.connection.get_db`)
+- ✅ Added BASE_URL to settings (defaults to localhost:8888)
+- ✅ Set Azure Container App minReplicas=1
+- ✅ Added BASE_URL environment variable to Azure deployment
+
+**Next Action Required**: Test locally first, then redeploy to Azure
+
+---
+
 ## ✅ Completed
 - OAuth web interface deployed at `/auth/oauth/login`
 - Google OAuth credentials configured in Azure Key Vault
