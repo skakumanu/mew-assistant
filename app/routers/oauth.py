@@ -134,7 +134,7 @@ async def oauth_login_page():
 async def google_authorize():
     """Initiate Google OAuth flow"""
     try:
-        with google_sso:
+        async with google_sso:
             return await google_sso.get_login_redirect()
     except Exception as e:
         logger.error(f"Google authorize error: {str(e)}", exc_info=True)
@@ -145,7 +145,7 @@ async def google_authorize():
 async def google_callback(request: Request, db: Session = Depends(get_db)):
     """Handle Google OAuth callback"""
     try:
-        with google_sso:
+        async with google_sso:
             user = await google_sso.verify_and_process(request)
         
         if not user:
@@ -200,7 +200,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 async def microsoft_authorize():
     """Initiate Microsoft OAuth flow"""
     try:
-        with microsoft_sso:
+        async with microsoft_sso:
             return await microsoft_sso.get_login_redirect()
     except Exception as e:
         logger.error(f"Microsoft authorize error: {str(e)}")
@@ -211,7 +211,7 @@ async def microsoft_authorize():
 async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
     """Handle Microsoft OAuth callback"""
     try:
-        with microsoft_sso:
+        async with microsoft_sso:
             user = await microsoft_sso.verify_and_process(request)
         
         if not user:
@@ -248,6 +248,18 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
                         }}, '*');
                     }}
                     localStorage.setItem('mew_token', '{jwt_token}');
+                    setTimeout(() => {{
+                        window.location.href = '/auth/oauth/login?success=true';
+                    }}, 2000);
+                </script>
+            </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
+        
+    except Exception as e:
+        logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
                     setTimeout(() => {{
                         window.location.href = '/auth/oauth/login?success=true';
                     }}, 2000);
