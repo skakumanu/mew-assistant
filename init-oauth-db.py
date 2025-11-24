@@ -18,10 +18,9 @@ def main():
     
     try:
         engine = create_engine(db_url)
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             # Make hashed_password nullable for OAuth users
             conn.execute(text("ALTER TABLE users ALTER COLUMN hashed_password DROP NOT NULL"))
-            conn.commit()
             print("✓ Database schema updated successfully")
             print("✓ hashed_password column is now nullable for OAuth users")
     except Exception as e:

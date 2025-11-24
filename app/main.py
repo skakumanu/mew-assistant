@@ -31,7 +31,7 @@ from .routers.voice_platforms import router as voice_platforms_router
 from .routers.oauth_simple import router as oauth_simple_router
 from .routers.onboarding import router as onboarding_router
 from .routers.ai_scheduler import router as ai_scheduler_router
-from .routers.oauth import router as oauth_router
+# OAuth router removed - using simple_oauth only
 from .database import Base
 from .middleware import register_exception_handlers, RequestIDMiddleware
 from .middleware.compliance import ComplianceMiddleware
@@ -103,7 +103,7 @@ app.include_router(voice_platforms_router)  # Multi-platform voice assistants (S
 app.include_router(webhooks_router)  # Webhook endpoints for external integrations
 app.include_router(backup_router)  # Cloud backup and restore - Azure integration
 app.include_router(ai_scheduler_router)  # AI-powered scheduling with conflict detection and optimization
-app.include_router(oauth_router)  # OAuth federated authentication (Google, Apple, Microsoft, Facebook)
+# Using simple_oauth router only - old oauth_router removed
 
 
 @app.get("/", tags=["health"])
