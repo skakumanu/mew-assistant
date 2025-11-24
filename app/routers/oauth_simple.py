@@ -215,7 +215,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             # Get user info
             userinfo_response = await client.get(
                 GOOGLE_CONFIG['userinfo_url'],
-                headers={'Authorization': f'Bearer {access_token'}
+                headers={'Authorization': f'Bearer {access_token}'}
             )
             
             if userinfo_response.status_code != 200:
