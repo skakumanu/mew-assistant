@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 import os
 
-router = APIRouter(prefix="/oauth", tags=["OAuth Web"])
+router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 
 @router.get("/login", response_class=HTMLResponse)
 async def oauth_login_page(request: Request):
