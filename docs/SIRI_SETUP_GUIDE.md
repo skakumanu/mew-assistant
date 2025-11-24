@@ -1,285 +1,167 @@
-# Siri Commands for Mew Assistant Setup
-## Step-by-Step Voice Commands for Admin Parent Account
+# 🎤 Siri Integration Setup Guide for Mew Assistant
 
-### Prerequisites
-- iOS device with Siri enabled
-- Mew Assistant app installed or web access configured
-- Siri Shortcuts app installed
+## Quick Setup for iPhone (3 Minutes)
+
+### Method 1: Manual Shortcut Creation (Recommended)
+
+Since Apple requires shortcuts to be manually created or shared via iCloud, follow these steps:
+
+#### Step 1: Get Your API URL
+Your Mew Assistant API: `https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net`
+
+#### Step 2: Create "Talk to Mew" Shortcut
+
+1. **Open Shortcuts App** on your iPhone
+2. **Tap "+" to create new shortcut**
+3. **Add Actions** in this order:
+
+   a. **Ask for Input**
+   - Question: "What would you like to schedule?"
+   - Input Type: Text
+   
+   b. **Get Contents of URL**
+   - URL: `https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/voice/siri/intent`
+   - Method: POST
+   - Headers:
+     - `Content-Type: application/json`
+   - Request Body: JSON
+     ```json
+     {
+       "text": "[Provided Input]",
+       "user_id": "YOUR_USER_ID"
+     }
+     ```
+   
+   c. **Get Dictionary from Input**
+   - Input: Contents of URL
+   
+   d. **Get Value for "response" from Dictionary**
+   
+   e. **Speak Text**
+   - Text: Dictionary Value
+
+4. **Name it**: "Talk to Mew"
+5. **Add to Home Screen** (optional)
+6. **Enable "Show in Share Sheet"**
+
+#### Step 3: Get Your User ID
+
+Run this command to get your user ID after logging in:
+
+```bash
+# Login first
+TOKEN=$(curl -s -X POST https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/federated/google \
+  -H "Content-Type: application/json" \
+  -d '{"token": "YOUR_GOOGLE_TOKEN"}' | jq -r '.access_token')
+
+# Get your user info
+curl -X GET https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/me \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Method 2: Direct URL Scheme (Simple Voice Commands)
+
+Create these shortcuts for specific commands:
+
+#### "Schedule with Mew"
+```
+Shortcut Actions:
+1. Ask for Input: "What do you want to schedule?"
+2. Open URL: mew://schedule?text=[Provided Input]
+```
+
+#### "Check My Schedule"
+```
+Shortcut Actions:
+1. Open URL: mew://summary
+2. Get Contents of URL: https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/mew/summary
+3. Speak Text: [Contents]
+```
+
+## Common Siri Commands
+
+Once set up, you can say:
+
+- **"Hey Siri, Talk to Mew"**
+  - Then: "Schedule dentist appointment for Tommy next Tuesday at 3pm"
+  
+- **"Hey Siri, Schedule with Mew"**
+  - Siri will ask what to schedule
+  
+- **"Hey Siri, Check My Schedule"**
+  - Get today's schedule summary
+
+## Authentication Setup
+
+### For Federated Login (Google/Microsoft):
+
+1. **First Time Setup via Web**:
+   - Go to: `https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/setup`
+   - Click "Sign in with Google" or "Sign in with Microsoft"
+   - Authorize calendar access
+   - Copy your API Token
+
+2. **Add Token to Shortcuts**:
+   - Edit your shortcut
+   - In the "Get Contents of URL" action
+   - Add Header: `Authorization: Bearer YOUR_TOKEN`
+
+## Advanced: Custom Siri Phrases
+
+You can create shortcuts for specific phrases:
+
+### "Add Therapy Session"
+```json
+{
+  "text": "Schedule therapy session for [Ask Each Time] on [Ask Each Time]",
+  "intent": "schedule",
+  "category": "therapy"
+}
+```
+
+### "What's Next Today"
+```json
+{
+  "intent": "next_event"
+}
+```
+
+### "Weekly Summary"
+```json
+{
+  "intent": "summary",
+  "period": "week"
+}
+```
+
+## Troubleshooting
+
+### "Siri says 'I can't help with that'"
+- Make sure you've created the shortcut first
+- Say the exact shortcut name: "Talk to Mew"
+
+### "Request Failed"
+- Check your internet connection
+- Verify the API URL is correct
+- Make sure your token hasn't expired
+
+### "No Response"
+- The API might be starting up (cold start)
+- Wait 10 seconds and try again
+
+## iOS Shortcuts Gallery Link
+
+I'll create a shareable link for you. For now, follow the manual setup above.
+
+**Want a video tutorial?** Let me know and I'll create one!
+
+## Next Steps
+
+1. ✅ Create "Talk to Mew" shortcut
+2. ✅ Test with simple command: "Schedule test event tomorrow"
+3. ✅ Add more specific shortcuts for common tasks
+4. ✅ Share shortcuts with family members
 
 ---
 
-## Phase 1: Initial Authentication (Federated Login)
-
-### Command 1: Open Mew Assistant
-**Say to Siri:**
-```
-"Hey Siri, open Mew Assistant"
-```
-or
-```
-"Hey Siri, go to mew-assistant-app.azurewebsites.net"
-```
-
-### Command 2: Login with Microsoft Account
-**Say to Siri:**
-```
-"Hey Siri, login to Mew with my Microsoft account"
-```
-
-**This will:**
-- Open the federated authentication flow
-- Redirect to Microsoft OAuth login
-- Authenticate you as skakumanu@hotmail.com (Admin role)
-- Return with authentication token
-
----
-
-## Phase 2: Calendar Integration Setup
-
-### Command 3: Connect Google Calendar
-**Say to Siri:**
-```
-"Hey Siri, connect my Google Calendar to Mew"
-```
-
-**This triggers:**
-- OAuth flow for Google Calendar API
-- Requests calendar read/write permissions
-- Links your Google Calendar to Mew Assistant
-
-### Command 4: Grant Calendar Permissions
-**Say to Siri:**
-```
-"Hey Siri, allow Mew to access my calendar"
-```
-
-**Permissions granted:**
-- Read calendar events
-- Create new events
-- Update existing events
-- Delete events
-- Access calendar metadata
-
----
-
-## Phase 3: Voice Command Configuration
-
-### Command 5: Enable Voice Scheduling
-**Say to Siri:**
-```
-"Hey Siri, enable voice commands for Mew scheduling"
-```
-
-### Command 6: Set Default Calendar
-**Say to Siri:**
-```
-"Hey Siri, set my Google Calendar as default for Mew"
-```
-
----
-
-## Phase 4: Test Voice Commands
-
-### Test Command 1: Create an Event
-**Say to Siri:**
-```
-"Hey Siri, tell Mew to schedule therapy session for tomorrow at 3 PM"
-```
-
-**Expected Response:**
-```
-"I've scheduled a therapy session for tomorrow at 3:00 PM. 
-The event has been added to your Google Calendar. 
-Would you like me to send a confirmation notification?"
-```
-
-### Test Command 2: Check Schedule
-**Say to Siri:**
-```
-"Hey Siri, ask Mew what's on my schedule today"
-```
-
-**Expected Response:**
-```
-"You have 3 events today:
-1. Speech therapy at 9:00 AM
-2. Lunch break at 12:00 PM  
-3. Occupational therapy at 2:30 PM
-Would you like more details?"
-```
-
-### Test Command 3: Reschedule an Event
-**Say to Siri:**
-```
-"Hey Siri, tell Mew to move therapy from 3 PM to 4 PM"
-```
-
-**Expected Response:**
-```
-"I found your therapy session at 3:00 PM. 
-I'll reschedule it to 4:00 PM. 
-Checking for conflicts... No conflicts found.
-Event updated successfully!"
-```
-
----
-
-## Complete Setup Commands (In Order)
-
-### Quick Setup Script
-Execute these commands in sequence for complete setup:
-
-```
-1. "Hey Siri, open Mew Assistant"
-2. "Hey Siri, login to Mew with my Microsoft account"
-   [Complete authentication in browser]
-3. "Hey Siri, connect my Google Calendar to Mew"
-   [Grant calendar permissions]
-4. "Hey Siri, enable voice commands for Mew"
-5. "Hey Siri, set Google Calendar as default"
-6. "Hey Siri, tell Mew my timezone is [Your Timezone]"
-7. "Hey Siri, ask Mew to confirm setup"
-```
-
----
-
-## Alternative: iOS Shortcuts Setup
-
-### Create Custom Siri Shortcut
-
-#### Shortcut 1: "Setup Mew Calendar"
-```
-1. Open Shortcuts app
-2. Create New Shortcut
-3. Add actions:
-   - URL: https://mew-assistant-app.azurewebsites.net/oauth/federated/microsoft
-   - Get Contents of URL (Method: GET)
-   - URL: https://mew-assistant-app.azurewebsites.net/calendar/connect
-   - Get Contents of URL (Method: POST with auth token)
-4. Name: "Setup Mew Calendar"
-5. Add to Siri: "Setup my Mew calendar"
-```
-
-#### Shortcut 2: "Mew Quick Schedule"
-```
-1. Open Shortcuts app
-2. Create New Shortcut
-3. Add actions:
-   - Ask for Input: "What would you like to schedule?"
-   - Set Variable: eventDetails
-   - URL: https://mew-assistant-app.azurewebsites.net/voice/command
-   - Get Contents of URL (Method: POST)
-     Body: {"text": [eventDetails], "channel": "siri"}
-   - Show Result
-4. Name: "Mew Quick Schedule"
-5. Add to Siri: "Schedule with Mew"
-```
-
----
-
-## Troubleshooting Voice Commands
-
-### If Siri Doesn't Recognize "Mew"
-Try these alternatives:
-- "Mew Assistant"
-- "My scheduling assistant"
-- "My family calendar app"
-
-### If Authentication Fails
-```
-"Hey Siri, reset Mew authentication"
-```
-Then retry login flow.
-
-### If Calendar Sync Fails
-```
-"Hey Siri, reconnect Mew to Google Calendar"
-```
-
----
-
-## Advanced Voice Commands
-
-### Family Management
-```
-"Hey Siri, tell Mew to add my daughter Sarah to my family"
-"Hey Siri, ask Mew to show Sarah's schedule"
-"Hey Siri, tell Mew to share my calendar with my spouse"
-```
-
-### Smart Scheduling
-```
-"Hey Siri, ask Mew to find time for therapy next week"
-"Hey Siri, tell Mew to avoid scheduling during lunch hours"
-"Hey Siri, ask Mew to suggest optimal therapy times"
-```
-
-### Conflict Management
-```
-"Hey Siri, ask Mew if I have any scheduling conflicts"
-"Hey Siri, tell Mew to resolve my calendar conflicts"
-"Hey Siri, ask Mew to prioritize therapy appointments"
-```
-
----
-
-## Security & Privacy
-
-### Voice Authentication
-For sensitive operations, Siri will request additional verification:
-```
-"Hey Siri, delete all my Mew calendar events"
-Response: "For security, please confirm by saying 'I authorize this action'"
-```
-
-### Data Access Control
-```
-"Hey Siri, show me what data Mew has access to"
-"Hey Siri, revoke Mew's calendar access"
-"Hey Siri, review Mew's privacy settings"
-```
-
----
-
-## Next Steps After Setup
-
-1. **Test Basic Commands**: Try creating, viewing, and modifying events
-2. **Set Up Family Members**: Add children and caregivers to your account
-3. **Configure Notifications**: Set up reminders for events
-4. **Explore AI Features**: Let Mew learn your scheduling patterns
-5. **Invite Family**: Share access with spouse or caregivers
-
----
-
-## Support
-
-If you encounter issues:
-```
-"Hey Siri, ask Mew for help"
-"Hey Siri, contact Mew support"
-```
-
-Or visit: https://mew-assistant-app.azurewebsites.net/docs
-
----
-
-## Quick Reference Card
-
-| Task | Siri Command |
-|------|--------------|
-| Login | "Hey Siri, login to Mew with Microsoft" |
-| Connect Calendar | "Hey Siri, connect Google Calendar to Mew" |
-| Create Event | "Hey Siri, tell Mew to schedule [event]" |
-| Check Schedule | "Hey Siri, ask Mew what's on my schedule" |
-| Reschedule | "Hey Siri, tell Mew to move [event]" |
-| Get Help | "Hey Siri, ask Mew for help" |
-
----
-
-**Pro Tip**: You can chain commands together:
-```
-"Hey Siri, tell Mew to schedule therapy tomorrow at 3 PM 
-and send a reminder 30 minutes before"
-```
-
-Mew will handle multi-step requests intelligently!
+**Need Help?** Open an issue on GitHub or contact support.
