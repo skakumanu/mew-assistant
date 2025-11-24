@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.orm import Session
 import os
 
-router = APIRouter(prefix="/oauth", tags=["OAuth Web"])
+from app.database.connection import get_db
+from app.services.oauth_service import OAuthService
+
+router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 
 @router.get("/login", response_class=HTMLResponse)
 async def oauth_login_page(request: Request):
@@ -207,6 +211,37 @@ async def oauth_login_page(request: Request):
 </html>
 """
     return HTMLResponse(content=html_content)
+
+# OAuth Provider Login Endpoints
+@router.get("/login/{provider}")
+async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = Depends(get_db)):
+    """Initiate OAuth flow for a provider"""
+    try:
+        oauth_service = OAuthService(db)
+        auth_url = await oauth_service.get_authorization_url(provider, redirect_uri)
+        return RedirectResponse(url=auth_url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
+
+@router.get("/callback/{provider}")
+async def oauth_callback(provider: str, code: str, state: str = None, db: Session = Depends(get_db)):
+    """Handle OAuth callback from provider"""
+    try:
+        oauth_service = OAuthService(db)
+        result = await oauth_service.handle_callback(provider, code, state)
+        
+        # Redirect to dashboard with token
+        response = RedirectResponse(url="/auth/oauth/dashboard")
+        response.set_cookie(
+            key="mew_token",
+            value=result["access_token"],
+            httponly=True,
+            secure=True,
+            samesite="lax"
+        )
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
