@@ -72,4 +72,3 @@ lingua-language-detector==2.0.2
 qrcode[pil]==8.0
 Pillow==11.0.0
 fastapi-sso==0.18.0
-psycopg2-binary==2.9.9
