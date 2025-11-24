@@ -71,3 +71,4 @@ lingua-language-detector==2.0.2
 # Onboarding and QR Code Generation
 qrcode[pil]==8.0
 Pillow==11.0.0
+fastapi-sso==1.1.0

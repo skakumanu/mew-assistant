@@ -1,195 +1,308 @@
-"""OAuth2/OIDC Authentication Router"""
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
+"""
+OAuth authentication router using fastapi-sso
+Proven, production-ready federated login implementation
+"""
+
+from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from fastapi_sso.sso.google import GoogleSSO
+from fastapi_sso.sso.microsoft import MicrosoftSSO
+import logging
 
-from app.database.connection import get_db
-from app.services.oauth_service import OAuthService
-from app.utils.auth import get_current_user
-from app.database.models import User
+from ..database.database import get_db
+from ..database.models import User, FederatedIdentity
+from ..services.auth_service import AuthService
+from ..utils.config import settings
 
-router = APIRouter(prefix="/auth", tags=["OAuth Authentication"])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/auth", tags=["OAuth"])
+
+# Initialize SSO providers
+google_sso = GoogleSSO(
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    redirect_uri=f"{settings.BASE_URL}/auth/google/callback",
+    allow_insecure_http=settings.ENVIRONMENT == "development"
+)
+
+microsoft_sso = MicrosoftSSO(
+    client_id=settings.MICROSOFT_CLIENT_ID,
+    client_secret=settings.MICROSOFT_CLIENT_SECRET,
+    redirect_uri=f"{settings.BASE_URL}/auth/microsoft/callback",
+    allow_insecure_http=settings.ENVIRONMENT == "development"
+)
 
 
-class OAuthLinkRequest(BaseModel):
-    """Request to link OAuth provider"""
-    provider: str
-    code: str
-    redirect_uri: str
-
-
-@router.get("/providers")
-async def get_available_providers():
-    """Get list of available OAuth providers"""
-    return {
-        "providers": [
-            {
-                "name": "google",
-                "display_name": "Google",
-                "icon": "google",
-                "scopes": ["openid", "email", "profile"]
-            },
-            {
-                "name": "microsoft",
-                "display_name": "Microsoft",
-                "icon": "microsoft",
-                "scopes": ["openid", "email", "profile"]
-            },
-            {
-                "name": "apple",
-                "display_name": "Apple",
-                "icon": "apple",
-                "scopes": ["name", "email"]
-            },
-            {
-                "name": "facebook",
-                "display_name": "Facebook",
-                "icon": "facebook",
-                "scopes": ["email", "public_profile"]
+@router.get("/oauth/login")
+async def oauth_login_page():
+    """OAuth login page"""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Mew Assistant - Login</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 20px;
             }
-        ]
-    }
+            .container {
+                background: white;
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                max-width: 400px;
+                width: 100%;
+                text-align: center;
+            }
+            h1 { color: #667eea; margin-bottom: 10px; font-size: 32px; }
+            .subtitle { color: #666; margin-bottom: 30px; }
+            .btn {
+                width: 100%;
+                padding: 15px;
+                margin: 10px 0;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+            }
+            .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+            .btn-google {
+                background: white;
+                color: #333;
+                border: 2px solid #ddd;
+            }
+            .btn-microsoft {
+                background: #00a4ef;
+                color: white;
+            }
+            .btn-apple {
+                background: #000;
+                color: white;
+            }
+            .logo { font-size: 64px; margin-bottom: 20px; }
+            .success { color: #4CAF50; margin-top: 20px; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="logo">🐱</div>
+            <h1>Mew Assistant</h1>
+            <p class="subtitle">Sign in to manage your family schedule</p>
+            
+            <a href="/auth/google/authorize" class="btn btn-google">
+                <span>Sign in with Google</span>
+            </a>
+            
+            <a href="/auth/microsoft/authorize" class="btn btn-microsoft">
+                <span>Sign in with Microsoft</span>
+            </a>
+            
+            <div id="success-message" style="display: none;" class="success">
+                ✓ Login successful! Redirecting...
+            </div>
+        </div>
+        
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') === 'true') {
+                document.getElementById('success-message').style.display = 'block';
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 
-@router.get("/login/{provider}")
-async def oauth_login(
-    provider: str,
-    request: Request,
-    redirect_uri: str = None
-):
-    """
-    Initiate OAuth login flow
-    
-    - **provider**: OAuth provider (google, microsoft, apple, facebook)
-    - **redirect_uri**: Optional custom redirect URI
-    """
-    if provider not in ['google', 'microsoft', 'apple', 'facebook']:
-        raise HTTPException(status_code=400, detail="Unsupported OAuth provider")
-    
-    if not redirect_uri:
-        redirect_uri = str(request.url_for('oauth_callback', provider=provider))
-    
+@router.get("/google/authorize")
+async def google_authorize():
+    """Initiate Google OAuth flow"""
     try:
-        auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
-        return RedirectResponse(auth_url)
+        with google_sso:
+            return await google_sso.get_login_redirect()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"OAuth initialization failed: {str(e)}")
+        logger.error(f"Google authorize error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Authorization failed: {str(e)}")
 
 
-@router.get("/callback/{provider}", name="oauth_callback")
-async def oauth_callback(
-    provider: str,
-    code: str,
-    request: Request,
-    db: Session = Depends(get_db),
-    state: str = None
-):
-    """
-    Handle OAuth callback
-    
-    This endpoint is called by the OAuth provider after user authorization
-    """
-    if provider not in ['google', 'microsoft', 'apple', 'facebook']:
-        raise HTTPException(status_code=400, detail="Unsupported OAuth provider")
-    
-    redirect_uri = str(request.url_for('oauth_callback', provider=provider))
-    
+@router.get("/google/callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle Google OAuth callback"""
     try:
-        result = await OAuthService.handle_callback(
-            provider=provider,
-            code=code,
-            redirect_uri=redirect_uri,
+        with google_sso:
+            user = await google_sso.verify_and_process(request)
+        
+        if not user:
+            raise HTTPException(status_code=400, detail="Failed to authenticate with Google")
+        
+        logger.info(f"Google user authenticated: {user.email}")
+        
+        # Process federated identity
+        federated_user = await process_federated_identity(
+            provider="google",
+            provider_user_id=user.id,
+            email=user.email,
+            full_name=user.display_name or user.email,
             db=db
         )
         
-        # In production, redirect to frontend with token in query params or set cookie
-        return {
-            "message": "Authentication successful",
-            **result
-        }
+        # Generate JWT token
+        auth_service = AuthService(db)
+        jwt_token = auth_service.create_access_token(data={"sub": federated_user.email})
         
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Return success page with token
+        html_content = f"""
+        <html>
+            <head><title>Login Successful</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                <h2 style="color: #4CAF50;">✓ Login Successful!</h2>
+                <p>Welcome, {federated_user.full_name}!</p>
+                <p>You can close this window and return to the app.</p>
+                <script>
+                    if (window.opener) {{
+                        window.opener.postMessage({{
+                            type: 'oauth_success',
+                            token: '{jwt_token}'
+                        }}, '*');
+                    }}
+                    localStorage.setItem('mew_token', '{jwt_token}');
+                    setTimeout(() => {{
+                        window.location.href = '/auth/oauth/login?success=true';
+                    }}, 2000);
+                </script>
+            </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
+        
     except Exception as e:
+        logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
-@router.post("/link")
-async def link_oauth_provider(
-    request: OAuthLinkRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Link an OAuth provider to current user account
-    
-    Requires authentication. Allows users to link multiple OAuth providers
-    to their account for convenient login.
-    """
-    if request.provider not in ['google', 'microsoft', 'apple', 'facebook']:
-        raise HTTPException(status_code=400, detail="Unsupported OAuth provider")
-    
+@router.get("/microsoft/authorize")
+async def microsoft_authorize():
+    """Initiate Microsoft OAuth flow"""
     try:
-        success = await OAuthService.link_provider(
-            user_id=current_user.id,
-            provider=request.provider,
-            code=request.code,
-            redirect_uri=request.redirect_uri,
+        with microsoft_sso:
+            return await microsoft_sso.get_login_redirect()
+    except Exception as e:
+        logger.error(f"Microsoft authorize error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Authorization failed: {str(e)}")
+
+
+@router.get("/microsoft/callback")
+async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
+    """Handle Microsoft OAuth callback"""
+    try:
+        with microsoft_sso:
+            user = await microsoft_sso.verify_and_process(request)
+        
+        if not user:
+            raise HTTPException(status_code=400, detail="Failed to authenticate with Microsoft")
+        
+        logger.info(f"Microsoft user authenticated: {user.email}")
+        
+        # Process federated identity
+        federated_user = await process_federated_identity(
+            provider="microsoft",
+            provider_user_id=user.id,
+            email=user.email,
+            full_name=user.display_name or user.email,
             db=db
         )
         
-        if success:
-            return {
-                "message": f"{request.provider.title()} account linked successfully",
-                "provider": request.provider
-            }
-        else:
-            raise HTTPException(status_code=500, detail="Failed to link provider")
-            
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Generate JWT token
+        auth_service = AuthService(db)
+        jwt_token = auth_service.create_access_token(data={"sub": federated_user.email})
+        
+        # Return success page
+        html_content = f"""
+        <html>
+            <head><title>Login Successful</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                <h2 style="color: #4CAF50;">✓ Login Successful!</h2>
+                <p>Welcome, {federated_user.full_name}!</p>
+                <p>You can close this window and return to the app.</p>
+                <script>
+                    if (window.opener) {{
+                        window.opener.postMessage({{
+                            type: 'oauth_success',
+                            token: '{jwt_token}'
+                        }}, '*');
+                    }}
+                    localStorage.setItem('mew_token', '{jwt_token}');
+                    setTimeout(() => {{
+                        window.location.href = '/auth/oauth/login?success=true';
+                    }}, 2000);
+                </script>
+            </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to link provider: {str(e)}")
+        logger.error(f"Microsoft OAuth callback error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
-@router.delete("/unlink/{provider}")
-async def unlink_oauth_provider(
+async def process_federated_identity(
     provider: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Unlink an OAuth provider from current user account
+    provider_user_id: str,
+    email: str,
+    full_name: str,
+    db: Session
+) -> User:
+    """Process federated identity and create/update user"""
     
-    Removes the link between user account and OAuth provider.
-    User can still login with password or other linked providers.
-    """
-    if provider not in ['google', 'microsoft', 'apple', 'facebook']:
-        raise HTTPException(status_code=400, detail="Unsupported OAuth provider")
+    # Check if federated identity exists
+    fed_identity = db.query(FederatedIdentity).filter(
+        FederatedIdentity.provider == provider,
+        FederatedIdentity.provider_user_id == provider_user_id
+    ).first()
     
-    success = OAuthService.unlink_provider(current_user.id, provider, db)
+    if fed_identity:
+        # Return existing user
+        return fed_identity.user
     
-    if success:
-        return {
-            "message": f"{provider.title()} account unlinked successfully",
-            "provider": provider
-        }
-    else:
-        raise HTTPException(status_code=404, detail=f"{provider.title()} account not linked")
-
-
-@router.get("/linked")
-async def get_linked_providers(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all OAuth providers linked to current user account
-    """
-    providers = OAuthService.get_linked_providers(current_user.id, db)
+    # Check if user exists with this email
+    user = db.query(User).filter(User.email == email).first()
     
-    return {
-        "user_id": current_user.id,
-        "linked_providers": providers
-    }
+    if not user:
+        # Create new user
+        user = User(
+            email=email,
+            full_name=full_name,
+            role="parent",  # Default role
+            is_active=True
+        )
+        db.add(user)
+        db.flush()
+    
+    # Create federated identity link
+    fed_identity = FederatedIdentity(
+        user_id=user.id,
+        provider=provider,
+        provider_user_id=provider_user_id
+    )
+    db.add(fed_identity)
+    db.commit()
+    db.refresh(user)
+    
+    return user
