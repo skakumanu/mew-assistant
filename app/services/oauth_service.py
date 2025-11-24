@@ -132,17 +132,27 @@ class OAuthService:
             # Check for errors
             if token_response.status_code != 200:
                 error_detail = token_response.text
+                print(f"Token exchange error: {error_detail}")
                 raise ValueError(f"Token exchange failed [{token_response.status_code}]: {error_detail}")
             
-            token = token_response.json()
+            try:
+                token = token_response.json()
+            except Exception as e:
+                print(f"Failed to parse token response as JSON: {token_response.text}")
+                raise ValueError(f"Invalid token response format: {str(e)}")
             
             # Log token response for debugging (remove in production)
+            print(f"Token response status: {token_response.status_code}")
             print(f"Token response keys: {list(token.keys())}")
-            print(f"Token response: {token}")
+            print(f"Token response (sanitized): {', '.join(token.keys())}")
             
             # Verify access token exists
             if 'access_token' not in token:
-                raise ValueError(f"No access_token in response. Full response: {token}")
+                print(f"Missing access_token. Full response: {token}")
+                # Check if it's an error response
+                if 'error' in token:
+                    raise ValueError(f"OAuth error: {token.get('error')} - {token.get('error_description', 'No description')}")
+                raise ValueError(f"No access_token in response. Response keys: {list(token.keys())}")
         
         # Get user info from provider
         if provider == 'facebook':
