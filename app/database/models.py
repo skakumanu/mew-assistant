@@ -108,7 +108,7 @@ class FederatedIdentity(Base):
     __tablename__ = "federated_identities"
     __table_args__ = {'extend_existing': True}
 
-    id = Column(String, primary_key=True)  # UUID
+    id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     provider = Column(String, nullable=False)  # google, apple, microsoft, etc.
     provider_user_id = Column(String, nullable=False)
