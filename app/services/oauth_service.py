@@ -56,7 +56,20 @@ class OAuthService:
     async def get_authorization_url(provider: str, redirect_uri: str) -> str:
         """Get OAuth authorization URL for provider"""
         client = oauth.create_client(provider)
-        return await client.authorize_redirect_url(redirect_uri)
+        
+        # Generate authorization URL with redirect_uri
+        metadata = await client.load_server_metadata()
+        params = {
+            'client_id': client.client_id,
+            'redirect_uri': redirect_uri,
+            'response_type': 'code',
+            'scope': ' '.join(client.client_kwargs.get('scope', '').split()),
+        }
+        
+        # Build authorization URL
+        auth_url = metadata['authorization_endpoint']
+        query_string = '&'.join([f'{k}={v}' for k, v in params.items()])
+        return f"{auth_url}?{query_string}"
     
     @staticmethod
     async def handle_callback(
@@ -72,7 +85,19 @@ class OAuthService:
         client = oauth.create_client(provider)
         
         # Exchange code for token
-        token = await client.authorize_access_token(code=code, redirect_uri=redirect_uri)
+        metadata = await client.load_server_metadata()
+        async with httpx.AsyncClient() as http_client:
+            token_response = await http_client.post(
+                metadata['token_endpoint'],
+                data={
+                    'grant_type': 'authorization_code',
+                    'code': code,
+                    'redirect_uri': redirect_uri,
+                    'client_id': client.client_id,
+                    'client_secret': client.client_secret,
+                }
+            )
+            token = token_response.json()
         
         # Get user info from provider
         if provider == 'facebook':
@@ -83,7 +108,13 @@ class OAuthService:
                 )
                 user_info = resp.json()
         else:
-            user_info = token.get('userinfo') or await client.userinfo(token=token)
+            # For OIDC providers, get userinfo from userinfo endpoint
+            async with httpx.AsyncClient() as http_client:
+                resp = await http_client.get(
+                    metadata['userinfo_endpoint'],
+                    headers={'Authorization': f"Bearer {token['access_token']}"}
+                )
+                user_info = resp.json()
         
         # Extract standard fields
         email = user_info.get('email')
