@@ -217,8 +217,7 @@ async def oauth_login_page(request: Request):
 async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = Depends(get_db)):
     """Initiate OAuth flow for a provider"""
     try:
-        oauth_service = OAuthService(db)
-        auth_url = await oauth_service.get_authorization_url(provider, redirect_uri)
+        auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
         return RedirectResponse(url=auth_url)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
@@ -227,8 +226,7 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
 async def oauth_callback(provider: str, code: str, state: str = None, db: Session = Depends(get_db)):
     """Handle OAuth callback from provider"""
     try:
-        oauth_service = OAuthService(db)
-        result = await oauth_service.handle_callback(provider, code, state)
+        result = await OAuthService.handle_callback(provider, code, state, db)
         
         # Redirect to dashboard with token
         response = RedirectResponse(url="/auth/oauth/dashboard")

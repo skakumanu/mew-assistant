@@ -26,12 +26,18 @@ if DATABASE_URL.startswith('sqlite'):
         echo=False  # Set to True for SQL query debugging
     )
 else:
+    # Azure PostgreSQL requires SSL
+    connect_args = {}
+    if "azure" in DATABASE_URL or "postgres.database.azure.com" in DATABASE_URL:
+        connect_args = {"sslmode": "require"}
+    
     engine = create_engine(
         DATABASE_URL,
         pool_size=10,
         max_overflow=20,
         pool_pre_ping=True,  # Verify connections before using them
-        echo=False  # Set to True for SQL query debugging
+        echo=False,  # Set to True for SQL query debugging
+        connect_args=connect_args
     )
 
 # Session factory
