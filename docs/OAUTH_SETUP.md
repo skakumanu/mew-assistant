@@ -36,13 +36,79 @@ az keyvault secret set --vault-name mew-keyvault --name "MICROSOFT-CLIENT-ID" --
 az keyvault secret set --vault-name mew-keyvault --name "MICROSOFT-CLIENT-SECRET" --value "your-client-secret"
 ```
 
-## Apple OAuth Setup
+## Apple OAuth Setup (Sign in with Apple)
+
+Apple OAuth uses a different flow than Google/Microsoft. Here's the detailed setup:
+
+### Step 1: Apple Developer Account Setup
 
 1. Go to [Apple Developer](https://developer.apple.com/account/)
-2. Create a new App ID or use existing
-3. Enable "Sign in with Apple"
-4. Create Service ID and configure return URLs
-5. Generate private key
+2. Navigate to **Certificates, Identifiers & Profiles**
+
+### Step 2: Create App ID
+
+1. Go to **Identifiers** → Click **+** → Select **App IDs**
+2. Select **App** → Continue
+3. Fill in:
+   - Description: `Mew Assistant`
+   - Bundle ID: `com.mewassistant.app` (or your domain)
+4. Enable **Sign in with Apple** capability
+5. Click **Continue** → **Register**
+
+### Step 3: Create Services ID
+
+1. Go to **Identifiers** → Click **+** → Select **Services IDs**
+2. Fill in:
+   - Description: `Mew Assistant Web`
+   - Identifier: `com.mewassistant.service`
+3. Enable **Sign in with Apple**
+4. Click **Configure** next to Sign in with Apple:
+   - **Primary App ID**: Select the App ID created above
+   - **Web Domain**: Your production domain (e.g., `mew-assistant-dev.azurecontainerapps.io`)
+   - **Return URLs**: 
+     - `https://mew-assistant-dev.azurecontainerapps.io/auth/oauth/callback/apple`
+     - `http://localhost:8888/auth/oauth/callback/apple` (for testing)
+5. Click **Save** → **Continue** → **Register**
+
+### Step 4: Create Private Key
+
+1. Go to **Keys** → Click **+**
+2. Fill in:
+   - Key Name: `Mew Assistant Sign in with Apple Key`
+3. Enable **Sign in with Apple**
+4. Click **Configure** → Select your Primary App ID
+5. Click **Save** → **Continue** → **Register**
+6. **Download the .p8 key file** (you can only download this once!)
+7. Note the **Key ID** shown on the page
+
+### Step 5: Get Your Team ID
+
+1. Go to **Membership** in the left sidebar
+2. Copy your **Team ID** (10-character string)
+
+### Step 6: Add to Azure Key Vault
+
+```bash
+# Service ID (Client ID)
+az keyvault secret set --vault-name mew-keyvault --name "APPLE-CLIENT-ID" --value "com.mewassistant.service"
+
+# Team ID
+az keyvault secret set --vault-name mew-keyvault --name "APPLE-TEAM-ID" --value "YOUR_TEAM_ID"
+
+# Key ID
+az keyvault secret set --vault-name mew-keyvault --name "APPLE-KEY-ID" --value "YOUR_KEY_ID"
+
+# Private Key (upload the .p8 file content)
+az keyvault secret set --vault-name mew-keyvault --name "APPLE-PRIVATE-KEY" --file "path/to/AuthKey_KEYID.p8"
+```
+
+### Important Apple OAuth Notes
+
+- Apple OAuth requires JWT-based authentication (not client secret)
+- The private key (.p8 file) must be kept secure
+- Apple requires HTTPS for production (HTTP only allowed for localhost)
+- User email may be provided only on first sign-in
+- Apple supports "Hide My Email" feature - handle both real and proxy emails
 
 ## Test OAuth Locally
 

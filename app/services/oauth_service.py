@@ -4,7 +4,8 @@ from authlib.jose import jwt
 from sqlalchemy.orm import Session
 from typing import Optional, Dict
 import httpx
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 from app.database.models import User, OAuthProvider
 from app.utils.auth import create_access_token
@@ -12,6 +13,27 @@ from app.utils.config import settings
 
 # Initialize OAuth client
 oauth = OAuth()
+
+def generate_apple_client_secret():
+    """Generate Apple client secret JWT"""
+    if not all([settings.APPLE_TEAM_ID, settings.APPLE_KEY_ID, settings.APPLE_PRIVATE_KEY]):
+        return None
+    
+    headers = {
+        'kid': settings.APPLE_KEY_ID,
+        'alg': 'ES256'
+    }
+    
+    payload = {
+        'iss': settings.APPLE_TEAM_ID,
+        'iat': int(time.time()),
+        'exp': int(time.time()) + 86400 * 180,  # 6 months
+        'aud': 'https://appleid.apple.com',
+        'sub': settings.APPLE_CLIENT_ID
+    }
+    
+    client_secret = jwt.encode(headers, payload, settings.APPLE_PRIVATE_KEY)
+    return client_secret.decode('utf-8') if isinstance(client_secret, bytes) else client_secret
 
 # Register OAuth providers
 oauth.register(
@@ -30,13 +52,20 @@ oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-oauth.register(
-    name='apple',
-    client_id=settings.APPLE_CLIENT_ID,
-    client_secret=settings.APPLE_CLIENT_SECRET,
-    server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'name email'}
-)
+# Apple OAuth requires dynamic client secret generation
+if settings.APPLE_CLIENT_ID:
+    apple_client_secret = generate_apple_client_secret()
+    if apple_client_secret:
+        oauth.register(
+            name='apple',
+            client_id=settings.APPLE_CLIENT_ID,
+            client_secret=apple_client_secret,
+            server_metadata_url='https://appleid.apple.com/.well-known/openid-configuration',
+            client_kwargs={
+                'scope': 'name email',
+                'response_mode': 'form_post'  # Apple requires form_post
+            }
+        )
 
 oauth.register(
     name='facebook',
