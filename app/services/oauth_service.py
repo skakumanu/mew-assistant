@@ -126,7 +126,17 @@ class OAuthService:
                     'client_secret': client.client_secret,
                 }
             )
+            
+            # Check for errors
+            if token_response.status_code != 200:
+                error_detail = token_response.text
+                raise ValueError(f"Token exchange failed: {error_detail}")
+            
             token = token_response.json()
+            
+            # Verify access token exists
+            if 'access_token' not in token:
+                raise ValueError(f"No access_token in response. Got: {list(token.keys())}")
         
         # Get user info from provider
         if provider == 'facebook':
@@ -135,6 +145,8 @@ class OAuthService:
                     'https://graph.facebook.com/me',
                     params={'fields': 'id,name,email', 'access_token': token['access_token']}
                 )
+                if resp.status_code != 200:
+                    raise ValueError(f"Failed to get user info: {resp.text}")
                 user_info = resp.json()
         else:
             # For OIDC providers, get userinfo from userinfo endpoint
@@ -143,6 +155,8 @@ class OAuthService:
                     metadata['userinfo_endpoint'],
                     headers={'Authorization': f"Bearer {token['access_token']}"}
                 )
+                if resp.status_code != 200:
+                    raise ValueError(f"Failed to get user info: {resp.text}")
                 user_info = resp.json()
         
         # Extract standard fields
