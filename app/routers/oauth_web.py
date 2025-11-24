@@ -187,17 +187,17 @@ async def oauth_login_page(request: Request):
         
         async function loginWithGoogle() {
             showStatus('Opening Google Sign-In...');
-            window.location.href = `${API_URL}/auth/google/authorize`;
+            window.location.href = `${API_URL}/auth/oauth/login/google`;
         }
         
         async function loginWithApple() {
             showStatus('Opening Apple Sign-In...');
-            window.location.href = `${API_URL}/auth/apple/authorize`;
+            window.location.href = `${API_URL}/auth/oauth/login/apple`;
         }
         
         async function loginWithMicrosoft() {
             showStatus('Opening Microsoft Sign-In...');
-            window.location.href = `${API_URL}/auth/microsoft/authorize`;
+            window.location.href = `${API_URL}/auth/oauth/login/microsoft`;
         }
     </script>
 </body>
