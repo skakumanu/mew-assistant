@@ -9,7 +9,7 @@ from app.services.oauth_service import OAuthService
 from app.utils.auth import get_current_user
 from app.database.models import User
 
-router = APIRouter(prefix="/auth/oauth", tags=["OAuth Authentication"])
+router = APIRouter(prefix="/auth", tags=["OAuth Authentication"])
 
 
 class OAuthLinkRequest(BaseModel):

@@ -64,9 +64,7 @@
 
         function loginWith(provider) {
             showStatus(`Redirecting to ${provider} login...`);
-            // In production, this would redirect to OAuth provider
-            // For testing, we'll simulate the flow
-            window.location.href = `${API_BASE}/auth/federated/${provider}/authorize`;
+            window.location.href = `${API_BASE}/auth/oauth/login/${provider}`;
         }
 
         // Check if we have a code in the URL (OAuth callback)
