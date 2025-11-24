@@ -28,6 +28,7 @@ from .routers import (
 from .routers.webhooks import router as webhooks_router
 from .routers.backup import router as backup_router
 from .routers.voice_platforms import router as voice_platforms_router
+from .routers.oauth_simple import router as oauth_simple_router
 from .routers.onboarding import router as onboarding_router
 from .routers.ai_scheduler import router as ai_scheduler_router
 from .routers.oauth import router as oauth_router
@@ -88,6 +89,7 @@ register_exception_handlers(app)
 app.include_router(onboarding_router)  # Easy registration - ALL channels
 app.include_router(auth_router)  # Authentication first
 app.include_router(oauth_web.router)  # OAuth web interface for mobile
+app.include_router(oauth_simple_router)  # Simple, bulletproof OAuth implementation
 app.include_router(session_router)
 app.include_router(message_router)
 app.include_router(summary_router)
