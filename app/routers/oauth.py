@@ -260,18 +260,6 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
-                    setTimeout(() => {{
-                        window.location.href = '/auth/oauth/login?success=true';
-                    }}, 2000);
-                </script>
-            </body>
-        </html>
-        """
-        return HTMLResponse(content=html_content)
-        
-    except Exception as e:
-        logger.error(f"Microsoft OAuth callback error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
 async def process_federated_identity(
