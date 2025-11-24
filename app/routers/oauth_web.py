@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 import os
 
-router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
+router = APIRouter(prefix="/oauth", tags=["OAuth Web"])
 
 @router.get("/login", response_class=HTMLResponse)
 async def oauth_login_page(request: Request):
@@ -187,17 +187,20 @@ async def oauth_login_page(request: Request):
         
         async function loginWithGoogle() {
             showStatus('Opening Google Sign-In...');
-            window.location.href = `${API_URL}/auth/oauth/login/google`;
+            const redirectUri = `${API_URL}/auth/oauth/callback/google`;
+            window.location.href = `${API_URL}/auth/oauth/login/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
         }
         
         async function loginWithApple() {
             showStatus('Opening Apple Sign-In...');
-            window.location.href = `${API_URL}/auth/oauth/login/apple`;
+            const redirectUri = `${API_URL}/auth/oauth/callback/apple`;
+            window.location.href = `${API_URL}/auth/oauth/login/apple?redirect_uri=${encodeURIComponent(redirectUri)}`;
         }
         
         async function loginWithMicrosoft() {
             showStatus('Opening Microsoft Sign-In...');
-            window.location.href = `${API_URL}/auth/oauth/login/microsoft`;
+            const redirectUri = `${API_URL}/auth/oauth/callback/microsoft`;
+            window.location.href = `${API_URL}/auth/oauth/login/microsoft?redirect_uri=${encodeURIComponent(redirectUri)}`;
         }
     </script>
 </body>
