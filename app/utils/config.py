@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "Mew Assistant"
     APP_VERSION: str = "1.0.0"
+    ENVIRONMENT: str = "production"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     API_HOST: str = "0.0.0.0"
