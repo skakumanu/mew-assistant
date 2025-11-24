@@ -1,132 +1,151 @@
 # Federated Authentication Setup Guide
 
-## Overview
-Mew Assistant now supports OAuth 2.0 federated authentication with Google, Microsoft, and Apple accounts.
+## ✅ Completed Steps (2025-11-24)
 
-## Current Status
-✅ **Deployed to Azure**: https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net
-✅ **Container Image Built**: Latest code pushed to Azure Container Registry
-✅ **OAuth Endpoints Ready**: All federated auth routes configured
+1. **Azure Key Vault Configuration**
+   - ✅ Stored Google OAuth Client ID in Key Vault
+   - ✅ Stored Google OAuth Client Secret in Key Vault
+   - ✅ Enabled system-assigned managed identity on Container App
+   - ✅ Granted Key Vault access to Container App identity
 
-## Testing the OAuth Flow
+2. **Container App Configuration**
+   - ✅ OAuth secrets linked from Key Vault  
+   - ✅ Environment variables configured
+   - ✅ Redirect URI configured: `https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/callback`
 
-### Option 1: Using the Test HTML Page
-1. Open `oauth-test.html` in your browser
-2. Click on any OAuth provider button
-3. Complete the OAuth flow
-4. Your token will be displayed and stored
+## 🚀 Your App URLs
 
-### Option 2: Manual Testing via cURL
+- **OAuth Login Page**: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/login
+- **API Documentation**: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/docs
+- **Health Check**: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/health
 
-**Step 1: Get Authorization URL**
+## 🔧 REQUIRED: Update Google Cloud Console
+
+Before OAuth will work, you MUST add the redirect URI to your Google OAuth client:
+
+### Step-by-Step Instructions
+
+1. **Go to Google Cloud Console**
+   - Visit: https://console.cloud.google.com/
+   - Select your project
+
+2. **Navigate to OAuth Settings**
+   - Go to **APIs & Services** → **Credentials**
+   - Find client ID: `321461422476-sgt4knrr7movtjk2djdpt5bom4q90qfk.apps.googleusercontent.com`
+
+3. **Add Redirect URI**
+   - Click **Edit** on your OAuth 2.0 Client
+   - Under **Authorized redirect URIs**, add:
+   ```
+   https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/callback
+   ```
+   - Click **Save**
+
+4. **Test OAuth Login**
+   - Open: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/login
+   - Click "Sign in with Google"
+   - Complete the sign-in process
+
+## 📱 Using from iPhone
+
+### Browser Method (Simplest)
+1. Open Safari on your iPhone
+2. Go to: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/login
+3. Tap "Sign in with Google"
+4. Authorize the app
+5. You'll receive your auth token
+
+### Siri Shortcut (After OAuth is Working)
+We'll create an iOS Shortcut once OAuth is confirmed working.
+
+## 🔍 Troubleshooting
+
+### Check if App is Running
 ```bash
-curl -s https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/federated/google/authorize | jq
+curl https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/health
 ```
 
-**Step 2: Visit the URL in your browser and authorize**
-
-**Step 3: Copy the code from redirect URL and exchange it:**
+### View Container Logs
 ```bash
-curl -X POST https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/federated/google/callback \
-  -H "Content-Type: application/json" \
-  -d '{"code": "YOUR_CODE_HERE"}' | jq
+az containerapp logs show \
+  --name mew-assistant-dev \
+  --resource-group mew-assistant-dev-rg \
+  --tail 100 \
+  --follow
 ```
 
-**Step 4: Use the token:**
+### Verify Environment Variables
 ```bash
-TOKEN="your_token_here"
-curl -H "Authorization: Bearer $TOKEN" \
-  https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/me | jq
+az containerapp show \
+  --name mew-assistant-dev \
+  --resource-group mew-assistant-dev-rg \
+  --query "properties.template.containers[0].env" \
+  --output table
 ```
 
-## Required OAuth Credentials
+### Common Issues
 
-To use federated authentication, you need to configure these environment variables in Azure:
+**"redirect_uri_mismatch" error**
+- The redirect URI in Google Console doesn't match exactly
+- Make sure it's: `https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/callback`
+- No trailing slash, exact match required
 
-### Google OAuth
-- `GOOGLE_CLIENT_ID`: Your Google OAuth client ID
-- `GOOGLE_CLIENT_SECRET`: Your Google OAuth client secret
-- Redirect URI: `https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/federated/google/callback`
+**"Not Found" error**
+- Container App may still be deploying
+- Wait 1-2 minutes and try again
+- Check logs with command above
 
-### Microsoft OAuth
-- `MICROSOFT_CLIENT_ID`: Your Azure AD app client ID
-- `MICROSOFT_CLIENT_SECRET`: Your Azure AD app client secret
-- Redirect URI: `https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/federated/microsoft/callback`
-
-### Apple OAuth
-- `APPLE_CLIENT_ID`: Your Apple Service ID
-- `APPLE_TEAM_ID`: Your Apple Team ID
-- `APPLE_KEY_ID`: Your Apple Key ID
-- `APPLE_PRIVATE_KEY`: Your Apple private key (PEM format)
-- Redirect URI: `https://mew-app-gyfre9f3gtgebjh9.eastus-01.azurewebsites.net/auth/federated/apple/callback`
-
-## Setting Up OAuth Providers
-
-### Google Cloud Console
-1. Go to https://console.cloud.google.com/
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI
-6. Copy client ID and secret to Azure Key Vault
-
-### Microsoft Azure Portal
-1. Go to https://portal.azure.com/
-2. Navigate to Azure Active Directory > App registrations
-3. Create new registration
-4. Add redirect URI
-5. Create client secret
-6. Copy application (client) ID and secret to Azure Key Vault
-
-### Apple Developer Portal
-1. Go to https://developer.apple.com/
-2. Create a Service ID
-3. Configure Sign in with Apple
-4. Create a private key
-5. Add all credentials to Azure Key Vault
-
-## Updating Azure Configuration
-
+**"Invalid credentials" error**  
+- Secrets may not have loaded from Key Vault
+- Restart the container app:
 ```bash
-# Set OAuth credentials in Azure Key Vault
-az keyvault secret set --vault-name mew-assistant-dev-kv \
-  --name google-client-id --value "YOUR_GOOGLE_CLIENT_ID"
-
-az keyvault secret set --vault-name mew-assistant-dev-kv \
-  --name google-client-secret --value "YOUR_GOOGLE_CLIENT_SECRET"
-
-# Repeat for Microsoft and Apple credentials
+az containerapp revision restart \
+  --name mew-assistant-dev \
+  --resource-group mew-assistant-dev-rg
 ```
 
-## Your Admin Accounts
+## 📋 Next Steps
 
-### Superuser (God Rights)
-- Email: skakumanu@gmail.com
-- Provider: Google OAuth
-- Role: superuser
-- Permissions: Full system access
+After Google OAuth is working:
 
-### Admin User
-- Email: skakumanu@hotmail.com
-- Provider: Microsoft OAuth
-- Role: admin
-- Permissions: Administrative access
+1. **Set up Microsoft OAuth**
+   - Create app in Azure AD / Microsoft Entra
+   - Add client ID/secret to Key Vault
+   - Update container app configuration
 
-## iPhone Siri Integration
+2. **Set up Apple Sign In**
+   - Register with Apple Developer
+   - Configure App ID and Services ID
+   - Add credentials to Key Vault
 
-See `SIRI_SETUP_GUIDE.md` for complete instructions on setting up Siri Shortcuts with OAuth.
+3. **Create iOS Shortcuts**
+   - Build Siri voice commands
+   - Generate QR codes for easy installation
+   - Test "Hey Siri, check my Mew schedule"
 
-## Next Steps
+4. **Configure Google Calendar Access**
+   - Enable Google Calendar API
+   - Request calendar scopes during OAuth
+   - Sync events with Mew Assistant
 
-1. **Configure OAuth Providers**: Set up credentials in Google, Microsoft, and Apple developer consoles
-2. **Update Azure Secrets**: Add all OAuth credentials to Azure Key Vault
-3. **Test OAuth Flow**: Use the test page or cURL commands
-4. **Set up Siri**: Follow the Siri setup guide
-5. **Add Calendar Integration**: Connect Google/Apple calendars
+## 🔐 Security Notes
 
-## Support
+- ✅ All OAuth secrets stored in Azure Key Vault (never in code)
+- ✅ Container App uses managed identity for Key Vault access
+- ✅ All traffic encrypted with HTTPS
+- ✅ JWT tokens expire after configured duration
+- ✅ Refresh tokens rotated on each use
 
-For issues or questions, check the logs:
-```bash
-az containerapp logs show --name mew-app --resource-group mew-assistant-dev-rg
-```
+## 📞 Get Help
+
+If you need assistance:
+1. Check the troubleshooting section above
+2. Review container logs for error messages
+3. Verify Google Cloud Console settings match exactly
+4. Ensure OAuth client is enabled and active
+
+## 📚 Additional Resources
+
+- [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2)
+- [Azure Key Vault Best Practices](https://learn.microsoft.com/en-us/azure/key-vault/general/best-practices)
+- [Azure Container Apps Documentation](https://learn.microsoft.com/en-us/azure/container-apps/)
