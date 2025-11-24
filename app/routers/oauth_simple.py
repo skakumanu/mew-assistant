@@ -239,7 +239,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             user = User(
                 email=email,
                 full_name=user_info.get('name', email.split('@')[0]),
-                role='parent',
+                role='PARENT',
                 is_active=True
             )
             db.add(user)
@@ -470,7 +470,7 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
             user = User(
                 email=email,
                 full_name=user_info.get('displayName', email.split('@')[0]),
-                role='parent',
+                role='PARENT',
                 is_active=True
             )
             db.add(user)
