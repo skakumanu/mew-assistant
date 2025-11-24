@@ -253,6 +253,8 @@ async def google_callback(request: Request, code: str = None, error: str = None,
                 email=email
             )
             db.add(fed_identity)
+            db.flush()
+            db.refresh(fed_identity)
             db.commit()
             logger.info(f"Created new user: {email}")
         else:
@@ -270,6 +272,8 @@ async def google_callback(request: Request, code: str = None, error: str = None,
                     email=email
                 )
                 db.add(fed_identity)
+                db.flush()
+                db.refresh(fed_identity)
                 db.commit()
             
             logger.info(f"User logged in: {email}")
