@@ -14,8 +14,8 @@ from urllib.parse import urlencode, parse_qs
 
 from ..database.connection import get_db
 from ..database.models import User, FederatedIdentity
-from ..services.auth_service import AuthService
 from ..utils.config import settings
+from ..utils.auth import create_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -279,8 +279,9 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             logger.info(f"User logged in: {email}")
         
         # Generate JWT token
-        auth_service = AuthService(db)
-        jwt_token = auth_service.create_access_token({"sub": str(user.id)})
+        # auth_service = AuthService(db)
+        token_data = {"sub": str(user.id), "email": user.email, "role": user.role}
+        jwt_token = create_access_token(token_data)
         
         # Return success page with token
         html_content = f"""
@@ -505,8 +506,9 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
             logger.info(f"User logged in: {email}")
         
         # Generate JWT token
-        auth_service = AuthService(db)
-        jwt_token = auth_service.create_access_token({"sub": str(user.id)})
+        # auth_service = AuthService(db)
+        token_data = {"sub": str(user.id), "email": user.email, "role": user.role}
+        jwt_token = create_access_token(token_data)
         
         # Return success page with token
         html_content = f"""
