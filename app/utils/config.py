@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     FACEBOOK_CLIENT_ID: Optional[str] = None
     FACEBOOK_CLIENT_SECRET: Optional[str] = None
     OAUTH_REDIRECT_URL: Optional[str] = None
+    BASE_URL: str = "http://localhost:8888"
     
     # Application
     APP_NAME: str = "Mew Assistant"

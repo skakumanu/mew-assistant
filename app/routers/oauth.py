@@ -10,7 +10,7 @@ from fastapi_sso.sso.google import GoogleSSO
 from fastapi_sso.sso.microsoft import MicrosoftSSO
 import logging
 
-from ..database.database import get_db
+from ..database.connection import get_db
 from ..database.models import User, FederatedIdentity
 from ..services.auth_service import AuthService
 from ..utils.config import settings
