@@ -84,6 +84,8 @@ class OAuthService:
     @staticmethod
     async def get_authorization_url(provider: str, redirect_uri: str) -> str:
         """Get OAuth authorization URL for provider"""
+        from urllib.parse import urlencode
+        
         client = oauth.create_client(provider)
         
         # Generate authorization URL with redirect_uri
@@ -95,9 +97,9 @@ class OAuthService:
             'scope': ' '.join(client.client_kwargs.get('scope', '').split()),
         }
         
-        # Build authorization URL
+        # Build authorization URL with proper URL encoding
         auth_url = metadata['authorization_endpoint']
-        query_string = '&'.join([f'{k}={v}' for k, v in params.items()])
+        query_string = urlencode(params)
         return f"{auth_url}?{query_string}"
     
     @staticmethod
@@ -130,13 +132,17 @@ class OAuthService:
             # Check for errors
             if token_response.status_code != 200:
                 error_detail = token_response.text
-                raise ValueError(f"Token exchange failed: {error_detail}")
+                raise ValueError(f"Token exchange failed [{token_response.status_code}]: {error_detail}")
             
             token = token_response.json()
             
+            # Log token response for debugging (remove in production)
+            print(f"Token response keys: {list(token.keys())}")
+            print(f"Token response: {token}")
+            
             # Verify access token exists
             if 'access_token' not in token:
-                raise ValueError(f"No access_token in response. Got: {list(token.keys())}")
+                raise ValueError(f"No access_token in response. Full response: {token}")
         
         # Get user info from provider
         if provider == 'facebook':
