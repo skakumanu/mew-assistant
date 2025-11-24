@@ -191,7 +191,7 @@ class OAuthService:
             user = User(
                 email=email,
                 full_name=full_name,
-                role='parent',
+                role='PARENT',
                 is_active=True,
                 email_verified=True,  # OAuth providers verify email
                 created_at=datetime.utcnow()
