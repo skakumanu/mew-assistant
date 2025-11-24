@@ -22,7 +22,8 @@ from .routers import (
     mobile_api_router,
     kid_router,
     parent_approval_router,
-    voice_router
+    voice_router,
+    oauth_web
 )
 from .routers.webhooks import router as webhooks_router
 from .routers.backup import router as backup_router
@@ -86,6 +87,7 @@ register_exception_handlers(app)
 # Include routers
 app.include_router(onboarding_router)  # Easy registration - ALL channels
 app.include_router(auth_router)  # Authentication first
+app.include_router(oauth_web.router)  # OAuth web interface for mobile
 app.include_router(session_router)
 app.include_router(message_router)
 app.include_router(summary_router)
