@@ -14,7 +14,7 @@ Mew Assistant supports federated authentication allowing users to sign in with t
 
 1. **Visit the Mew Assistant Web App**
    ```
-   https://mew-assistant-app.azurecontainerapps.io
+   https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
    ```
 
 2. **Click "Sign In" or "Get Started"**
@@ -123,13 +123,13 @@ All federated authentication uses industry-standard OAuth 2.0 protocol, ensuring
 
 ### View Connected Accounts
 ```bash
-curl -X GET https://mew-assistant-app.azurecontainerapps.io/auth/oauth/linked \
+curl -X GET https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/linked \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### Unlink a Provider
 ```bash
-curl -X POST https://mew-assistant-app.azurecontainerapps.io/auth/oauth/unlink \
+curl -X POST https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/unlink \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"provider": "google"}'
@@ -138,7 +138,7 @@ curl -X POST https://mew-assistant-app.azurecontainerapps.io/auth/oauth/unlink \
 ### Add Additional Providers
 You can link multiple providers to the same Mew Assistant account for flexibility:
 ```bash
-curl -X GET https://mew-assistant-app.azurecontainerapps.io/auth/oauth/google/login \
+curl -X GET https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/google/login \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
