@@ -11,7 +11,7 @@ from fastapi_sso.sso.microsoft import MicrosoftSSO
 import logging
 
 from ..database.connection import get_db
-from ..database.models import User, FederatedIdentity
+from ..database.models import User, FederatedIdentity, UserRole
 from ..services.auth_service import AuthService
 from ..utils.config import settings
 
@@ -289,7 +289,7 @@ async def process_federated_identity(
         user = User(
             email=email,
             full_name=full_name,
-            role="PARENT",  # Default role
+            role=UserRole.PARENT,  # Default role
             is_active=True
         )
         db.add(user)

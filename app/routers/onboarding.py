@@ -10,7 +10,7 @@ import base64
 from datetime import datetime, timedelta
 
 from ..database.connection import get_db
-from ..database.models import User, Session
+from ..database.models import User, Session, UserRole
 from ..schemas.auth import UserCreate
 from ..services.auth_service import AuthService
 from ..utils.notifications import NotificationService
@@ -56,7 +56,7 @@ async def quick_onboard(
         email=data.contact if "@" in data.contact else f"{data.contact}@temp.mew",
         password=temp_password,
         full_name=data.name,
-        role="PARENT",
+        role=UserRole.PARENT,
         phone=data.contact if "@" not in data.contact else None
     )
     

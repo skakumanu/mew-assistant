@@ -12,11 +12,12 @@ from enum import Enum
 
 class UserRole(str, Enum):
     """User role enumeration"""
-    ADMIN = "admin"
-    CAREGIVER = "caregiver"
-    PARENT = "parent"
-    THERAPIST = "therapist"
-    EDUCATOR = "educator"
+    SUPERUSER = "SUPERUSER"
+    ADMIN = "ADMIN"
+    PARENT = "PARENT"
+    CAREGIVER = "CAREGIVER"
+    THERAPIST = "THERAPIST"
+    EDUCATOR = "EDUCATOR"
 
 
 class UserBase(BaseModel):
