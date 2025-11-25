@@ -8,9 +8,11 @@ and PostgreSQL session tracking.
 For contributor onboarding, see README.md
 """
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import time
+import os
 
 from .routers import (
     session_router, 
@@ -84,6 +86,11 @@ app.add_middleware(ComplianceMiddleware)
 
 # 6. Register exception handlers
 register_exception_handlers(app)
+
+# Mount static files for dashboard
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Include routers
 app.include_router(onboarding_router)  # Easy registration - ALL channels

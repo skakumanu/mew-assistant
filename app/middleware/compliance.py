@@ -8,12 +8,12 @@ This middleware enforces compliance with:
 - General data privacy best practices
 """
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Set
+from starlette.responses import Response
+from typing import Set, Callable, Awaitable, Dict, Any, Optional, List
 import re
-import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.utils.logger import get_logger
 from app.utils.exceptions import ComplianceViolationError
@@ -41,6 +41,9 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         '/auth/register',
         '/auth/login',
         '/auth/refresh',
+        '/auth/simple/google/callback',
+        '/auth/simple/github/callback',
+        '/auth/callback',
         '/health',
         '/docs',
         '/openapi.json',
@@ -62,12 +65,11 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         '/sessions/{session_id}',
         '/messages'
     }
-    
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """
         Process each request for compliance checks
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         
         # Skip all compliance checks for exempt endpoints
         if any(request.url.path.startswith(endpoint) for endpoint in self.EXEMPT_ENDPOINTS):
@@ -99,7 +101,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         
         # 7. Log audit trail completion
         if self._requires_audit(request.url.path):
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
             await self._create_audit_log(request, "RESPONSE", response.status_code, duration)
         
         return response
@@ -145,18 +147,18 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         self, 
         request: Request, 
         event_type: str,
-        status_code: int = None,
-        duration: float = None
+        status_code: Optional[int] = None,
+        duration: Optional[float] = None
     ):
         """
         Create comprehensive audit log for compliance
         Required by HIPAA for all PHI access
         """
-        audit_entry = {
-            'timestamp': datetime.utcnow().isoformat(),
+        audit_entry: Dict[str, Any] = {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'event_type': event_type,
             'user_id': request.headers.get('X-User-ID', 'anonymous'),
-            'ip_address': self._anonymize_ip(request.client.host),
+            'ip_address': self._anonymize_ip(request.client.host) if request.client else 'unknown',
             'method': request.method,
             'path': request.url.path,
             'user_agent': request.headers.get('User-Agent', 'unknown'),
@@ -208,7 +210,7 @@ class DataMinimizationGuard:
     }
     
     @classmethod
-    def validate_fields(cls, entity_type: str, data: dict) -> dict:
+    def validate_fields(cls, entity_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate that only allowed fields are being stored
         """
@@ -274,7 +276,7 @@ class ConsentManager:
     }
     
     @classmethod
-    def validate_consent(cls, user_consents: dict, required_consent_types: list) -> bool:
+    def validate_consent(cls, user_consents: Dict[str, bool], required_consent_types: List[str]) -> bool:
         """
         Validate user has provided all required consents
         """
@@ -290,7 +292,7 @@ class ConsentManager:
         return True
     
     @classmethod
-    def get_required_consents(cls) -> dict:
+    def get_required_consents(cls) -> Dict[str, str]:
         """
         Return all required consent types and descriptions
         """
