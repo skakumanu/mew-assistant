@@ -280,7 +280,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
         
         # Generate JWT token
         # auth_service = AuthService(db)
-        token_data = {"sub": str(user.id), "email": user.email, "role": user.role}
+        token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
         # Return success page with token
@@ -507,7 +507,7 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
         
         # Generate JWT token
         # auth_service = AuthService(db)
-        token_data = {"sub": str(user.id), "email": user.email, "role": user.role}
+        token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
         # Return success page with token
