@@ -13,7 +13,7 @@ import httpx
 from urllib.parse import urlencode, parse_qs
 
 from ..database.connection import get_db
-from ..database.models import User, FederatedIdentity
+from ..database.models import User, FederatedIdentity, UserRole
 from ..utils.config import settings
 from ..utils.auth import create_access_token
 
@@ -239,7 +239,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             user = User(
                 email=email,
                 full_name=user_info.get('name', email.split('@')[0]),
-                role='PARENT',
+                role=UserRole.PARENT,
                 is_active=True
             )
             db.add(user)
