@@ -289,7 +289,7 @@ async def process_federated_identity(
         user = User(
             email=email,
             full_name=full_name,
-            role="parent",  # Default role
+            role="PARENT",  # Default role
             is_active=True
         )
         db.add(user)

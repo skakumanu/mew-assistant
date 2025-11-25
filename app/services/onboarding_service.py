@@ -170,7 +170,7 @@ class OnboardingService:
         user = User(
             email=email,
             full_name=name,
-            role="parent",
+            role="PARENT",
             is_active=True,
             email_verified=True,  # Trust social provider verification
             auth_provider=provider,

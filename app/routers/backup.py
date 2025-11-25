@@ -28,7 +28,7 @@ async def create_backup(
     Create an encrypted backup of the database in Azure Storage
     Requires admin role
     """
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
@@ -62,7 +62,7 @@ async def list_backups(
     List all available backups in Azure Storage
     Requires admin role
     """
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
@@ -89,7 +89,7 @@ async def restore_backup(
     Requires admin role
     WARNING: This will overwrite the current database
     """
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
@@ -123,7 +123,7 @@ async def cleanup_old_backups(
     Delete backups older than specified days
     Requires admin role
     """
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:

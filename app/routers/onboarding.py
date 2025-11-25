@@ -56,7 +56,7 @@ async def quick_onboard(
         email=data.contact if "@" in data.contact else f"{data.contact}@temp.mew",
         password=temp_password,
         full_name=data.name,
-        role="parent",
+        role="PARENT",
         phone=data.contact if "@" not in data.contact else None
     )
     

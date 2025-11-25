@@ -75,7 +75,7 @@ async def get_current_parent(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Get current user who is a parent"""
-    if current_user.role != "parent":
+    if current_user.role != "PARENT":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this resource"
@@ -87,7 +87,7 @@ async def get_current_admin(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Get current user who is an admin"""
-    if current_user.role != "admin":
+    if current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

@@ -247,7 +247,7 @@ class AccessControlValidator:
             raise ComplianceViolationError(f"Invalid user role: {user_role}")
         
         # Parents always have full access to their own data
-        if user_role == 'parent' and resource_owner == user_id:
+        if user_role == 'PARENT' and resource_owner == user_id:
             return True
         
         # Check role-based permissions
