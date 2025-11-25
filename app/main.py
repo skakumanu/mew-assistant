@@ -8,9 +8,10 @@ and PostgreSQL session tracking.
 For contributor onboarding, see README.md
 """
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import time
 import os
 
@@ -92,6 +93,10 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+# Setup templates
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+templates = Jinja2Templates(directory=templates_dir)
+
 # Include routers
 app.include_router(onboarding_router)  # Easy registration - ALL channels
 app.include_router(auth_router)  # Authentication first
@@ -113,8 +118,17 @@ app.include_router(ai_scheduler_router)  # AI-powered scheduling with conflict d
 # Using simple_oauth router only - old oauth_router removed
 
 
-@app.get("/", tags=["health"])
-async def root():
+@app.get("/", response_class=HTMLResponse, tags=["home"])
+async def root(request: Request):
+    """
+    Landing page with easy sign-in options.
+    Mobile-friendly interface for quick registration.
+    """
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/api/health", tags=["health"])
+async def health():
     """
     Health check endpoint.
     Returns basic information about the Mew Assistant API.
@@ -126,20 +140,20 @@ async def root():
         "endpoints": {
             "onboarding": "/api/v1/onboarding/* (easy registration - email, phone, voice, social)",
             "auth": "/auth/register, /auth/login, /auth/me",
-            "oauth": "/auth/oauth/* (Google, Apple, Microsoft, Facebook login)",
+            "oauth": "/auth/simple/* (Google, Apple, Microsoft login)",
             "sessions": "/mew/session, /mew/confirm",
             "messages": "/mew/ingest",
             "summaries": "/mew/summary",
             "calendar": "/calendar/*",
             "mobile": "/mobile/*",
             "kid": "/kid/* (kid-friendly endpoints)",
-            "voice": "/voice/* (multilingual voice commands - 20+ languages)",
+            "voice": "/voice/* (multilingual voice commands - 100+ languages)",
             "webhooks": "/webhooks/sms/incoming, /webhooks/whatsapp/incoming",
             "backup": "/api/backup/* (Azure cloud backups)",
             "ai_scheduler": "/ai-scheduler/* (AI-powered scheduling with conflict detection)",
             "docs": "/docs"
         },
-        "registration": "No password needed! Register via email, phone, voice, or social login (Google/Apple/Microsoft/Facebook)"
+        "registration": "No password needed! Register via social login (Google/Apple/Microsoft)"
     }
 
 
