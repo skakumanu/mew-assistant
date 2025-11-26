@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
 # Copy Python dependencies from builder
 COPY --from=builder /root/.local /root/.local
 
-# Copy application code
+# Copy application code (includes templates and static)
 COPY ./app ./app
 COPY .env.example .env
 
