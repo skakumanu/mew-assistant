@@ -95,7 +95,12 @@ if os.path.exists(static_dir):
 
 # Setup templates
 templates_dir = os.path.join(os.path.dirname(__file__), "templates")
-templates = Jinja2Templates(directory=templates_dir)
+templates = None
+if os.path.exists(templates_dir):
+    templates = Jinja2Templates(directory=templates_dir)
+    logger.info(f"Templates loaded from {templates_dir}")
+else:
+    logger.warning(f"Templates directory not found: {templates_dir}")
 
 # Include routers
 app.include_router(onboarding_router)  # Easy registration - ALL channels
@@ -118,13 +123,36 @@ app.include_router(ai_scheduler_router)  # AI-powered scheduling with conflict d
 # Using simple_oauth router only - old oauth_router removed
 
 
-@app.get("/", response_class=HTMLResponse, tags=["home"])
+@app.get("/", tags=["home"])
 async def root(request: Request):
     """
     Landing page with easy sign-in options.
     Mobile-friendly interface for quick registration.
     """
-    return templates.TemplateResponse("index.html", {"request": request})
+    if templates:
+        return templates.TemplateResponse("index.html", {"request": request})
+    else:
+        # Fallback to simple HTML if templates not available
+        return HTMLResponse(content="""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Mew Assistant</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+                .btn { display: block; padding: 15px; margin: 10px 0; text-align: center; background: #4285f4; color: white; text-decoration: none; border-radius: 5px; }
+                h1 { color: #333; }
+            </style>
+        </head>
+        <body>
+            <h1>🐱 Welcome to Mew Assistant</h1>
+            <p>Your AI-powered family scheduling assistant</p>
+            <a href="/auth/simple/login" class="btn">Sign in with Google</a>
+            <a href="/docs" class="btn">View API Documentation</a>
+        </body>
+        </html>
+        """)
 
 
 @app.get("/api/health", tags=["health"])
