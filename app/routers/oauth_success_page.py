@@ -51,6 +51,18 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
             .info-box strong {{ color: #667eea; display: block; margin-bottom: 10px; }}
             .info-box div {{ margin: 8px 0 8px 20px; }}
             .note {{ color: #999; font-size: 14px; margin-top: 25px; line-height: 1.6; }}
+            .btn {{
+                display: inline-block;
+                background: #667eea;
+                color: white;
+                padding: 15px 30px;
+                border-radius: 10px;
+                text-decoration: none;
+                font-weight: 600;
+                margin: 10px 0;
+                transition: all 0.3s;
+            }}
+            .btn:hover {{ background: #5568d3; transform: translateY(-2px); }}
         </style>
     </head>
     <body>
@@ -69,10 +81,16 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
                 <div>• (Coming soon: Ask Siri!)</div>
             </div>
             
+            <a href="https://raw.githubusercontent.com/skakumanu/mew-assistant/feature/customerzerosetup/calendar-viewer.html" 
+               class="btn" download="calendar-viewer.html">
+                📅 Download Calendar Viewer
+            </a>
+            
             <p class="note">
-                📱 <strong>Next step:</strong><br>
-                We'll send you a link to set up Siri shortcuts.<br>
-                For now, you're all signed in!
+                📱 <strong>How to use:</strong><br>
+                1. Download the file above<br>
+                2. Open it in your browser<br>
+                3. Your calendar will show automatically!
             </p>
             
             <p class="note" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
@@ -89,6 +107,9 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
             
             // Log success for debugging
             console.log('✅ Mew Assistant: Logged in successfully');
+            
+            // If user already has calendar viewer open in another tab, they can just refresh it
+            console.log('💡 Tip: If you have calendar-viewer.html open, just refresh that page!');
         </script>
     </body>
     </html>

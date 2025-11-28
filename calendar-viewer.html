@@ -169,9 +169,16 @@
             const userName = localStorage.getItem('mew_name');
             
             if (token) {
+                // Already logged in - hide step 1, show step 2
                 document.getElementById('step1').classList.add('hidden');
                 document.getElementById('step2').classList.remove('hidden');
                 showStatus(`Welcome back, ${userName || 'there'}!`, 'info');
+                
+                // Auto-fetch events if returning from sign-in
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('auto') === 'true' || document.referrer.includes('gentlehill')) {
+                    setTimeout(fetchEvents, 500);
+                }
             }
         };
 
