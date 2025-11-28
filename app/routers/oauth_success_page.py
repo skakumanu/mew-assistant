@@ -3,13 +3,13 @@
 def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
     """
     Returns a simple, user-friendly success page after OAuth login.
-    No technical jargon - just tells users they're connected and what to do next.
+    Hides technical details, auto-redirects to simple viewer.
     """
     return f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>✅ You're In!</title>
+        <title>✅ Connected!</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <style>
@@ -39,77 +39,89 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
             }}
             h1 {{ color: #667eea; margin-bottom: 10px; font-size: 32px; }}
             .subtitle {{ color: #666; margin-bottom: 30px; font-size: 18px; line-height: 1.5; }}
-            .info-box {{
-                background: #f8f9fa;
-                padding: 20px;
+            .big-box {{
+                background: #e8f5e9;
+                padding: 25px;
                 border-radius: 12px;
                 margin: 25px 0;
-                font-size: 15px;
-                color: #495057;
-                text-align: left;
+                border: 2px solid #4caf50;
             }}
-            .info-box strong {{ color: #667eea; display: block; margin-bottom: 10px; }}
-            .info-box div {{ margin: 8px 0 8px 20px; }}
+            .big-box .title {{ 
+                font-size: 20px; 
+                font-weight: bold; 
+                color: #2e7d32; 
+                margin-bottom: 15px; 
+            }}
+            .big-box .step {{ 
+                background: white;
+                padding: 12px;
+                margin: 8px 0;
+                border-radius: 6px;
+                color: #333;
+            }}
             .note {{ color: #999; font-size: 14px; margin-top: 25px; line-height: 1.6; }}
-            .btn {{
-                display: inline-block;
-                background: #667eea;
-                color: white;
-                padding: 15px 30px;
-                border-radius: 10px;
-                text-decoration: none;
-                font-weight: 600;
-                margin: 10px 0;
-                transition: all 0.3s;
+            .countdown {{
+                color: #667eea;
+                font-size: 16px;
+                margin: 20px 0;
+                font-weight: bold;
             }}
-            .btn:hover {{ background: #5568d3; transform: translateY(-2px); }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="icon">🎉</div>
-            <h1>You're All Set!</h1>
+            <h1>Success!</h1>
             <p class="subtitle">
                 Hi {user_name}!<br>
-                Your calendar is connected.
+                Your Google Calendar is connected.
             </p>
             
-            <div class="info-box">
-                <strong>✅ What you can do now:</strong>
-                <div>• View your Google Calendar</div>
-                <div>• Check your schedule anytime</div>
-                <div>• (Coming soon: Ask Siri!)</div>
+            <div class="big-box">
+                <div class="title">🎯 Next: View Your Calendar</div>
+                <div class="step">1️⃣ Download the calendar viewer file</div>
+                <div class="step">2️⃣ Open it in your browser</div>
+                <div class="step">3️⃣ Click "Show My Events"</div>
             </div>
             
-            <a href="https://raw.githubusercontent.com/skakumanu/mew-assistant/feature/customerzerosetup/calendar-viewer.html" 
-               class="btn" download="calendar-viewer.html">
-                📅 Download Calendar Viewer
-            </a>
+            <div class="countdown" id="countdown">
+                Downloading calendar viewer in <span id="timer">5</span> seconds...
+            </div>
             
             <p class="note">
-                📱 <strong>How to use:</strong><br>
-                1. Download the file above<br>
-                2. Open it in your browser<br>
-                3. Your calendar will show automatically!
-            </p>
-            
-            <p class="note" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-                🔐 Logged in for 30 days<br>
-                Just sign in again if needed
+                💡 Can't find the download?<br>
+                Check your Downloads folder for<br>
+                <strong>calendar-simple.html</strong>
             </p>
         </div>
         
         <script>
-            // Quietly save login info for later
+            // Save login info silently
             localStorage.setItem('mew_token', '{jwt_token}');
             localStorage.setItem('mew_user', '{user_email}');
             localStorage.setItem('mew_name', '{user_name}');
             
-            // Log success for debugging
-            console.log('✅ Mew Assistant: Logged in successfully');
-            
-            // If user already has calendar viewer open in another tab, they can just refresh it
-            console.log('💡 Tip: If you have calendar-viewer.html open, just refresh that page!');
+            // Auto-download the simple calendar viewer after 5 seconds
+            let seconds = 5;
+            const timer = setInterval(() => {{
+                seconds--;
+                document.getElementById('timer').textContent = seconds;
+                
+                if (seconds <= 0) {{
+                    clearInterval(timer);
+                    document.getElementById('countdown').innerHTML = '⬇️ Downloading now...';
+                    
+                    // Trigger download
+                    const link = document.createElement('a');
+                    link.href = 'https://raw.githubusercontent.com/skakumanu/mew-assistant/feature/customerzerosetup/calendar-simple.html';
+                    link.download = 'calendar-simple.html';
+                    link.click();
+                    
+                    setTimeout(() => {{
+                        document.getElementById('countdown').innerHTML = '✅ Download started!<br><small style="color:#666;">Open the file from your Downloads folder</small>';
+                    }}, 1000);
+                }}
+            }}, 1000);
         </script>
     </body>
     </html>
