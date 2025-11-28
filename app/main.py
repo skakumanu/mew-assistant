@@ -38,11 +38,13 @@ app.include_router(landing.router, tags=["landing"])
 from .routers import (
     auth_router, session_router, message_router, summary_router,
     calendar_router, mobile_router, voice_router, kid_router,
-    simple_oauth_router, ai_scheduler_router, parent_approval_router
+    simple_oauth_router, ai_scheduler_router, parent_approval_router,
+    simple_calendar_router
 )
 
 app.include_router(auth_router, tags=["auth"])
 app.include_router(simple_oauth_router, tags=["oauth"])
+app.include_router(simple_calendar_router, tags=["calendar"])
 app.include_router(session_router, prefix="/mew", tags=["sessions"])
 app.include_router(message_router, prefix="/mew", tags=["messages"])
 app.include_router(summary_router, prefix="/mew", tags=["summaries"])

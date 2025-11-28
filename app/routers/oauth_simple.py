@@ -28,7 +28,7 @@ GOOGLE_CONFIG = {
     'userinfo_url': 'https://www.googleapis.com/oauth2/v2/userinfo',
     'client_id': settings.GOOGLE_CLIENT_ID,
     'client_secret': settings.GOOGLE_CLIENT_SECRET,
-    'scope': 'openid email profile'
+    'scope': 'openid email profile https://www.googleapis.com/auth/calendar.readonly'
 }
 
 MICROSOFT_CONFIG = {
@@ -245,12 +245,14 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             db.add(user)
             db.flush()
             
-            # Create federated identity
+            # Create federated identity with OAuth tokens
             fed_identity = FederatedIdentity(
                 user_id=user.id,
                 provider='google',
                 provider_user_id=user_info.get('sub') or user_info.get('id'),
-                email=email
+                email=email,
+                access_token=access_token,
+                refresh_token=token_json.get('refresh_token')
             )
             db.add(fed_identity)
             db.flush()
@@ -258,7 +260,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             db.commit()
             logger.info(f"Created new user: {email}")
         else:
-            # Update federated identity if needed
+            # Update federated identity with new tokens
             fed_identity = db.query(FederatedIdentity).filter(
                 FederatedIdentity.user_id == user.id,
                 FederatedIdentity.provider == 'google'
@@ -269,12 +271,20 @@ async def google_callback(request: Request, code: str = None, error: str = None,
                     user_id=user.id,
                     provider='google',
                     provider_user_id=user_info.get('sub') or user_info.get('id'),
-                    email=email
+                    email=email,
+                    access_token=access_token,
+                    refresh_token=token_json.get('refresh_token')
                 )
                 db.add(fed_identity)
-                db.flush()
-                db.refresh(fed_identity)
-                db.commit()
+            else:
+                # Update tokens
+                fed_identity.access_token = access_token
+                if token_json.get('refresh_token'):
+                    fed_identity.refresh_token = token_json.get('refresh_token')
+            
+            db.flush()
+            db.refresh(fed_identity)
+            db.commit()
             
             logger.info(f"User logged in: {email}")
         
