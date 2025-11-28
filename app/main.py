@@ -56,3 +56,7 @@ app.include_router(approval_router, prefix="/approvals", tags=["approvals"])
 @app.get("/health")
 async def health():
     return {"status": "healthy", "service": "Mew Assistant"}
+
+@app.get("/version")
+async def version():
+    return {"version": "landing-page-v2", "deployed": "2025-11-28T02:00:00Z"}

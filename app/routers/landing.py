@@ -5,6 +5,7 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def landing_page():
+    # Version identifier: LANDING_PAGE_V2_DEPLOYED
     html_content = """
     <!DOCTYPE html>
     <html lang="en">
