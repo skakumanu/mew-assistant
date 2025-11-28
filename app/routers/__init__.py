@@ -9,6 +9,9 @@ from .mobile_api import router as mobile_api_router
 from .kid_friendly import router as kid_router
 from .parent_approval import router as parent_approval_router
 from .voice import router as voice_router
+from .simple_oauth_router import router as simple_oauth_router
+from .ai_scheduler import router as ai_scheduler_router
+from .approval import router as approval_router
 from . import oauth_web
 
 __all__ = [
@@ -22,5 +25,8 @@ __all__ = [
     "kid_router",
     "parent_approval_router",
     "voice_router",
+    "simple_oauth_router",
+    "ai_scheduler_router",
+    "approval_router",
     "oauth_web"
 ]
