@@ -16,6 +16,7 @@ from ..database.connection import get_db
 from ..database.models import User, FederatedIdentity, UserRole
 from ..utils.config import settings
 from ..utils.auth import create_access_token
+from .oauth_success_page import get_success_page
 
 logger = logging.getLogger(__name__)
 

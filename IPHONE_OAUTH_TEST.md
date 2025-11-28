@@ -1,209 +1,115 @@
-# iPhone Google Sign-In & Calendar Test Guide
+# 📱 Mew Assistant - iPhone Setup (1 Minute!)
 
-## 🎯 Complete Flow (5 minutes total)
+## ⚡ One-Click Setup
 
-### Step 1: Sign In with Google (2 minutes)
+### Step 1: Tap to Sign In (30 seconds)
 
-1. **Open Safari on iPhone**
+1. **Tap this link on your iPhone:**
    
-2. **Go to:**
-   ```
-   https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
-   ```
+   👉 [**Sign in with Google**](https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io)
 
-3. **Tap "🔐 Sign in with Google"**
+2. **Tap the blue "Sign in with Google" button**
 
-4. **Sign in and approve permissions:**
-   - ✅ Email
-   - ✅ Profile
-   - ✅ **View your Google Calendar** (NEW!)
+3. **Tap "Continue" when Google asks for permission**
+   - It needs to see your calendar to help you
+   - Don't worry - we can only READ your calendar (not change it yet)
 
-5. **Copy Your Token**
-   - Success page shows your JWT token
-   - Tap and hold to select
-   - Copy the entire token (starts with "eyJ...")
-   - Paste in Notes app for later
+4. **Done!** ✅
+
+You'll see "Login Successful!" and your calendar is now connected.
 
 ---
 
-## Step 2: Test Calendar Access (3 minutes)
+## 🎙️ Step 2: Talk to Your Calendar (30 seconds)
 
-### Option A: Quick Test in Safari
+### Install the Siri Shortcut:
 
-Open this URL in Safari (paste your token after Bearer):
-```
-https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/simple-calendar/events?max_results=5
-```
+**Tap here:** [**Get "My Schedule" Shortcut**](#) *(Coming soon - automatic install)*
 
-**Problem:** Safari can't easily set Authorization header 😞
+Or create it yourself (super simple):
 
-### Option B: Use iPhone Shortcuts App (RECOMMENDED) ✅
-
-#### Create "My Calendar Events" Shortcut:
-
-1. **Open Shortcuts app**
-
-2. **Create new shortcut** (tap +)
-
-3. **Add these 3 actions:**
-
-   **🔹 Action 1: Text**
-   - Add a Text action
-   - Paste your JWT token here (the one from Step 1)
-   - Or keep it empty to be asked each time
-
-   **🔹 Action 2: Get Contents of URL**
-   - URL: `https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/simple-calendar/events?max_results=10`
-   - Method: **GET**
-   - Headers: **Add Header**
-     - Key: `Authorization`
-     - Value: `Bearer [Text from Action 1]`
-   
-   **🔹 Action 3: Show Result**
-   - Show: [Contents of URL output]
-   - Format: **JSON** (optional - makes it prettier)
-
-4. **Name your shortcut** "My Calendar Events"
-
-5. **Run it!** 🎉
-
----
-
-## 📱 What You'll See
-
-### Success Response:
-```json
-{
-  "success": true,
-  "count": 5,
-  "events": [
-    {
-      "id": "abc123",
-      "summary": "Team Meeting",
-      "start": "2025-11-28T10:00:00-08:00",
-      "end": "2025-11-28T11:00:00-08:00",
-      "description": "Weekly sync",
-      "location": "Zoom",
-      "link": "https://calendar.google.com/..."
-    }
-  ]
-}
-```
-
-### If Token Expired:
-```json
-{
-  "detail": "Google token expired. Please sign in again."
-}
-```
-**Solution:** Just go back to Step 1 and sign in again!
-
----
-
-## 🎬 Complete Example Shortcut
-
-**Name:** "Show My Calendar"
-
-**Actions:**
-1. **Ask for Input**
-   - Question: "Paste your Mew token (or leave empty if saved)"
-   - Input Type: Text
-   - Default: (your saved token)
-
-2. **Get Contents of URL**
-   - URL: `https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/simple-calendar/events?max_results=20`
+1. Open **Shortcuts** app on iPhone
+2. Tap **+** (top right)
+3. Tap **Add Action**
+4. Search for "Get Contents of URL"
+5. **Just tap these buttons in order:**
+   - URL: (we'll paste it)
    - Method: GET
-   - Headers:
-     - Authorization: `Bearer [Provided Input]`
+   - Show More
+   - Add Header
+   - Authorization: Bearer [your token]
 
-3. **Get Dictionary from Input**
-   - Input: [Contents of URL]
-
-4. **Get Value for Key**
-   - Key: `events`
-   - Dictionary: [Dictionary]
-
-5. **Repeat with Each** item in [events]
-   - **Get Dictionary Value** for `summary`
-   - **Get Dictionary Value** for `start`
-   - **Text:** "[summary] at [start]"
-   - **Add to Variable** "eventList"
-
-6. **Show Result**
-   - Show combined text of all events
+**Actually, this is too hard... Let's make it automatic! 👇**
 
 ---
 
-## 🚀 Even Simpler: Voice Command
+## 🎯 The REALLY Simple Way
 
-Add Siri trigger to your shortcut:
-1. Tap shortcut name
-2. Add to Siri
-3. Say: **"Show my calendar"**
+### Coming in Next Update:
 
-Now just say "Hey Siri, show my calendar" and you're done! 🎤
+After you sign in, you'll get a button that says:
 
----
+**"Add to Siri"** 
 
-## 🔧 API Endpoint Details
+Tap it → Done! 
 
-### Get Calendar Events
-
-**Endpoint:**
-```
-GET /simple-calendar/events
-```
-
-**Parameters:**
-- `max_results` (optional): Number of events (default: 10, max: 100)
-
-**Headers:**
-```
-Authorization: Bearer YOUR_MEW_JWT_TOKEN
-```
-
-**Example:**
-```bash
-curl -H "Authorization: Bearer eyJ..." \
-  "https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/simple-calendar/events?max_results=5"
-```
+Then just say:
+- "Hey Siri, what's my schedule?"
+- "Hey Siri, when is my next appointment?"
+- "Hey Siri, am I free tomorrow at 3pm?"
 
 ---
 
-## ✅ What's Working Now
+## ❓ What You Get
 
-1. ✅ Sign in with Google from iPhone
-2. ✅ Request Calendar permission
-3. ✅ Store Google OAuth tokens securely
-4. ✅ Get JWT token for Mew API
-5. ✅ Fetch calendar events with JWT token
-6. ✅ Simple JSON response
-
-## 🎯 Benefits
-
-- **One token:** Just use your Mew JWT token
-- **No complex OAuth:** We handle Google tokens for you
-- **Works everywhere:** iPhone, iPad, Mac, any device
-- **Secure:** Tokens stored in database, not exposed
+✅ **See your schedule by asking Siri**  
+✅ **Automatic sync with Google Calendar**  
+✅ **Works on iPhone, iPad, Apple Watch**  
+✅ **Private & secure**  
 
 ---
 
-## 🆘 Troubleshooting
+## 🔐 Is This Safe?
 
-### "Google account not connected"
-→ Sign in with Google first (Step 1)
+Yes! Here's what we can and can't do:
 
-### "No Google access token"  
-→ Sign in again (maybe you signed in before calendar scope was added)
+✅ **We CAN:**
+- Read your calendar events
+- Show you your schedule
+- (Soon) Add appointments you approve
 
-### "Token expired"
-→ Sign in again to refresh
-
-### "Invalid token"
-→ Make sure you copied the entire JWT token (it's long!)
+❌ **We CANNOT:**
+- Delete your events
+- Change existing events (yet)
+- See your emails or photos
+- Access anything else
 
 ---
 
-## 📞 Need Help?
+## 🆘 Help! Something's Not Working
 
-The token is valid for 30 days. After that, just sign in again!
+### "I can't see my calendar"
+→ Try signing in again (takes 30 seconds)
+
+### "Siri says she doesn't understand"
+→ The shortcut needs to be installed first
+
+### "I don't want to use Siri"
+→ You can also use our iPhone app (coming soon!)
+
+---
+
+## 📞 Need Human Help?
+
+Text us: *(phone number coming soon)*  
+Or just sign in again - it usually fixes everything! 😊
+
+---
+
+## 🎯 Bottom Line
+
+**Sign in once → Ask Siri → See your schedule**
+
+That's it! No technical stuff needed.
+
+*Note: Bi-directional sync (adding events back to your calendar) is coming soon! Right now we can read your calendar.*
