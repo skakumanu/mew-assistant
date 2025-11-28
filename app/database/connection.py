@@ -57,3 +57,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+async def init_db():
+    """Initialize database tables"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        from .models import Base as ModelsBase
+        # Create all tables
+        ModelsBase.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.warning(f"Could not initialize database: {e}")
+        logger.info("Database tables will be created when connection is available.")
