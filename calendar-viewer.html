@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 My Calendar - Mew Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .event-list {
+            margin-top: 20px;
+        }
+        .event {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .event-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .event-time {
+            color: #666;
+            font-size: 14px;
+        }
+        .event-location {
+            color: #999;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 My Calendar</h1>
+        <p class="subtitle">View your Google Calendar events</p>
+
+        <!-- Step 1: Check if logged in -->
+        <div id="step1">
+            <div class="status info">
+                <strong>Step 1:</strong> First, sign in with Google to connect your calendar.
+            </div>
+            <button class="btn" onclick="signIn()">
+                🔐 Sign in with Google
+            </button>
+        </div>
+
+        <!-- Step 2: Fetch events -->
+        <div id="step2" class="hidden">
+            <div class="status success">
+                ✅ You're signed in!
+            </div>
+            <button class="btn" onclick="fetchEvents()">
+                📅 Show My Calendar
+            </button>
+            <button class="btn btn-secondary" onclick="signOut()">
+                Sign Out
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #666;">Loading your events...</p>
+            </div>
+        </div>
+
+        <!-- Status messages -->
+        <div id="status"></div>
+
+        <!-- Events display -->
+        <div id="events" class="event-list"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io';
+        
+        // Check if user is already logged in
+        window.onload = function() {
+            const token = localStorage.getItem('mew_token');
+            const userName = localStorage.getItem('mew_name');
+            
+            if (token) {
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                showStatus(`Welcome back, ${userName || 'there'}!`, 'info');
+            }
+        };
+
+        function signIn() {
+            window.location.href = `${API_BASE}/auth/simple/google`;
+        }
+
+        function signOut() {
+            localStorage.removeItem('mew_token');
+            localStorage.removeItem('mew_user');
+            localStorage.removeItem('mew_name');
+            location.reload();
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+            statusDiv.classList.remove('hidden');
+        }
+
+        async function fetchEvents() {
+            const token = localStorage.getItem('mew_token');
+            
+            if (!token) {
+                showStatus('Please sign in first!', 'error');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('events').innerHTML = '';
+            document.getElementById('status').classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE}/simple-calendar/events?max_results=20`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Hide loading
+                document.getElementById('loading').classList.add('hidden');
+
+                if (response.status === 401) {
+                    showStatus('⚠️ Your session expired. Please sign in again.', 'error');
+                    setTimeout(signOut, 2000);
+                    return;
+                }
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    showStatus(`❌ Error: ${error.detail || 'Failed to fetch events'}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                
+                if (data.success && data.events && data.events.length > 0) {
+                    displayEvents(data.events);
+                    showStatus(`✅ Found ${data.count} event${data.count !== 1 ? 's' : ''}`, 'success');
+                } else {
+                    showStatus('📭 No events found in your calendar.', 'info');
+                }
+
+            } catch (error) {
+                document.getElementById('loading').classList.add('hidden');
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                console.error('Fetch error:', error);
+            }
+        }
+
+        function displayEvents(events) {
+            const eventsDiv = document.getElementById('events');
+            eventsDiv.innerHTML = '';
+
+            events.forEach(event => {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'event';
+
+                const title = document.createElement('div');
+                title.className = 'event-title';
+                title.textContent = event.summary || 'Untitled Event';
+
+                const time = document.createElement('div');
+                time.className = 'event-time';
+                time.textContent = formatDateTime(event.start, event.end);
+
+                eventEl.appendChild(title);
+                eventEl.appendChild(time);
+
+                if (event.location) {
+                    const location = document.createElement('div');
+                    location.className = 'event-location';
+                    location.textContent = `📍 ${event.location}`;
+                    eventEl.appendChild(location);
+                }
+
+                eventsDiv.appendChild(eventEl);
+            });
+        }
+
+        function formatDateTime(start, end) {
+            if (!start) return 'Date/time not specified';
+
+            const startDate = new Date(start);
+            const endDate = end ? new Date(end) : null;
+
+            const options = {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+
+            let formatted = startDate.toLocaleString('en-US', options);
+
+            if (endDate) {
+                const endTime = endDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                formatted += ` - ${endTime}`;
+            }
+
+            return formatted;
+        }
+    </script>
+</body>
+</html>
