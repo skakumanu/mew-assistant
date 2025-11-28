@@ -38,7 +38,7 @@ app.include_router(landing.router, tags=["landing"])
 from .routers import (
     auth_router, session_router, message_router, summary_router,
     calendar_router, mobile_router, voice_router, kid_router,
-    simple_oauth_router, ai_scheduler_router, approval_router
+    simple_oauth_router, ai_scheduler_router, parent_approval_router
 )
 
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
@@ -51,7 +51,7 @@ app.include_router(mobile_router, prefix="/mobile", tags=["mobile"])
 app.include_router(voice_router, prefix="/voice", tags=["voice"])
 app.include_router(kid_router, prefix="/kid", tags=["kid"])
 app.include_router(ai_scheduler_router, prefix="/ai-scheduler", tags=["ai-scheduler"])
-app.include_router(approval_router, prefix="/approvals", tags=["approvals"])
+app.include_router(parent_approval_router, prefix="/approvals", tags=["approvals"])
 
 @app.get("/health")
 async def health():

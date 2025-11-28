@@ -40,13 +40,10 @@ async def landing_page():
                 <p class="subtitle">Your Family's AI-Powered Scheduling Assistant</p>
                 
                 <div>
-                    <a href="/auth/simple/login?provider=google" class="btn btn-google">
+                    <a href="/auth/simple/google" class="btn btn-google">
                         🔐 Sign in with Google
                     </a>
-                    <a href="/auth/simple/login?provider=apple" class="btn btn-apple">
-                        🍎 Sign in with Apple
-                    </a>
-                    <a href="/auth/simple/login?provider=microsoft" class="btn btn-microsoft">
+                    <a href="/auth/simple/microsoft" class="btn btn-microsoft">
                         🏢 Sign in with Microsoft
                     </a>
                 </div>
