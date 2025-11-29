@@ -2,49 +2,35 @@
 
 ## For Non-Technical People (Customer Zero!)
 
-### What You'll Do:
-1. Click a link
-2. Sign in with Google
-3. Wait 5 seconds
-4. Open a file
-5. See your calendar
-
-**Total time: 2 minutes**
+### Total time: 3 minutes
 
 ---
 
-## Step 1: Connect Your Calendar
+## Step 1: Add Yourself as Test User (IMPORTANT!)
 
-**On your phone or computer, click this link:**
+**First, fix the Google OAuth error:**
 
-👉 https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+1. **Go to:** https://console.cloud.google.com/apis/credentials/consent
+2. Scroll to **"Test users"** section
+3. Click **"+ ADD USERS"**
+4. Add your email address
+5. Click **"SAVE"**
+
+✅ Done! Now you can sign in.
+
+---
+
+## Step 2: Connect Your Calendar
+
+**On your phone or computer, click:**
+
+👉 https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/simple/google
 
 **Then:**
-1. Click the blue button "Sign in with Google"
-2. Choose your Google account
-3. Click "Allow" when it asks for calendar permission
-
----
-
-## Step 2: Wait 5 Seconds
-
-After you sign in, you'll see:
-
-```
-🎉 Success!
-
-Hi [Your Name]!
-Your Google Calendar is connected.
-
-🎯 Next: View Your Calendar
-  1️⃣ Download the calendar viewer file
-  2️⃣ Open it in your browser  
-  3️⃣ Click "Show My Events"
-
-⬇️ Downloading calendar viewer in 5 seconds...
-```
-
-**Just wait!** The file downloads automatically.
+1. Choose your Google account
+2. Click "Allow" when it asks for calendar permission
+3. You'll see a success page
+4. Wait 5 seconds - a file will download automatically
 
 ---
 
@@ -58,67 +44,71 @@ Your Google Calendar is connected.
 - **On computer:** Double-click the file
 - **On phone:** Tap the file in Downloads
 
-It opens in your web browser (Chrome, Safari, etc.)
-
 ---
 
-## Step 4: See Your Calendar
+## Step 4: Use It!
 
-You'll see a big blue button:
+When you open the file, you'll see:
 
-**"📅 Show My Events"**
+### First Time:
+```
+🔐 First Time Setup
 
-**Click it!**
+To view your calendar, you need to connect your Google account:
 
-Your calendar events appear! 🎉
+1. Click the button below
+2. Sign in with Google
+3. Come back to this page
+4. Refresh and your calendar will appear!
+
+[🔐 Connect Google Calendar]
+```
+
+**Click the button** → Sign in → Come back to this file → **Refresh the page (F5)**
+
+### After Connecting:
+```
+[📅 Show My Events]
+```
+
+**Click it** → Your calendar appears! 🎉
 
 ---
 
 ## That's It!
 
-You can close the page anytime.
-
-Next time you want to see your calendar:
-- Just open that same file again
-- Click "Show My Events"
-- Done!
-
----
-
-## Video Walkthrough
-
-*(Coming soon: We'll add a video showing these steps)*
+**Keep this file!** You can:
+- Close it anytime
+- Open it again later
+- Just click "Show My Events" to see your calendar
+- No need to sign in again (stays connected for 30 days)
 
 ---
 
 ## Troubleshooting
 
-**Q: I don't see the download?**
-A: Check your Downloads folder for `calendar-simple.html`
+**Q: I get "Error 403: access_denied"**
+A: Go to Step 1 and add yourself as a test user in Google Cloud Console
 
-**Q: File won't open?**
-A: Right-click it → "Open with" → Choose Chrome or Safari
-
-**Q: Button says "Connect Google Calendar"?**
-A: You need to do Step 1 again (sign in)
+**Q: File downloads but button says "Connect Google Calendar"?**
+A: Click it, sign in, then come back and refresh this page (F5)
 
 **Q: Don't see my events?**
-A: Click "Show My Events" button. If still empty, make sure you have events in your Google Calendar.
+A: Make sure you have events in your Google Calendar, then click "Show My Events" again
 
 **Q: Says "Please sign in again"?**
-A: Go back to Step 1 and sign in again. Takes 30 seconds!
+A: Your session expired (after 30 days). Click "Connect Google Calendar" again.
 
 ---
 
 ## Summary
 
-1. **Click:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
-2. **Sign in** with Google
-3. **Wait** for download (5 seconds)
-4. **Open** the file
-5. **Click** "Show My Events"
+1. **Add yourself as test user** (Google Cloud Console)
+2. **Sign in** (auto-downloads file)
+3. **Open file** → Click "Connect" button → Refresh page
+4. **Click** "Show My Events"
 
-**Done!** No apps. No coding. Just buttons! 🎉
+**Done!** View your calendar anytime by opening this file! 🎉
 
 ---
 
@@ -126,20 +116,19 @@ A: Go back to Step 1 and sign in again. Takes 30 seconds!
 
 **Right now:** You can VIEW your calendar ✅
 
-**Coming in 2-3 weeks:** You'll be able to ADD events by talking to Siri! 
-
-We're building it the safe way - view first, then add features.
+**Coming in 2-3 weeks:** You'll be able to ADD events by talking to Siri!
 
 ---
 
-## Need Help?
+## Download Link
 
-Try these in order:
-1. Sign in again (Step 1) - fixes most issues!
-2. Download the file manually: [Click here](https://raw.githubusercontent.com/skakumanu/mew-assistant/feature/customerzerosetup/calendar-simple.html) → Right-click → Save
-3. Check NON_TECHNICAL_GUIDE.md for detailed help
+**Manual download if needed:**
+https://raw.githubusercontent.com/skakumanu/mew-assistant/feature/customerzerosetup/calendar-simple.html
+
+(Right-click → Save As → calendar-simple.html)
 
 ---
 
-**Ready? Start here:** 
-https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+**Ready? Start with Step 1!**
+
+https://console.cloud.google.com/apis/credentials/consent
