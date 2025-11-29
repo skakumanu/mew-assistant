@@ -2,12 +2,8 @@
 Simple web page to view calendar - no downloads needed!
 """
 
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-
-from ..database.connection import get_db
-from ..utils.auth import get_current_user_optional
 
 router = APIRouter(tags=["Calendar Web"])
 
