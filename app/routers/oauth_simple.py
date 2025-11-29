@@ -287,91 +287,14 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             db.refresh(fed_identity)
             db.commit()
             
-            logger.info(f"User logged in: {email}")
+        logger.info(f"User logged in: {email}")
         
         # Generate JWT token
-        # auth_service = AuthService(db)
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
-        # Return success page with token
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Login Successful</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-                body {{
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                }}
-                .container {{
-                    background: white;
-                    border-radius: 20px;
-                    padding: 40px;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                    max-width: 600px;
-                    width: 100%;
-                    text-align: center;
-                }}
-                h1 {{ color: #667eea; margin-bottom: 20px; }}
-                .success {{ color: #10b981; font-size: 64px; margin-bottom: 20px; }}
-                .token {{ 
-                    background: #f3f4f6;
-                    padding: 15px;
-                    border-radius: 10px;
-                    word-break: break-all;
-                    margin: 20px 0;
-                    font-family: monospace;
-                    font-size: 12px;
-                }}
-                .copy-btn {{
-                    background: #667eea;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    font-weight: 600;
-                }}
-                .copy-btn:hover {{ background: #5568d3; }}
-                .info {{ color: #666; margin-top: 20px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="success">✅</div>
-                <h1>Login Successful!</h1>
-                <p>Welcome, {user.full_name}!</p>
-                <p class="info">Your access token (save this):</p>
-                <div class="token" id="token">{jwt_token}</div>
-                <button class="copy-btn" onclick="copyToken()">Copy Token</button>
-                <p class="info" style="margin-top: 20px;">
-                    You can now use this token to access the Mew Assistant API.
-                </p>
-            </div>
-            <script>
-                function copyToken() {{
-                    const token = document.getElementById('token').textContent;
-                    navigator.clipboard.writeText(token).then(() => {{
-                        alert('Token copied to clipboard!');
-                    }});
-                }}
-                // Auto-save to localStorage
-                localStorage.setItem('mew_token', '{jwt_token}');
-            </script>
-        </body>
-        </html>
-        """
-        
+        # Return simple success page with auto-download
+        html_content = get_success_page(user.full_name, user.email, jwt_token)
         return HTMLResponse(content=html_content)
         
     except HTTPException:
@@ -517,90 +440,12 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
             logger.info(f"User logged in: {email}")
         
         # Generate JWT token
-        # auth_service = AuthService(db)
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
-        # Return success page with token
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Login Successful</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-                body {{
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                }}
-                .container {{
-                    background: white;
-                    border-radius: 20px;
-                    padding: 40px;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                    max-width: 600px;
-                    width: 100%;
-                    text-align: center;
-                }}
-                h1 {{ color: #667eea; margin-bottom: 20px; }}
-                .success {{ color: #10b981; font-size: 64px; margin-bottom: 20px; }}
-                .token {{ 
-                    background: #f3f4f6;
-                    padding: 15px;
-                    border-radius: 10px;
-                    word-break: break-all;
-                    margin: 20px 0;
-                    font-family: monospace;
-                    font-size: 12px;
-                }}
-                .copy-btn {{
-                    background: #667eea;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    font-weight: 600;
-                }}
-                .copy-btn:hover {{ background: #5568d3; }}
-                .info {{ color: #666; margin-top: 20px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="success">✅</div>
-                <h1>Login Successful!</h1>
-                <p>Welcome, {user.full_name}!</p>
-                <p class="info">Your access token (save this):</p>
-                <div class="token" id="token">{jwt_token}</div>
-                <button class="copy-btn" onclick="copyToken()">Copy Token</button>
-                <p class="info" style="margin-top: 20px;">
-                    You can now use this token to access the Mew Assistant API.
-                </p>
-            </div>
-            <script>
-                function copyToken() {{
-                    const token = document.getElementById('token').textContent;
-                    navigator.clipboard.writeText(token).then(() => {{
-                        alert('Token copied to clipboard!');
-                    }});
-                }}
-                // Auto-save to localStorage
-                localStorage.setItem('mew_token', '{jwt_token}');
-            </script>
-        </body>
-        </html>
-        """
-        
+        # Return simple success page with auto-download
+        html_content = get_success_page(user.full_name, user.email, jwt_token)
         return HTMLResponse(content=html_content)
-        
     except HTTPException:
         raise
     except Exception as e:
