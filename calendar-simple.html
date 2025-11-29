@@ -54,34 +54,58 @@
         }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
         .loading {
             text-align: center;
             padding: 30px;
             color: #666;
             font-size: 18px;
         }
+        .instructions {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ffc107;
+            margin: 20px 0;
+        }
+        .instructions h3 { color: #856404; margin-bottom: 10px; }
+        .instructions ol { margin-left: 20px; margin-top: 10px; }
+        .instructions li { margin: 8px 0; color: #856404; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📅 My Calendar</h1>
         
-        <!-- Not signed in -->
-        <div id="needSignIn" style="display:none;">
-            <p style="text-align:center; margin:20px 0; color:#666; font-size:16px;">
-                Click below to connect your Google Calendar
-            </p>
+        <!-- First time: Need to connect -->
+        <div id="needConnect">
+            <div class="instructions">
+                <h3>🔐 First Time Setup</h3>
+                <p>To view your calendar, you need to connect your Google account:</p>
+                <ol>
+                    <li>Click the button below</li>
+                    <li>Sign in with Google</li>
+                    <li>Come back to this page</li>
+                    <li>Refresh and your calendar will appear!</li>
+                </ol>
+            </div>
             <a href="https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/simple/google" 
-               class="big-button">
+               class="big-button" target="_blank">
                 🔐 Connect Google Calendar
             </a>
+            <p style="text-align: center; color: #666; margin-top: 15px; font-size: 14px;">
+                After signing in, come back here and <strong>refresh this page</strong> (F5)
+            </p>
         </div>
         
-        <!-- Signed in -->
-        <div id="signedIn" style="display:none;">
+        <!-- Connected: Show calendar button -->
+        <div id="hasConnection" style="display:none;">
             <button onclick="showCalendar()" class="big-button">
                 📅 Show My Events
             </button>
+            <p style="text-align: center; color: #666; margin-top: 10px; font-size: 14px;">
+                <a href="#" onclick="forgetToken(); return false;" style="color: #999;">Sign out</a>
+            </p>
         </div>
         
         <!-- Loading -->
@@ -99,15 +123,52 @@
     <script>
         const API = 'https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io';
         
-        // Check if signed in
+        // On page load, check if we can access the API (same origin)
         window.onload = function() {
-            const token = localStorage.getItem('mew_token');
-            if (token) {
-                document.getElementById('signedIn').style.display = 'block';
+            // Try to get token from localStorage (works if opened from same domain)
+            let token = localStorage.getItem('mew_token');
+            
+            // If no token in localStorage, try checking with the API
+            if (!token) {
+                checkConnection();
             } else {
-                document.getElementById('needSignIn').style.display = 'block';
+                showConnected(token);
             }
         };
+        
+        function checkConnection() {
+            // Check if user is logged in by making API call
+            fetch(API + '/auth/me', { credentials: 'include' })
+                .then(res => {
+                    if (res.ok) {
+                        return res.json();
+                    }
+                    throw new Error('Not connected');
+                })
+                .then(data => {
+                    // User is logged in! Show the calendar button
+                    document.getElementById('needConnect').style.display = 'none';
+                    document.getElementById('hasConnection').style.display = 'block';
+                    showMessage('Connected as ' + (data.email || 'user'), 'success');
+                })
+                .catch(() => {
+                    // Not connected, show connect button
+                    document.getElementById('needConnect').style.display = 'block';
+                    document.getElementById('hasConnection').style.display = 'none';
+                });
+        }
+        
+        function showConnected(token) {
+            document.getElementById('needConnect').style.display = 'none';
+            document.getElementById('hasConnection').style.display = 'block';
+        }
+        
+        function forgetToken() {
+            localStorage.removeItem('mew_token');
+            localStorage.removeItem('mew_user');
+            localStorage.removeItem('mew_name');
+            location.reload();
+        }
         
         function showMessage(text, type) {
             const msg = document.getElementById('message');
@@ -117,8 +178,9 @@
         
         function showCalendar() {
             const token = localStorage.getItem('mew_token');
+            
             if (!token) {
-                showMessage('Please connect your calendar first', 'error');
+                showMessage('Please connect your calendar first, then refresh this page', 'error');
                 return;
             }
             
@@ -155,15 +217,25 @@
                         
                         div.appendChild(title);
                         div.appendChild(time);
+                        
+                        if (event.location) {
+                            const loc = document.createElement('div');
+                            loc.style.color = '#999';
+                            loc.style.fontSize = '13px';
+                            loc.style.marginTop = '5px';
+                            loc.textContent = '📍 ' + event.location;
+                            div.appendChild(loc);
+                        }
+                        
                         eventsDiv.appendChild(div);
                     });
                 } else {
-                    showMessage('No events found', 'success');
+                    showMessage('No events found', 'info');
                 }
             })
             .catch(error => {
                 document.getElementById('loading').style.display = 'none';
-                showMessage('Error: ' + error.message, 'error');
+                showMessage('Error: ' + error.message + '. Try refreshing the page.', 'error');
             });
         }
     </script>
