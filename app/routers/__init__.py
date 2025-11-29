@@ -12,6 +12,7 @@ from .voice import router as voice_router
 from .oauth_simple import router as simple_oauth_router
 from .ai_scheduler import router as ai_scheduler_router
 from .simple_calendar import router as simple_calendar_router
+from .calendar_web import router as calendar_web_router
 # from .approval import router as approval_router
 from . import oauth_web
 
@@ -29,6 +30,7 @@ __all__ = [
     "simple_oauth_router",
     "ai_scheduler_router",
     "simple_calendar_router",
+    "calendar_web_router",
     # "approval_router",
     "oauth_web"
 ]
