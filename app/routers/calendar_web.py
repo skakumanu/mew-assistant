@@ -141,6 +141,21 @@ async def calendar_page(request: Request):
         <script>
             // Check if user is signed in
             window.onload = function() {
+                // Check for token in URL (from OAuth redirect)
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlToken = urlParams.get('token');
+                const userName = urlParams.get('name');
+                
+                if (urlToken) {
+                    // Save token from URL to localStorage
+                    localStorage.setItem('mew_token', urlToken);
+                    if (userName) {
+                        localStorage.setItem('mew_name', userName);
+                    }
+                    // Clean URL (remove token from address bar)
+                    window.history.replaceState({}, document.title, '/calendar');
+                }
+                
                 checkAuth();
             };
             

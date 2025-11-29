@@ -293,9 +293,11 @@ async def google_callback(request: Request, code: str = None, error: str = None,
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
-        # Return simple success page with auto-download
-        html_content = get_success_page(user.full_name, user.email, jwt_token)
-        return HTMLResponse(content=html_content)
+        # Redirect to calendar page with token in URL
+        return RedirectResponse(
+            url=f"/calendar?token={jwt_token}&name={user.full_name}",
+            status_code=303
+        )
         
     except HTTPException:
         raise
