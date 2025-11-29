@@ -1,91 +1,171 @@
-# OAuth Quick Start Guide
+# 🔧 Google OAuth Setup - Fix "Error 403: access_denied"
 
-## For Customer Zero (You!)
+## Problem
+Google OAuth app is in "Testing" mode and needs test users added.
 
-### Access the App
+## Quick Fix (5 minutes)
 
-**Production URL:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+### Step 1: Go to Google Cloud Console
 
-### Login with Google (Federated Authentication)
+**Open:** https://console.cloud.google.com/apis/credentials
 
-1. **Open on your iPhone:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/oauth/login
+**Make sure you're in the right project** (the one with your OAuth credentials)
 
-2. **Tap "Sign in with Google"**
+---
 
-3. **Authorize the app** when Google prompts you
+### Step 2: Add Test Users
 
-4. **You're logged in!** Your account will be created automatically with:
-   - Email: skakumanu@gmail.com
-   - Role: Superuser (god rights)
-   - Linked to: Google OAuth
+1. **Click on "OAuth consent screen"** (left sidebar)
 
-### Alternative: Microsoft Login
+2. **Scroll down to "Test users"** section
 
-1. Same URL: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/oauth/login
+3. **Click "+ ADD USERS"**
 
-2. Tap "Sign in with Microsoft"
+4. **Add your email addresses:**
+   - Your Gmail address
+   - Any other email you want to test with
+   - One email per line
 
-3. This will create/link to: skakumanu@hotmail.com with Admin role
+5. **Click "SAVE"**
 
-### After Login
+---
 
-Once logged in, you can:
+### Step 3: Test Again
 
-1. **Connect Your Google Calendar**
-   ```bash
-   curl -X POST https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/calendar/connect/google \
-     -H "Authorization: Bearer YOUR_TOKEN"
-   ```
+Now go back to:
+https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
 
-2. **Test Voice Commands**
-   - See SIRI_SETUP_GUIDE.md for Siri integration
-   - Use the shortcuts provided
+Click "Sign in with Google" → Should work now! ✅
 
-3. **Make a Scheduling Request**
-   ```bash
-   curl -X POST https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/voice/command \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "text": "Schedule dentist appointment tomorrow at 3pm",
-       "language": "en"
-     }'
-   ```
+---
 
-### Troubleshooting
+## Alternative: Publish Your App (Takes Longer)
 
-**Issue:** "Not Found" error
-- **Solution:** Make sure you're using `/oauth/login` (not `/auth/oauth/login`)
+If you want ANYONE to be able to sign in (not just test users):
 
-**Issue:** Google/Microsoft auth fails
-- **Solution:** Contact admin - OAuth credentials may need verification
+### Option A: Quick Publish (Good for Now)
 
-**Issue:** Can't connect calendar
-- **Solution:** Make sure you've completed OAuth login first
+1. **Go to:** https://console.cloud.google.com/apis/credentials/consent
+2. **Click "PUBLISH APP"** button (top right)
+3. **Confirm:** "Make app public"
+4. **Status changes to:** "In Production"
 
-### Developer Access
+**Warning:** Google might require verification if you request sensitive scopes. For calendar.readonly, usually fine!
 
-**API Documentation:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/docs
+### Option B: Full Verification (Needed Later)
 
-**Health Check:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/health
+When you're ready for public launch:
+1. Go through Google's verification process
+2. Provide privacy policy, terms of service
+3. Explain why you need calendar access
+4. Wait 3-7 days for approval
 
-### Your Accounts
+---
 
-As Customer Zero, you have TWO accounts set up:
+## What's Happening?
 
-1. **Superuser Account**
-   - Email: skakumanu@gmail.com
-   - Provider: Google OAuth
-   - Permissions: Full god rights, can do anything
+Your OAuth app has 3 states:
 
-2. **Admin Account**
-   - Email: skakumanu@hotmail.com
-   - Provider: Microsoft OAuth
-   - Permissions: Administrative access
+1. **Testing** (← You are here)
+   - Only works for test users
+   - Up to 100 test users
+   - Perfect for development
 
-### Support
+2. **In Production (Unverified)**
+   - Anyone can sign in
+   - Shows "unverified" warning
+   - Good for beta/early users
 
-For issues or questions:
-- Check logs: `az containerapp logs show --name mew-assistant-dev --resource-group mew-assistant-dev-rg`
-- View docs: `/docs` endpoint
-- GitHub: https://github.com/skakumanu/mew-assistant
+3. **In Production (Verified)**
+   - Anyone can sign in
+   - No warnings
+   - Requires Google approval
+
+---
+
+## Recommended for Customer Zero Testing
+
+### For Now: Add Test Users
+- **Fast:** Takes 2 minutes
+- **Safe:** Only your testers can access
+- **Perfect for:** Initial testing
+
+**Steps:**
+1. Add 5-10 test user emails
+2. Share the link with them
+3. They can sign in immediately
+
+### Later: Publish App
+- When you have 10+ happy testers
+- Click "Publish App"
+- Anyone can sign in
+- May show "unverified" warning (that's OK!)
+
+---
+
+## Quick Reference
+
+**Add test users here:**
+https://console.cloud.google.com/apis/credentials/consent
+
+**Current OAuth redirect URL (should be configured):**
+```
+https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/simple/google/callback
+```
+
+**Scopes you're requesting:**
+- `openid` - Basic authentication
+- `email` - User's email address
+- `profile` - User's name and photo
+- `https://www.googleapis.com/auth/calendar.readonly` - Read calendar
+
+---
+
+## Troubleshooting
+
+### Still getting 403 after adding test user?
+- Make sure you added the EXACT email address
+- Wait 1-2 minutes for Google to sync
+- Try in incognito/private window
+- Make sure you're signed in with that Google account
+
+### Want to add more than 100 test users?
+- You need to publish the app (move to Production)
+
+### Error says "redirect_uri_mismatch"?
+- Go to Credentials → OAuth 2.0 Client IDs
+- Click your client ID
+- Add this to "Authorized redirect URIs":
+  ```
+  https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/simple/google/callback
+  ```
+
+---
+
+## Next Steps
+
+1. **Add yourself as test user** (takes 2 min)
+2. **Test the sign-in flow** (works now!)
+3. **Add your customer zero testers** (5-10 people)
+4. **After successful testing → Publish app** (1 click)
+
+---
+
+## Environment Variables Check
+
+Make sure these are set in Azure Container App:
+
+```bash
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-secret
+BASE_URL=https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+```
+
+**Check in Azure Portal:**
+Settings → Environment variables
+
+---
+
+**Quick fix:** Add your email as test user, then try again!
+
+**Link:** https://console.cloud.google.com/apis/credentials/consent
