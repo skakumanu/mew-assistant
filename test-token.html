@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Token</title>
+</head>
+<body>
+    <h1>Debug Token Issue</h1>
+    <button onclick="testToken()">Test Token</button>
+    <pre id="output"></pre>
+    
+    <script>
+        function testToken() {
+            const token = localStorage.getItem('mew_token');
+            const output = document.getElementById('output');
+            
+            output.textContent = 'Token exists: ' + (token ? 'YES' : 'NO') + '\n';
+            output.textContent += 'Token length: ' + (token ? token.length : 0) + '\n';
+            output.textContent += 'Token start: ' + (token ? token.substring(0, 20) : 'N/A') + '\n\n';
+            
+            if (token) {
+                output.textContent += 'Testing API call...\n';
+                
+                fetch('https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/simple-calendar/events?max_results=5', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                .then(response => {
+                    output.textContent += 'Response status: ' + response.status + '\n';
+                    return response.json();
+                })
+                .then(data => {
+                    output.textContent += 'Response: ' + JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    output.textContent += 'Error: ' + error.message;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
