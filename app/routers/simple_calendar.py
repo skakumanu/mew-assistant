@@ -11,6 +11,7 @@ import logging
 from ..database.connection import get_db
 from ..database.models import FederatedIdentity
 from ..utils.auth import get_current_user
+from ..utils.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,36 @@ async def get_calendar_events(
             detail="No Google access token found. Please sign in again."
         )
     
+    # Function to refresh Google token if needed
+    async def refresh_google_token():
+        if not fed_identity.refresh_token:
+            return False
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                token_response = await client.post(
+                    'https://oauth2.googleapis.com/token',
+                    data={
+                        'client_id': settings.GOOGLE_CLIENT_ID,
+                        'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                        'refresh_token': fed_identity.refresh_token,
+                        'grant_type': 'refresh_token'
+                    }
+                )
+                
+                if token_response.status_code == 200:
+                    token_data = token_response.json()
+                    fed_identity.access_token = token_data['access_token']
+                    db.commit()
+                    logger.info(f"Refreshed Google token for user {current_user.id}")
+                    return True
+                else:
+                    logger.error(f"Token refresh failed: {token_response.text}")
+                    return False
+        except Exception as e:
+            logger.error(f"Error refreshing token: {e}")
+            return False
+    
     # Call Google Calendar API
     try:
         async with httpx.AsyncClient() as client:
@@ -59,16 +90,31 @@ async def get_calendar_events(
                     'maxResults': max_results,
                     'orderBy': 'startTime',
                     'singleEvents': True,
-                    'timeMin': None  # Could add current time to only get future events
+                    'timeMin': None
                 },
                 headers={'Authorization': f'Bearer {fed_identity.access_token}'}
             )
             
+            # If token expired, try to refresh and retry once
             if response.status_code == 401:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Google token expired. Please sign in again."
-                )
+                logger.info(f"Google token expired for user {current_user.id}, attempting refresh...")
+                if await refresh_google_token():
+                    # Retry with new token
+                    response = await client.get(
+                        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+                        params={
+                            'maxResults': max_results,
+                            'orderBy': 'startTime',
+                            'singleEvents': True,
+                            'timeMin': None
+                        },
+                        headers={'Authorization': f'Bearer {fed_identity.access_token}'}
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Google token expired and refresh failed. Please sign in again."
+                    )
             
             if response.status_code != 200:
                 logger.error(f"Google Calendar API error: {response.text}")
