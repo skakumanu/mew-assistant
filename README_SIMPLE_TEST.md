@@ -1,64 +1,34 @@
-# ⚡ Quick Test - iPhone Google Calendar
+# Debug Test - Token is Saved, Now Test API Call
 
-## 1 Minute Test
+Good news! Token is being saved to localStorage.
 
-### On Your iPhone:
+## Next Step: Test the API call directly
 
-1. **Open this link:**
-   https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+After signing in, open Console (F12) and run this:
 
-2. **Tap "Sign in with Google"**
+```javascript
+const token = localStorage.getItem('mew_token');
+console.log('Testing API with token:', token.substring(0, 20) + '...');
 
-3. **Approve calendar permission**
-
-4. **Done!** ✅
-
-Your Google Calendar is now connected.
-
----
-
-## What You Can Do
-
-✅ **View your calendar** (read-only)  
-❌ **Add events** (coming in 2 weeks)
-
----
-
-## Test It Works
-
-After signing in, you'll see a success page.
-
-Your token is saved automatically in the browser.
-
-To see your events, a developer can call:
-```
-GET /simple-calendar/events
-Authorization: Bearer [your token]
+fetch('https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/simple-calendar/events?max_results=5', {
+    headers: { 'Authorization': 'Bearer ' + token }
+})
+.then(response => {
+    console.log('Status:', response.status);
+    return response.json();
+})
+.then(data => {
+    console.log('Response:', data);
+})
+.catch(error => {
+    console.error('Error:', error);
+});
 ```
 
----
+## What to Tell Me:
 
-## For Non-Tech People
+1. **Status:** What number? (200, 401, 400, 500?)
+2. **Response:** Copy the entire JSON that prints
+3. **Error:** If there's an error, what does it say?
 
-**What does this mean?**
-- You signed in ✅
-- Your calendar is connected ✅
-- You can view it through an app ✅
-- You can't add events YET ⏳
-
-**Next steps:**
-- We'll build a simple iPhone app
-- Or create a Siri shortcut for you
-- Then you can just talk to your phone!
-
----
-
-## Full Docs
-
-- **Quick Start:** IPHONE_TEST_READY.md
-- **Detailed Guide:** IPHONE_OAUTH_TEST.md  
-- **Technical Status:** SIMPLE_CALENDAR_STATUS.md
-
----
-
-**Questions?** Just sign in again - it fixes most things! 😊
+This will tell us exactly what the API is returning!
