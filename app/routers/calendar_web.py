@@ -260,3 +260,19 @@ async def calendar_page(request: Request):
     """
     
     return HTMLResponse(content=html)
+
+
+@router.get("/test-token")
+async def test_token():
+    """Debug endpoint to test token generation"""
+    from ..utils.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+    
+    test_data = {"sub": "test", "email": "test@test.com", "role": "user"}
+    token = create_access_token(test_data)
+    
+    return {
+        "token_length": len(token),
+        "token_preview": token[:50] + "...",
+        "expire_minutes_setting": ACCESS_TOKEN_EXPIRE_MINUTES,
+        "expire_days": ACCESS_TOKEN_EXPIRE_MINUTES / 1440
+    }
