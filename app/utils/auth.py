@@ -185,22 +185,32 @@ async def get_current_user(
     
     try:
         payload = decode_token(token)
-        email: str = payload.get("sub")
+        user_id: str = payload.get("sub")
         
-        if email is None:
+        logger.info(f"Token decoded successfully, user_id: {user_id}")
+        
+        if user_id is None:
+            logger.error("No 'sub' in token payload")
             raise credentials_exception
             
         # Verify token type
         if payload.get("type") != "access":
+            logger.error(f"Invalid token type: {payload.get('type')}")
             raise credentials_exception
             
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT decode error: {str(e)}")
         raise credentials_exception
     
-    # Get user from database
-    user = db.query(User).filter(User.email == email).first()
+    # Get user from database by ID (sub contains user ID, not email)
+    try:
+        user = db.query(User).filter(User.id == int(user_id)).first()
+    except ValueError:
+        logger.error(f"Invalid user_id format: {user_id}")
+        raise credentials_exception
     
     if user is None:
+        logger.error(f"User not found in database for ID: {user_id}")
         raise credentials_exception
     
     if not user.is_active:
