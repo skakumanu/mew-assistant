@@ -146,12 +146,18 @@ async def calendar_page(request: Request):
                 const urlToken = urlParams.get('token');
                 const userName = urlParams.get('name');
                 
+                console.log('Calendar page loaded');
+                console.log('Token in URL:', urlToken ? 'YES' : 'NO');
+                console.log('Current localStorage token:', localStorage.getItem('mew_token') ? 'EXISTS' : 'NONE');
+                
                 if (urlToken) {
+                    console.log('Saving token to localStorage...');
                     // Save token from URL to localStorage
                     localStorage.setItem('mew_token', urlToken);
                     if (userName) {
                         localStorage.setItem('mew_name', userName);
                     }
+                    console.log('Token saved! Length:', urlToken.length);
                     // Clean URL (remove token from address bar)
                     window.history.replaceState({}, document.title, '/calendar');
                 }

@@ -162,11 +162,16 @@ async def google_login():
 @router.get("/simple/google/callback")
 async def google_callback(request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)):
     """Handle Google OAuth callback"""
+    logger.info("=== GOOGLE CALLBACK STARTED ===")
+    logger.info(f"Code present: {code is not None}, Error: {error}")
+    
     try:
         if error:
+            logger.error(f"OAuth error received: {error}")
             raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
         
         if not code:
+            logger.error("No authorization code received")
             raise HTTPException(status_code=400, detail="No authorization code received")
         
         logger.info(f"Received authorization code: {code[:10]}...")
