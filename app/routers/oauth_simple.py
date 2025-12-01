@@ -293,9 +293,14 @@ async def google_callback(request: Request, code: str = None, error: str = None,
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
+        logger.info(f"Created JWT token for user {user.id}, redirecting to /calendar with token")
+        logger.info(f"Token length: {len(jwt_token)}, starts with: {jwt_token[:20]}")
+        
         # Redirect to calendar page with token in URL
+        redirect_url = f"/calendar?token={jwt_token}&name={user.full_name}"
+        logger.info(f"Redirect URL: {redirect_url[:100]}...")
         return RedirectResponse(
-            url=f"/calendar?token={jwt_token}&name={user.full_name}",
+            url=redirect_url,
             status_code=303
         )
         
