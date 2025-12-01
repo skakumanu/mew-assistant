@@ -30,6 +30,7 @@ COPY --from=builder /root/.local /root/.local
 # Copy application code (includes templates and static)
 COPY ./app ./app
 COPY .env.example .env
+COPY init-oauth-db.py .
 
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
@@ -38,5 +39,5 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run migration then start the application
+CMD python init-oauth-db.py && uvicorn app.main:app --host 0.0.0.0 --port 8000
