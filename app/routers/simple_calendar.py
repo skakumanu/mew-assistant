@@ -83,6 +83,11 @@ async def get_calendar_events(
     
     # Call Google Calendar API
     try:
+        from datetime import datetime, timezone
+        
+        # Get current time in RFC3339 format (required for timeMin with orderBy)
+        time_min = datetime.now(timezone.utc).isoformat()
+        
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 'https://www.googleapis.com/calendar/v3/calendars/primary/events',
@@ -90,7 +95,7 @@ async def get_calendar_events(
                     'maxResults': max_results,
                     'orderBy': 'startTime',
                     'singleEvents': True,
-                    'timeMin': None
+                    'timeMin': time_min  # Required when using orderBy=startTime
                 },
                 headers={'Authorization': f'Bearer {fed_identity.access_token}'}
             )
@@ -106,7 +111,7 @@ async def get_calendar_events(
                             'maxResults': max_results,
                             'orderBy': 'startTime',
                             'singleEvents': True,
-                            'timeMin': None
+                            'timeMin': time_min  # Use same timeMin
                         },
                         headers={'Authorization': f'Bearer {fed_identity.access_token}'}
                     )
