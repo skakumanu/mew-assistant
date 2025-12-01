@@ -118,6 +118,11 @@ class FederatedIdentity(Base):
     name = Column(String, nullable=True)
     picture = Column(String, nullable=True)
     
+    # OAuth tokens for API access
+    access_token = Column(String, nullable=True)
+    refresh_token = Column(String, nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+    
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     last_used_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
