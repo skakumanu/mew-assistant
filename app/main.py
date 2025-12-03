@@ -39,10 +39,11 @@ from .routers import (
     auth_router, session_router, message_router, summary_router,
     calendar_router, mobile_router, voice_router, kid_router,
     simple_oauth_router, ai_scheduler_router, parent_approval_router,
-    simple_calendar_router, calendar_web_router, debug_router
+    simple_calendar_router, calendar_web_router, debug_router, oauth_web
 )
 
 app.include_router(auth_router, tags=["auth"])
+app.include_router(oauth_web.router, tags=["oauth"])
 app.include_router(simple_oauth_router, tags=["oauth"])
 app.include_router(simple_calendar_router, tags=["calendar"])
 app.include_router(calendar_web_router, tags=["calendar-web"])
