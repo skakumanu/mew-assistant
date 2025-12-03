@@ -237,8 +237,10 @@ async def oauth_callback(request: Request, provider: str, code: str, state: str 
         
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
         
-        # Redirect to dashboard with token
-        response = RedirectResponse(url="/auth/oauth/dashboard")
+        # Redirect to dashboard with token in URL so JavaScript can access it
+        # The dashboard will save it to localStorage
+        dashboard_url = f"/auth/oauth/dashboard?token={result['access_token']}"
+        response = RedirectResponse(url=dashboard_url)
         response.set_cookie(
             key="mew_token",
             value=result["access_token"],
