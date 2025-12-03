@@ -176,7 +176,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         
         # Skip CSRF for public registration/login/voice endpoints
         public_endpoints = [
-            '/auth/register', '/auth/login', '/auth/magic-link', 
+            '/auth/register', '/auth/login', '/auth/magic-link', '/auth/reset-password',
             '/voice/', '/api/v1/voice/', '/health', '/docs', '/redoc', '/openapi.json'
         ]
         if any(request.url.path.startswith(endpoint) for endpoint in public_endpoints):
