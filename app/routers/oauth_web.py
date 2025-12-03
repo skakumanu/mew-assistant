@@ -179,7 +179,7 @@ async def oauth_login_page(request: Request):
                     localStorage.setItem('mew_user', JSON.stringify(data.user));
                     showStatus('Login successful! Redirecting...');
                     setTimeout(() => {
-                        window.location.href = '/oauth/dashboard';
+                        window.location.href = '/auth/oauth/dashboard';
                     }, 1500);
                 } else {
                     showStatus(data.detail || 'Login failed', true);
@@ -316,7 +316,7 @@ async def dashboard(request: Request):
             const token = localStorage.getItem('mew_token') || getTokenFromURL();
             
             if (!token) {
-                window.location.href = '/oauth/login';
+                window.location.href = '/auth/oauth/login';
                 return;
             }
             
@@ -331,11 +331,11 @@ async def dashboard(request: Request):
                     localStorage.setItem('mew_user', JSON.stringify(user));
                     displayUserInfo(user);
                 } else {
-                    window.location.href = '/oauth/login';
+                    window.location.href = '/auth/oauth/login';
                 }
             } catch (error) {
                 console.error('Error loading user:', error);
-                window.location.href = '/oauth/login';
+                window.location.href = '/auth/oauth/login';
             }
         }
         
@@ -364,7 +364,7 @@ async def dashboard(request: Request):
         function logout() {
             localStorage.removeItem('mew_token');
             localStorage.removeItem('mew_user');
-            window.location.href = '/oauth/login';
+            window.location.href = '/auth/oauth/login';
         }
         
         loadUserInfo();
