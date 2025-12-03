@@ -7,7 +7,7 @@ import httpx
 from datetime import datetime, timedelta
 import time
 
-from app.database.models import User, OAuthProvider
+from app.database.models import User, OAuthProvider, UserRole
 from app.utils.auth import create_access_token
 from app.utils.config import settings
 
