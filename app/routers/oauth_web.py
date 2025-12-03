@@ -227,12 +227,13 @@ async def oauth_callback(request: Request, provider: str, code: str, state: str 
     """Handle OAuth callback from provider"""
     try:
         # Reconstruct the redirect_uri that was used in the authorization request
-        # Use request.url to get the proper scheme (https) from the actual callback URL
-        scheme = request.url.scheme  # Gets 'https' from the actual request
+        # Azure load balancer terminates SSL, so check X-Forwarded-Proto header
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
         host = request.headers.get("host") or request.url.netloc
         redirect_uri = f"{scheme}://{host}/auth/oauth/callback/{provider}"
         
         print(f"[OAuth Callback] Provider: {provider}, redirect_uri: {redirect_uri}")
+        print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {request.headers.get('x-forwarded-proto')}, scheme: {request.url.scheme}")
         
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
         
