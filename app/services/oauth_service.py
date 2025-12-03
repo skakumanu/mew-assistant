@@ -227,7 +227,7 @@ class OAuthService:
         
         # Create JWT token
         access_token = create_access_token(data={
-            "sub": user.email,
+            "sub": str(user.id),  # Use user ID as subject, not email
             "user_id": user.id,
             "role": user.role
         })
