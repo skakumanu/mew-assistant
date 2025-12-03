@@ -227,8 +227,12 @@ async def oauth_callback(request: Request, provider: str, code: str, state: str 
     """Handle OAuth callback from provider"""
     try:
         # Reconstruct the redirect_uri that was used in the authorization request
-        base_url = str(request.base_url).rstrip('/')
-        redirect_uri = f"{base_url}/auth/oauth/callback/{provider}"
+        # Use request.url to get the proper scheme (https) from the actual callback URL
+        scheme = request.url.scheme  # Gets 'https' from the actual request
+        host = request.headers.get("host") or request.url.netloc
+        redirect_uri = f"{scheme}://{host}/auth/oauth/callback/{provider}"
+        
+        print(f"[OAuth Callback] Provider: {provider}, redirect_uri: {redirect_uri}")
         
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
         
