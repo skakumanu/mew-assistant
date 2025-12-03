@@ -223,10 +223,14 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
         raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
 
 @router.get("/callback/{provider}")
-async def oauth_callback(provider: str, code: str, state: str = None, db: Session = Depends(get_db)):
+async def oauth_callback(request: Request, provider: str, code: str, state: str = None, db: Session = Depends(get_db)):
     """Handle OAuth callback from provider"""
     try:
-        result = await OAuthService.handle_callback(provider, code, state, db)
+        # Reconstruct the redirect_uri that was used in the authorization request
+        base_url = str(request.base_url).rstrip('/')
+        redirect_uri = f"{base_url}/auth/oauth/callback/{provider}"
+        
+        result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
         
         # Redirect to dashboard with token
         response = RedirectResponse(url="/auth/oauth/dashboard")
