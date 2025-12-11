@@ -4,8 +4,6 @@ Endpoints for calendar integration and event management
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime
 
 from app.database.connection import get_db
 from app.schemas.calendar import (

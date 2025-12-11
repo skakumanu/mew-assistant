@@ -3,10 +3,9 @@ Role-Based Access Control (RBAC) System
 Defines roles, permissions, and access control utilities
 """
 from enum import Enum
-from typing import List, Optional
+from typing import List
 from functools import wraps
-from fastapi import HTTPException, status, Depends
-from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
 
 class UserRole(str, Enum):
     """User role definitions with hierarchy"""

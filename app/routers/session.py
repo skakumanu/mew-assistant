@@ -5,7 +5,6 @@ Handles /mew/confirm and session-related endpoints.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
 
 from ..database import get_db
 from ..schemas.session import (

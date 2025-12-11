@@ -3,8 +3,7 @@ Voice Processor - Handles speech-to-text with multilingual support
 Uses Azure Speech Services for enterprise-grade recognition
 """
 
-from typing import Optional, Dict, Any, List
-import asyncio
+from typing import Optional, Dict
 from datetime import datetime
 import logging
 
@@ -14,8 +13,8 @@ except ImportError:
     speechsdk = None
 
 from app.database import get_db
-from app.database.models import VoiceCommand, VoiceSession
-from app.schemas.voice import VoiceCommandCreate, VoiceCommandResponse
+from app.database.models import VoiceCommand
+from app.schemas.voice import VoiceCommandResponse
 from app.utils.config import settings
 from .language_detector import LanguageDetector
 from .command_parser import CommandParser

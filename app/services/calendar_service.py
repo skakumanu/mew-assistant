@@ -4,7 +4,7 @@ Business logic for calendar integration and event management
 """
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)

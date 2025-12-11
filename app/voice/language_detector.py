@@ -3,7 +3,7 @@ Language Detection Module with Automatic Detection Support
 Supports multiple detection backends for robustness
 """
 
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, List, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class LanguageDetector:
         
         # Secondary: lingua-language-detector (more accurate for short texts)
         try:
-            from lingua import Language, LanguageDetectorBuilder
+            from lingua import LanguageDetectorBuilder
             self.lingua_detector = LanguageDetectorBuilder.from_all_languages().build()
             self.lingua_available = True
             logger.info("lingua-language-detector initialized as backup")

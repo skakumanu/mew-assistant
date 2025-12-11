@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-import os
 
 from app.database.connection import get_db
 from app.services.oauth_service import OAuthService
+from app.utils.log_sanitizer import sanitize_for_log
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 
@@ -232,8 +232,8 @@ async def oauth_callback(request: Request, provider: str, code: str, state: str 
         host = request.headers.get("host") or request.url.netloc
         redirect_uri = f"{scheme}://{host}/auth/oauth/callback/{provider}"
         
-        print(f"[OAuth Callback] Provider: {provider}, redirect_uri: {redirect_uri}")
-        print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {request.headers.get('x-forwarded-proto')}, scheme: {request.url.scheme}")
+        print(f"[OAuth Callback] Provider: {sanitize_for_log(provider)}, redirect_uri: {sanitize_for_log(redirect_uri)}")
+        print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {sanitize_for_log(request.headers.get('x-forwarded-proto'))}, scheme: {sanitize_for_log(request.url.scheme)}")
         
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
         

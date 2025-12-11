@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 import logging
 
-from app.database.models import ScheduleEntry, UserProfile, UserPreference
+from app.database.models import ScheduleEntry
 from app.schemas.schedule import ScheduleConflict, ScheduleSuggestion, OptimizationResult
 
 logger = logging.getLogger(__name__)

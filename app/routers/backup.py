@@ -4,7 +4,6 @@ Manages cloud backups, restoration, and data export
 """
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List
 from datetime import datetime
 
 from app.database import get_db

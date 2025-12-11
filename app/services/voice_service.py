@@ -4,14 +4,14 @@ Handles multilingual voice commands with automatic language detection
 Supporting 100+ languages from around the world
 """
 
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import logging
 from sqlalchemy.orm import Session
 
 from app.database.models import VoiceCommand
 from app.database.models import User
-from app.schemas.voice import VoiceCommandRequest, VoiceCommandResponse, VoiceTranscription
+from app.schemas.voice import VoiceCommandResponse, VoiceTranscription
 from app.integrations.voice_integration import VoiceIntegration
 from app.services.session_service import SessionService
 

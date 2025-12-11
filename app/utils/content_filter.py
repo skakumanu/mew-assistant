@@ -4,7 +4,6 @@ Safety filters for kid-friendly content
 Ensures appropriate language and detects concerning messages
 """
 import re
-from typing import List, Tuple
 
 
 class ContentFilter:

@@ -1,7 +1,7 @@
 """
 Smart approval engine for kid requests with minimal parent burden.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timedelta
 from enum import Enum
 

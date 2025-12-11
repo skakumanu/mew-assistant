@@ -12,7 +12,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import secrets
 import hashlib
-import json
 import os
 import logging
 

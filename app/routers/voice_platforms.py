@@ -3,12 +3,11 @@ Voice Platform Router
 Handles requests from Siri, Alexa, Google Assistant, Tesla, etc.
 """
 
-from fastapi import APIRouter, Request, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
 import logging
 
 from app.schemas.voice_platform import (
-    VoicePlatformRequest,
     VoicePlatformResponse,
     SiriRequest,
     AlexaRequest,

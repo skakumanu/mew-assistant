@@ -3,7 +3,7 @@ Voice Command Router
 Handles voice command endpoints with automatic language detection for 100+ languages
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import logging
@@ -14,7 +14,6 @@ from app.schemas.voice import (
     VoiceCommandResponse,
     VoiceSessionCreate,
     VoiceSessionResponse,
-    SupportedLanguagesResponse,
     VoiceLanguageInfo,
     VoiceStatisticsResponse
 )

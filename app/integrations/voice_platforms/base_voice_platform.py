@@ -4,7 +4,7 @@ Abstract class for all voice assistant platforms
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 import logging
 
@@ -21,23 +21,19 @@ class BaseVoicePlatform(ABC):
     @abstractmethod
     async def authenticate(self, credentials: Dict[str, Any]) -> bool:
         """Authenticate with the voice platform"""
-        pass
     
     @abstractmethod
     async def handle_intent(self, intent: str, slots: Dict[str, Any], 
                           user_id: str) -> Dict[str, Any]:
         """Process voice intent from the platform"""
-        pass
     
     @abstractmethod
     async def send_response(self, response: Dict[str, Any]) -> bool:
         """Send response back to the voice platform"""
-        pass
     
     @abstractmethod
     async def register_skill(self, skill_config: Dict[str, Any]) -> bool:
         """Register/update skill on the platform"""
-        pass
     
     async def log_interaction(self, user_id: str, intent: str, 
                              success: bool, metadata: Dict[str, Any] = None):

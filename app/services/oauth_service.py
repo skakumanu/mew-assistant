@@ -2,9 +2,9 @@
 from authlib.integrations.starlette_client import OAuth
 from authlib.jose import jwt
 from sqlalchemy.orm import Session
-from typing import Optional, Dict
+from typing import Dict
 import httpx
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 
 from app.database.models import User, OAuthProvider, UserRole

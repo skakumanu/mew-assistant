@@ -12,6 +12,7 @@ from ..database.connection import get_db
 from ..database.models import FederatedIdentity
 from ..utils.auth import get_current_user
 from ..utils.config import settings
+from ..utils.log_sanitizer import sanitize_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ async def get_calendar_events(
                     token_data = token_response.json()
                     fed_identity.access_token = token_data['access_token']
                     db.commit()
-                    logger.info(f"Refreshed Google token for user {current_user.id}")
+                    logger.info(f"Refreshed Google token for user {sanitize_user_id(current_user.id)}")
                     return True
                 else:
                     logger.error(f"Token refresh failed: {token_response.text}")
@@ -102,7 +103,7 @@ async def get_calendar_events(
             
             # If token expired, try to refresh and retry once
             if response.status_code == 401:
-                logger.info(f"Google token expired for user {current_user.id}, attempting refresh...")
+                logger.info(f"Google token expired for user {sanitize_user_id(current_user.id)}, attempting refresh...")
                 if await refresh_google_token():
                     # Retry with new token
                     response = await client.get(

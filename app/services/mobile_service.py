@@ -4,7 +4,7 @@ Handles mobile device management and push notifications
 """
 
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from datetime import datetime, timedelta
 from fastapi import BackgroundTasks
 import logging
@@ -15,10 +15,8 @@ from app.schemas.mobile import (
     PushNotificationRequest,
     AppConfigResponse,
     OfflineSyncRequest,
-    OfflineSyncResponse,
-    MobilePlatform
+    OfflineSyncResponse
 )
-from app.database.models import User
 
 logger = logging.getLogger(__name__)
 

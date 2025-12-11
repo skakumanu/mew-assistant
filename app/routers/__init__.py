@@ -34,6 +34,5 @@ __all__ = [
     # "approval_router",
     "oauth_web"
 ]
-from .debug_page import router as debug_router
 
 __all__.append("debug_router")

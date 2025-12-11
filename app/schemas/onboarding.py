@@ -1,9 +1,8 @@
 """
 Onboarding Schemas - Easy Registration Data Models
 """
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, Dict, Any, List
-from datetime import datetime
 
 
 class QuickRegistrationRequest(BaseModel):

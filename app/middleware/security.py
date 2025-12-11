@@ -10,7 +10,7 @@ Implements security best practices:
 - Content Security Policy
 """
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 import re
 import hashlib
@@ -21,7 +21,7 @@ import bleach
 
 from app.utils.logger import get_logger
 from app.utils.exceptions import SecurityViolationError, RateLimitExceeded
-from app.utils.privacy import privacy_guardrails, PIIDetector
+from app.utils.privacy import PIIDetector
 
 logger = get_logger(__name__)
 

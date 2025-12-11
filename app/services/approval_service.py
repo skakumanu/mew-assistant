@@ -4,7 +4,7 @@ Handles all kid requests that require parent approval before execution
 CRITICAL: All schedule changes from kids MUST go through this service
 """
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict
+from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 

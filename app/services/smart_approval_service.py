@@ -3,7 +3,7 @@ Smart Approval Service
 Reduces parent overwhelm by intelligently auto-approving safe requests
 and batching others for efficient review.
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from app.database.models import ApprovalRequest, User, ApprovalRule

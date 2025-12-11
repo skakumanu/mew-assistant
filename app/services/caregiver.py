@@ -1,7 +1,7 @@
 """
 Caregiver service for support and summaries.
 """
-from typing import Dict, List
+from typing import Dict
 from datetime import datetime
 
 

@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
 
-from .database.connection import engine, Base, init_db
+from .database.connection import init_db
 from .routers import landing
 
 logger = logging.getLogger(__name__)

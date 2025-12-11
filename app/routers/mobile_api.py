@@ -3,9 +3,8 @@ Mobile API Router
 Optimized endpoints for iOS and Android mobile apps
 """
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import Optional, List
 import logging
 
 from app.database import get_db
@@ -15,7 +14,6 @@ from app.schemas.mobile import (
     MobileDeviceResponse,
     PushNotificationRequest,
     AppConfigResponse,
-    MobileSessionSync,
     OfflineSyncRequest,
     OfflineSyncResponse
 )

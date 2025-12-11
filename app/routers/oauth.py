@@ -4,7 +4,7 @@ Proven, production-ready federated login implementation
 """
 
 from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from fastapi_sso.sso.google import GoogleSSO
 from fastapi_sso.sso.microsoft import MicrosoftSSO

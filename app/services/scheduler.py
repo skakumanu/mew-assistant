@@ -1,7 +1,7 @@
 """
 Scheduler service for managing appointments and sessions.
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import uuid4
 

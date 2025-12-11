@@ -2,7 +2,7 @@
 Bot Protection Middleware
 Protects against automated attacks, spam, and abuse
 """
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from datetime import datetime, timedelta

@@ -7,7 +7,6 @@ Supports 100+ global languages with automatic detection
 from typing import Optional, Dict, Any
 import logging
 from datetime import datetime
-import io
 
 from app.utils.config import settings
 from app.schemas.voice import VoiceTranscription

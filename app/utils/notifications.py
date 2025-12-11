@@ -11,7 +11,6 @@ class NotificationService:
     
     def __init__(self):
         """Initialize notification service"""
-        pass
     
     async def send_email(
         self,

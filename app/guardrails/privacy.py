@@ -17,7 +17,6 @@ class PrivacyGuard:
     
     def __init__(self):
         """Initialize privacy guard."""
-        pass
     
     def detect_pii(self, text: str) -> Dict[str, List[str]]:
         """Detect PII in text."""

@@ -8,8 +8,7 @@ from typing import List, Optional
 import json
 from ..database.models import (
     CaregiverSummary as SummaryModel,
-    Session as SessionModel,
-    Message as MessageModel
+    Session as SessionModel
 )
 from ..schemas.summary import SummaryRequest
 

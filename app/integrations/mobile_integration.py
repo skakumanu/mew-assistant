@@ -5,7 +5,6 @@ Support for iOS (Apple) and Android push notifications and deep linking
 from typing import List, Optional, Dict, Any
 from enum import Enum
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class MobileIntegration:
             bool: Initialization success status
         """
         try:
-            from aioapns import APNs, NotificationRequest
+            from aioapns import APNs
             
             self.apns_client = APNs(
                 key=credentials.get('key_path'),

@@ -2,7 +2,7 @@
 Pydantic schemas for message ingestion.
 Validates multi-channel message data (email, SMS, WhatsApp).
 """
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional
 from enum import Enum

@@ -10,7 +10,6 @@ import secrets
 import re
 
 from app.database.models import User, Family, UserRole
-from app.schemas.auth import UserCreate
 from app.utils.logger import get_logger
 from app.utils.notifications import NotificationService
 
@@ -293,7 +292,6 @@ class OnboardingService:
     ):
         """Handle voice platform confirmation"""
         # Platform-specific handling
-        pass
     
     def _generate_voice_friendly_code(self) -> str:
         """Generate easy-to-say code (e.g., 'Charlie-7-Delta-3')"""
@@ -327,7 +325,6 @@ class OnboardingService:
     ) -> User:
         """Create user from magic link"""
         # Implementation
-        pass
     
     async def _generate_access_token(self, user: User) -> str:
         """Generate JWT access token"""

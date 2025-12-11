@@ -5,7 +5,7 @@ Handles activity suggestions, schedule changes, rewards, and parent-kid communic
 """
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
 
 from ..database.models import User
@@ -209,7 +209,6 @@ class KidService:
     def award_sticker(self, kid_id: int, activity_id: int, sticker_type: str):
         """Award a sticker for completing an activity"""
         # In real implementation, save to database
-        pass
     
     def _generate_id(self) -> int:
         """Generate a unique ID"""

@@ -4,8 +4,6 @@ Provides simplified, age-appropriate endpoints for children to interact with Mew
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime, timedelta
 
 from ..database import get_db
 from ..database.models import User
@@ -13,7 +11,6 @@ from ..schemas.kid_friendly import (
     KidScheduleRequest,
     KidScheduleResponse,
     KidActivitySuggestion,
-    ParentApprovalRequest,
     SimplifiedResponse,
     EmojiReaction
 )

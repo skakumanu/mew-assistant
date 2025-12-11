@@ -2,7 +2,7 @@
 Google Calendar integration for scheduling.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from enum import Enum
 

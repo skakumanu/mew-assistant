@@ -1,7 +1,7 @@
 """
 Compliance checking for HIPAA, COPPA, GDPR.
 """
-from typing import Dict, List
+from typing import Dict
 from datetime import datetime
 
 

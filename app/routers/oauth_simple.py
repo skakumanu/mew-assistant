@@ -6,13 +6,12 @@ No complex libraries - just direct HTTP calls
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import jwt
 import logging
 import httpx
-from urllib.parse import urlencode, parse_qs
+from urllib.parse import urlencode
 
 from ..database.connection import get_db
+from ..utils.log_sanitizer import sanitize_email, sanitize_user_id
 from ..database.models import User, FederatedIdentity, UserRole
 from ..utils.config import settings
 from ..utils.auth import create_access_token
@@ -231,7 +230,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
                 )
             
             user_info = userinfo_response.json()
-            logger.info(f"User info retrieved: {user_info.get('email')}")
+            logger.info(f"User info retrieved: {sanitize_email(user_info.get('email'))}")
         
         # Find or create user
         email = user_info.get('email')
@@ -264,7 +263,7 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             db.flush()
             db.refresh(fed_identity)
             db.commit()
-            logger.info(f"Created new user: {email}")
+            logger.info(f"Created new user: {sanitize_email(email)}")
         else:
             # Update federated identity with new tokens
             fed_identity = db.query(FederatedIdentity).filter(
@@ -292,13 +291,13 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             db.refresh(fed_identity)
             db.commit()
             
-        logger.info(f"User logged in: {email}")
+        logger.info(f"User logged in: {sanitize_email(email)}")
         
         # Generate JWT token
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
         
-        logger.info(f"Created JWT token for user {user.id}, redirecting to /calendar with token")
+        logger.info(f"Created JWT token for user {sanitize_user_id(user.id)}, redirecting to /calendar with token")
         logger.info(f"Token length: {len(jwt_token)}, starts with: {jwt_token[:20]}")
         
         # Redirect to calendar page with token in URL
@@ -431,7 +430,7 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
             )
             db.add(fed_identity)
             db.commit()
-            logger.info(f"Created new user: {email}")
+            logger.info(f"Created new user: {sanitize_email(email)}")
         else:
             # Update federated identity if needed
             fed_identity = db.query(FederatedIdentity).filter(
@@ -449,7 +448,7 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
                 db.add(fed_identity)
                 db.commit()
             
-            logger.info(f"User logged in: {email}")
+            logger.info(f"User logged in: {sanitize_email(email)}")
         
         # Generate JWT token
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
