@@ -9,9 +9,6 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     """Service for sending notifications via multiple channels"""
     
-    def __init__(self):
-        """Initialize notification service"""
-    
     async def send_email(
         self,
         to: str,

@@ -23,6 +23,12 @@ logger = logging.getLogger(__name__)
 # Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
+
+# Token Expiration Configuration
+# NOTE: 30-day (43200 minutes) default is intentional for OAuth-based authentication
+# where users sign in via Google/Microsoft. These are federated identities with
+# their own security controls. For password-based auth, consider shorter durations.
+# Override with ACCESS_TOKEN_EXPIRE_MINUTES environment variable if needed.
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))  # 30 days default
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 

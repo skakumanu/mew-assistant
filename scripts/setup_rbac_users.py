@@ -2,9 +2,15 @@
 """
 Setup script for RBAC users
 Cleans existing users and creates superuser, admin, and regular user accounts
+
+SECURITY NOTE: This script is for initial setup/testing only.
+Passwords should be changed immediately after first login.
+For production, use environment variables or secure password prompts.
 """
 import sys
 import os
+import secrets
+import string
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import create_engine
@@ -17,8 +23,19 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def generate_secure_password(length=16):
+    """Generate a secure random password"""
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(alphabet) for _ in range(length))
+    return password
+
 def setup_rbac_users():
     """Clean database and create RBAC users"""
+    
+    # Get passwords from environment or generate secure ones
+    superuser_password = os.getenv('SUPERUSER_PASSWORD') or generate_secure_password()
+    admin_password = os.getenv('ADMIN_PASSWORD') or generate_secure_password()
+    parent_password = os.getenv('PARENT_PASSWORD') or generate_secure_password()
     
     # Connect to database
     engine = create_engine(settings.DATABASE_URL)
@@ -36,7 +53,7 @@ def setup_rbac_users():
         superuser = User(
             email="super@mew-assistant.org",
             username="superuser",
-            hashed_password=get_password_hash("SuperSecure123!"),
+            hashed_password=get_password_hash(superuser_password),
             full_name="System Superuser",
             role="SUPERUSER",
             is_active=True,
@@ -49,7 +66,7 @@ def setup_rbac_users():
         admin = User(
             email="admin@mew-assistant.org",
             username="admin",
-            hashed_password=get_password_hash("AdminSecure123!"),
+            hashed_password=get_password_hash(admin_password),
             full_name="System Administrator",
             role="ADMIN",
             is_active=True,
@@ -62,7 +79,7 @@ def setup_rbac_users():
         parent = User(
             email="skakumanu@gmail.com",
             username="skakumanu",
-            hashed_password=get_password_hash("Parent@Mew2024"),
+            hashed_password=get_password_hash(parent_password),
             full_name="Srinivasa Kakumanu",
             role="PARENT",
             is_active=True,
@@ -76,6 +93,12 @@ def setup_rbac_users():
         db.commit()
         
         logger.info("\n" + "="*60)
+        logger.info("RBAC Users Created Successfully!")
+        logger.info("="*60)
+        logger.info("\nGenerated Passwords (SAVE THESE):")
+        logger.info(f"Superuser (super@mew-assistant.org): {superuser_password}")
+        logger.info(f"Admin (admin@mew-assistant.org): {admin_password}")
+        logger.info(f"Parent (skakumanu@gmail.com): {parent_password}")
         logger.info("RBAC Users Created Successfully!")
         logger.info("="*60)
         logger.info("\nCredentials:")
