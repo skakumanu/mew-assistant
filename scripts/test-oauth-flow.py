@@ -4,7 +4,6 @@ Test OAuth flow to debug authentication issues
 """
 import asyncio
 import httpx
-from urllib.parse import urlencode
 
 BASE_URL = "https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io"
 

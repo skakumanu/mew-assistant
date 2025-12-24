@@ -1,4 +1,3 @@
-import os
 import psycopg2
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential

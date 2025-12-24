@@ -135,7 +135,8 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
                 if any(re.search(pattern, body_str, re.IGNORECASE) 
                        for pattern in self.suspicious_patterns):
                     return True
-            except:
+            except Exception:
+                # Ignore errors reading or decoding the request body; skip body content check if it fails
                 pass
         
         return False
@@ -143,13 +144,6 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
     def _check_user_agent(self, request: Request) -> bool:
         """Validate User-Agent header"""
         user_agent = request.headers.get("User-Agent", "")
-        
-        # Allow legitimate voice assistants and browsers
-        legitimate_agents = [
-            "Mozilla/", "Chrome/", "Safari/", "Edge/", "Firefox/",
-            "Alexa", "Siri", "Google Assistant", "PostmanRuntime",
-            "curl/", "python-requests/"
-        ]
         
         # Skip for health checks and docs
         if request.url.path in ["/health", "/docs", "/openapi.json"]:

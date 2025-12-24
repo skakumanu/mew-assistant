@@ -5,7 +5,6 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.middleware.bot_protection import captcha_verifier
-import time
 
 client = TestClient(app)
 
@@ -101,7 +100,7 @@ class TestCaptcha:
                 f"/auth/captcha/verify?challenge_id={challenge_id}&response={answer}"
             )
             assert verify_response.status_code == 200
-            assert verify_response.json()["verified"] == True
+            assert verify_response.json()["verified"]
     
     def test_verify_incorrect_response(self):
         """Test incorrect CAPTCHA response"""

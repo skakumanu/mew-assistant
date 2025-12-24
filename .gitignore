@@ -71,6 +71,7 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+debug/
 
 # Sensitive data
 *.pem
