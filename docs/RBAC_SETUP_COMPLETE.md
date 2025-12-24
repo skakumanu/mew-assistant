@@ -55,20 +55,22 @@ Successfully implemented a comprehensive Role-Based Access Control (RBAC) system
 1. **Superuser Account**
    - Email: `super@mew-assistant.org`
    - Username: `superuser`
-   - Password: `SuperSecure123!`
+   - Password: *Generated during setup (see setup script output)*
    - Role: SUPERUSER
 
 2. **Admin Account**
    - Email: `admin@mew-assistant.org`
    - Username: `admin`
-   - Password: `AdminSecure123!`
+   - Password: *Generated during setup (see setup script output)*
    - Role: ADMIN
 
 3. **Your Parent Account (Customer Zero)**
    - Email: `skakumanu@gmail.com`
    - Username: `skakumanu`
-   - Password: `Parent@Mew2024`
+   - Password: *Generated during setup (see setup script output)*
    - Role: PARENT
+
+> ⚠️ **SECURITY WARNING**: Passwords are randomly generated during setup. Save them securely (password manager, encrypted note, etc.). Users MUST change passwords on first login. Never commit passwords to version control.
 
 ## Security Features
 
