@@ -1,4 +1,8 @@
-"""Simple success page for OAuth flows with XSS protection"""
+#!/usr/bin/env python3
+"""Fix XSS vulnerabilities in OAuth pages"""
+
+# Fix oauth_success_page.py
+oauth_success_code = '''"""Simple success page for OAuth flows with XSS protection"""
 import html
 import json
 
@@ -43,3 +47,9 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
     </body>
     </html>
     """
+'''
+
+with open('app/routers/oauth_success_page.py', 'w', encoding='utf-8') as f:
+    f.write(oauth_success_code)
+
+print('✅ oauth_success_page.py fixed with XSS protection')

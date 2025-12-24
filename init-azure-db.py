@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Initialize Azure PostgreSQL database with correct credentials."""
+"""Initialize Azure PostgreSQL database with credentials from environment."""
 import psycopg2
+import os
 import sys
 
-# Azure PostgreSQL settings
-DB_HOST = "mew-db-dev.postgres.database.azure.com"
-DB_USER = "mewadmin"
-DB_PASSWORD = "MewDev2024SecurePass"
-DB_NAME = "mew_db"
+# Azure PostgreSQL settings - MUST be set in environment
+DB_HOST = os.getenv("DB_HOST", "mew-db-dev.postgres.database.azure.com")
+DB_USER = os.getenv("DB_USER", "mewadmin")
+DB_PASSWORD = os.getenv("DB_PASSWORD")  # Required from environment
+DB_NAME = os.getenv("DB_NAME", "mew_db")
+
+if not DB_PASSWORD:
+    print("ERROR: DB_PASSWORD environment variable not set")
+    sys.exit(1)
 
 try:
     print(f"Connecting to {DB_HOST}...")
