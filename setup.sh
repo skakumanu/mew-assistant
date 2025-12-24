@@ -55,7 +55,9 @@ if [ ! -f ".env" ]; then
         # Configure for PostgreSQL with Podman
         cat > .env << 'EOF'
 # Mew Assistant Configuration - PostgreSQL with Podman
-DATABASE_URL=postgresql://mew_user:mew_password@localhost:5432/mew_assistant
+# Set DATABASE_URL environment variable before running
+# Example: postgresql://user:password@localhost:5432/mew_assistant
+DATABASE_URL=${DATABASE_URL:-postgresql://localhost:5432/mew_assistant}
 APP_NAME=Mew Assistant
 DEBUG=True
 CORS_ORIGINS=*
