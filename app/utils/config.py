@@ -11,10 +11,10 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database
-    DATABASE_URL: str = "postgresql://mew_user:mew_password@localhost:5432/mew_assistant"
+    DATABASE_URL: str  # Required: set in environment
     
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str  # Required: set in environment
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

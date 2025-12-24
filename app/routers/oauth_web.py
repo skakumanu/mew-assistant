@@ -347,12 +347,34 @@ async def dashboard(request: Request):
         }
         
         function displayUserInfo(user) {
-            document.getElementById('userInfo').innerHTML = `
-                <h3>👤 ${user.full_name}</h3>
-                <p><strong>Email:</strong> ${user.email}</p>
-                <p><strong>Role:</strong> ${user.role}</p>
-                ${user.federated_provider ? `<p><strong>Provider:</strong> ${user.federated_provider}</p>` : ''}
-            `;
+            // Use textContent to prevent XSS attacks from user-supplied data
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = '';
+            
+            // Create and safely append name
+            const nameEl = document.createElement('h3');
+            nameEl.textContent = '👤 ' + (user.full_name || 'User');
+            userInfoDiv.appendChild(nameEl);
+            
+            // Create and safely append email
+            const emailP = document.createElement('p');
+            emailP.innerHTML = '<strong>Email:</strong> <span id="emailValue"></span>';
+            document.getElementById('emailValue').textContent = user.email || 'N/A';
+            userInfoDiv.appendChild(emailP);
+            
+            // Create and safely append role
+            const roleP = document.createElement('p');
+            roleP.innerHTML = '<strong>Role:</strong> <span id="roleValue"></span>';
+            document.getElementById('roleValue').textContent = user.role || 'N/A';
+            userInfoDiv.appendChild(roleP);
+            
+            // Add provider if present
+            if (user.federated_provider) {
+                const providerP = document.createElement('p');
+                providerP.innerHTML = '<strong>Provider:</strong> <span id="providerValue"></span>';
+                document.getElementById('providerValue').textContent = user.federated_provider;
+                userInfoDiv.appendChild(providerP);
+            }
         }
         
         function connectCalendar() {
