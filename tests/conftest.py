@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.database import Base, get_db
+from app.database.models import User
 
 
 # Use in-memory SQLite for testing
@@ -55,6 +56,22 @@ def client(test_db, monkeypatch):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+def db_session(test_db):
+    """Alias fixture so tests can request `db_session` explicitly."""
+    return test_db
+
+
+@pytest.fixture(scope="function")
+def test_user(db_session):
+    """Create a persisted test user for scheduler tests."""
+    user = User(email="scheduler_tester@example.com", hashed_password="test", full_name="Scheduler Tester")
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 
 @pytest.fixture

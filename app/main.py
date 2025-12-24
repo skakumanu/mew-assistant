@@ -47,19 +47,24 @@ app.include_router(simple_oauth_router, tags=["oauth"])
 app.include_router(simple_calendar_router, tags=["calendar"])
 app.include_router(calendar_web_router, tags=["calendar-web"])
 app.include_router(debug_router, tags=["debug"])
-app.include_router(session_router, prefix="/mew", tags=["sessions"])
-app.include_router(message_router, prefix="/mew", tags=["messages"])
-app.include_router(summary_router, prefix="/mew", tags=["summaries"])
-app.include_router(calendar_router, prefix="/calendar", tags=["calendar"])
-app.include_router(mobile_router, prefix="/mobile", tags=["mobile"])
-app.include_router(voice_router, prefix="/voice", tags=["voice"])
-app.include_router(kid_router, prefix="/kid", tags=["kid"])
-app.include_router(ai_scheduler_router, prefix="/ai-scheduler", tags=["ai-scheduler"])
-app.include_router(parent_approval_router, prefix="/approvals", tags=["approvals"])
+app.include_router(session_router, tags=["sessions"])
+app.include_router(message_router, tags=["messages"])
+app.include_router(summary_router, tags=["summaries"])
+app.include_router(calendar_router, tags=["calendar"])
+app.include_router(mobile_router, tags=["mobile"])
+app.include_router(voice_router, tags=["voice"])
+app.include_router(kid_router, tags=["kid"])
+app.include_router(ai_scheduler_router, tags=["ai-scheduler"])
+app.include_router(parent_approval_router, tags=["approvals"])
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "Mew Assistant"}
+    from datetime import datetime
+    return {
+        "status": "healthy",
+        "service": "Mew Assistant",
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 @app.get("/version")
 async def version():

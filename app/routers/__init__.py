@@ -15,6 +15,7 @@ from .simple_calendar import router as simple_calendar_router
 from .calendar_web import router as calendar_web_router
 # from .approval import router as approval_router
 from . import oauth_web
+from .debug_page import router as debug_router
 
 __all__ = [
     "auth_router", 
@@ -32,7 +33,6 @@ __all__ = [
     "simple_calendar_router",
     "calendar_web_router",
     # "approval_router",
-    "oauth_web"
+    "oauth_web",
+    "debug_router"
 ]
-
-__all__.append("debug_router")

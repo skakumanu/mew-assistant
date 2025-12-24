@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 import logging
 
-from app.database.models import ScheduleEntry
+from app.database.models import ScheduleEntry, SessionStatus, PriorityLevel
 from app.schemas.schedule import ScheduleConflict, ScheduleSuggestion, OptimizationResult
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class AISchedulerService:
         existing_entries = self.db.query(ScheduleEntry).filter(
             and_(
                 ScheduleEntry.user_id == user_id,
-                ScheduleEntry.status == 'confirmed',
+                ScheduleEntry.status == SessionStatus.CONFIRMED,
                 or_(
                     and_(ScheduleEntry.start_time <= start, ScheduleEntry.end_time > start),
                     and_(ScheduleEntry.start_time < end, ScheduleEntry.end_time >= end),
@@ -58,10 +58,15 @@ class AISchedulerService:
             suggestions = await self._generate_conflict_resolution(entry, proposed_entry)
             
             conflicts.append(ScheduleConflict(
+                type=self._determine_conflict_type(entry, proposed_entry),
+                schedule1_id=entry.id,
+                schedule2_id=proposed_entry.get('id', 0),
+                message=f"{entry.title} conflicts with {proposed_entry.get('title', 'proposed entry')}",
+                suggested_resolution=suggestions[0] if suggestions else "Adjust timing",
+                severity=severity,
                 conflicting_entry_id=entry.id,
                 conflicting_title=entry.title,
                 conflict_type=self._determine_conflict_type(entry, proposed_entry),
-                severity=severity,
                 overlap_minutes=self._calculate_overlap_minutes(entry, proposed_entry),
                 suggestions=suggestions
             ))
@@ -153,6 +158,7 @@ class AISchedulerService:
                 start_time=slot['start'],
                 end_time=slot['end'],
                 confidence_score=score['confidence'],
+                reason=score['reasoning'],
                 reasoning=score['reasoning'],
                 factors=score['factors']
             ))
@@ -221,7 +227,7 @@ class AISchedulerService:
                 ScheduleEntry.user_id == user_id,
                 ScheduleEntry.activity_type == activity_type,
                 ScheduleEntry.start_time >= ninety_days_ago,
-                ScheduleEntry.status == 'completed'
+                ScheduleEntry.status == SessionStatus.COMPLETED
             )
         ).all()
         
@@ -250,7 +256,9 @@ class AISchedulerService:
         # High severity conditions
         if overlap_minutes > 30:
             return 'high'
-        if existing.priority == 'critical' or proposed.get('priority') == 'critical':
+        if existing.priority in (PriorityLevel.HIGH, PriorityLevel.URGENT):
+            return 'high'
+        if proposed.get('priority') in (PriorityLevel.HIGH.value, PriorityLevel.URGENT.value, 'critical'):
             return 'high'
         if existing.activity_type in ['therapy', 'medical']:
             return 'high'
