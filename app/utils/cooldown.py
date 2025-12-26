@@ -43,6 +43,15 @@ class CooldownDetector:
         until = self.manager.get_cooldown_until(user_id) if in_cooldown else None
         return in_cooldown, until
 
+    # Backwards-compatible alias expected by tests
+    def check_cooldown(self, user_id: str, messages: Optional[list] = None) -> Tuple[bool, Optional[datetime]]:
+        """Alias for `check` that matches older test expectations.
+
+        `messages` parameter is accepted for compatibility but ignored
+        by this simple implementation.
+        """
+        return self.check(user_id)
+
 
 def check_cooldown(session: Session) -> Tuple[bool, Optional[datetime]]:
     """

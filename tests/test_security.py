@@ -44,6 +44,28 @@ def client(app):
     return TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _clear_middleware(client):
+    """Clear middleware in-memory counters before each test to ensure determinism."""
+    try:
+        sec = getattr(client.app.state, 'security_middleware', None)
+        if sec is not None and hasattr(sec, 'reset_state'):
+            sec.reset_state()
+        else:
+            client.app.state.security_middleware.request_counts.clear()
+    except Exception:
+        pass
+    try:
+        bot = getattr(client.app.state, 'bot_protection_middleware', None)
+        if bot is not None and hasattr(bot, 'reset_state'):
+            bot.reset_state()
+        else:
+            client.app.state.bot_protection_middleware.request_counts.clear()
+            client.app.state.bot_protection_middleware.blocked_ips.clear()
+    except Exception:
+        pass
+
+
 class TestSecurityMiddleware:
     """Test security middleware functionality"""
     
@@ -61,6 +83,14 @@ class TestSecurityMiddleware:
     
     def test_rate_limiting(self, client):
         """Test rate limiting prevents excessive requests"""
+        # Ensure strict rate limiting is enabled for this test
+        import os
+        os.environ.pop('TESTING_SKIP_STRICT_RATE_LIMIT', None)
+        # Reset rate-limit counters for a clean test run
+        try:
+            client.app.state.security_middleware.request_counts.clear()
+        except Exception:
+            pass
         # Auth endpoints have strict limits (5 per minute)
         responses = []
         for i in range(7):

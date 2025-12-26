@@ -136,3 +136,20 @@ class SmartApprovalEngine:
     def get_pending_batch(self, parent_id: str) -> List[Dict]:
         """Get pending requests for parent review."""
         return self.pending_approvals.get(parent_id, [])
+
+    # Backwards-compatible helper expected by older tests
+    def should_auto_approve(self, request: Dict) -> bool:
+        """Return True if the given request would be auto-approved.
+
+        Accepts a request dict with keys like `type`, `child_id`, and
+        other metadata. This wraps the existing evaluate_request
+        and returns a boolean.
+        """
+        try:
+            req_type = request.get("type") or request.get("request_type")
+            child_id = request.get("child_id") or request.get("child")
+            # minimal shape
+            decision = self.evaluate_request(child_id or "", request.get("parent_id", ""), req_type or "", request)
+            return decision.get("decision") == ApprovalDecision.AUTO_APPROVED
+        except Exception:
+            return False

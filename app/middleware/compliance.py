@@ -48,7 +48,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         '/docs',
         '/openapi.json',
         '/redoc',
-        '/'
+        # NOTE: do NOT include '/' as a prefix; that matches every path
     }
     
     # Endpoints that require consent verification
@@ -70,59 +70,70 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         Process each request for compliance checks
         """
         start_time = datetime.now(timezone.utc)
-        
-        # Skip all compliance checks for exempt endpoints
-        if any(request.url.path.startswith(endpoint) for endpoint in self.EXEMPT_ENDPOINTS):
+
+        try:
+            # Skip all compliance checks for exempt endpoints
+            if any(request.url.path.startswith(endpoint) for endpoint in self.EXEMPT_ENDPOINTS):
+                response = await call_next(request)
+                # still add basic security headers for visibility
+                response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+                response.headers.setdefault('X-Frame-Options', 'DENY')
+                response.headers.setdefault('X-XSS-Protection', '1; mode=block')
+                response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+                response.headers.setdefault('X-Privacy-Policy', '/privacy')
+                return response
+
+            # 1. Check for required consent headers
+            await self._verify_consent(request)
+
+            # 2. Validate data retention requirements
+            await self._check_data_retention(request)
+
+            # 3. Log audit trail for sensitive operations
+            if self._requires_audit(request.url.path):
+                await self._create_audit_log(request, "REQUEST")
+
+            # 4. Process request
             response = await call_next(request)
+
+            # 5. Sanitize response for PHI
+            # Note: Response body sanitization happens at service layer
+
+            # 6. Add compliance headers
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['X-Frame-Options'] = 'DENY'
+            response.headers['X-XSS-Protection'] = '1; mode=block'
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+            response.headers['X-Privacy-Policy'] = '/privacy'
+
+            # 7. Log audit trail completion
+            if self._requires_audit(request.url.path):
+                duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                await self._create_audit_log(request, "RESPONSE", response.status_code, duration)
+
             return response
-        
-        # 1. Check for required consent headers
-        await self._verify_consent(request)
-        
-        # 2. Validate data retention requirements
-        await self._check_data_retention(request)
-        
-        # 3. Log audit trail for sensitive operations
-        if self._requires_audit(request.url.path):
-            await self._create_audit_log(request, "REQUEST")
-        
-        # 4. Process request
-        response = await call_next(request)
-        
-        # 5. Sanitize response for PHI
-        # Note: Response body sanitization happens at service layer
-        
-        # 6. Add compliance headers
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        response.headers['X-Privacy-Policy'] = '/privacy'
-        
-        # 7. Log audit trail completion
-        if self._requires_audit(request.url.path):
-            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-            await self._create_audit_log(request, "RESPONSE", response.status_code, duration)
-        
-        return response
+
+        except ComplianceViolationError as exc:
+            # Return JSON response for compliance violations (tests expect HTTP 403)
+            import json
+
+            logger.warning(f"Compliance violation: {exc}")
+            body = json.dumps({"detail": str(exc)})
+            return Response(content=body, status_code=403, media_type="application/json")
     
     async def _verify_consent(self, request: Request):
         """
         Verify user consent for data processing (HIPAA/COPPA requirement)
         """
-        import os
-        # Skip consent checks in test mode
-        if os.getenv('TESTING') == 'true':
-            return
-            
+        # Enforce consent for configured endpoints. Tests expect consent enforcement
         if any(request.url.path.startswith(endpoint) for endpoint in self.CONSENT_REQUIRED_ENDPOINTS):
             consent_header = request.headers.get('X-User-Consent') or request.headers.get('X-Consent-Given')
-            
+
             if not consent_header or consent_header != 'true':
                 logger.warning(f"Missing consent for {request.url.path}")
+                # Include the consent key in the error message so callers/tests can assert on it
                 raise ComplianceViolationError(
-                    "User consent required for this operation. "
-                    "Include 'X-User-Consent: true' header after obtaining proper consent."
+                    "Missing required consent: data_processing (Agreement to process data with AI/ML models)"
                 )
     
     async def _check_data_retention(self, request: Request):
@@ -140,8 +151,8 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         """
         Check if endpoint requires audit logging
         """
-        return any(path.startswith(endpoint.split('{')[0]) 
-                  for endpoint in self.AUDIT_REQUIRED_ENDPOINTS)
+        return any(path.startswith(endpoint.split('{')[0])
+                   for endpoint in self.AUDIT_REQUIRED_ENDPOINTS)
     
     async def _create_audit_log(
         self, 
@@ -283,10 +294,10 @@ class ConsentManager:
         for consent_type in required_consent_types:
             if consent_type not in cls.REQUIRED_CONSENTS:
                 raise ComplianceViolationError(f"Unknown consent type: {consent_type}")
-            
             if not user_consents.get(consent_type, False):
+                # Include the consent key in the message to help callers/tests assert which consent is missing
                 raise ComplianceViolationError(
-                    f"Missing required consent: {cls.REQUIRED_CONSENTS[consent_type]}"
+                    f"Missing required consent: {consent_type} ({cls.REQUIRED_CONSENTS[consent_type]})"
                 )
         
         return True

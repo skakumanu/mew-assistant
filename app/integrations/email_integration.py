@@ -128,3 +128,8 @@ class EmailIntegration:
         body = template["body"].format(**data)
 
         return await self.send_email(to_email, subject, body, is_html=True)
+
+
+def get_email_integration() -> EmailIntegration:
+    """Factory used by tests to get an EmailIntegration instance."""
+    return EmailIntegration()

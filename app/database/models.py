@@ -60,8 +60,10 @@ class User(Base):
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, unique=True, index=True, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=True)
+    name = Column(String, nullable=True)
     hashed_password = Column(String, nullable=True)  # Nullable for federated auth users
     full_name = Column(String, nullable=True)
     
@@ -144,9 +146,11 @@ class Session(Base):
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    session_type = Column(String, nullable=False)  # tutoring, scheduling, caregiver_summary
+    session_id = Column(String, unique=True, index=True, nullable=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, index=True)
+    session_type = Column(String, nullable=False, default="generic", server_default="generic")  # tutoring, scheduling, caregiver_summary
     status = Column(Enum(SessionStatus), default=SessionStatus.PENDING)
+    action_type = Column(String, nullable=True)
     priority = Column(Enum(PriorityLevel), default=PriorityLevel.NORMAL)
     
     # Timestamps
@@ -180,9 +184,17 @@ class Message(Base):
     __tablename__ = "messages"
     __table_args__ = {'extend_existing': True}
 
+    def __init__(self, **kwargs):
+        # Accept legacy `content` kw arg used across tests and map it to `body`.
+        if 'content' in kwargs:
+            kwargs['body'] = kwargs.pop('content')
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    session_id = Column(String, ForeignKey("sessions.session_id"), nullable=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=True, index=True)
     
     # Channel information
     channel = Column(Enum(ChannelType), nullable=False)
@@ -190,6 +202,7 @@ class Message(Base):
     recipient = Column(String, nullable=True)
     
     # Message content
+    message_id = Column(String, unique=True, index=True, nullable=True)
     subject = Column(String(500), nullable=True)
     body = Column(Text, nullable=False)
     raw_content = Column(Text, nullable=True)  # Original message for debugging
@@ -338,6 +351,9 @@ class ApprovalRequest(Base):
             and not self.is_expired()
             and not self.applied_to_calendar
         )
+
+    # Relationship to audit logs for easy access in tests
+    audit_logs = relationship("ApprovalAuditLog", backref="approval_request", cascade="all, delete-orphan")
 
 
 class ApprovalAuditLog(Base):

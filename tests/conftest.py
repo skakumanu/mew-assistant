@@ -45,6 +45,9 @@ def client(test_db, monkeypatch):
     # Set test mode to bypass strict compliance checks
     monkeypatch.setenv("TESTING", "true")
     monkeypatch.setenv("ENVIRONMENT", "test")
+    # By default, skip strict rate limiting for most tests to avoid cross-test interference.
+    # Tests that specifically assert rate-limiting behavior will remove this env var.
+    monkeypatch.setenv("TESTING_SKIP_STRICT_RATE_LIMIT", "true")
     
     def override_get_db():
         try:

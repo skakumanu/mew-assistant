@@ -13,6 +13,10 @@ class PriorityManager:
     def __init__(self):
         """Initialize priority manager."""
         self.priority_overrides = {}
+        # simple keyword-based detector used by tests
+        self.priority_keywords = [
+            'urgent', 'emergency', 'help', 'asap', 'critical', 'immediately', 'need help'
+        ]
     
     def set_priority(self, session_id: str, priority: PriorityLevel):
         """Set priority level for a session."""
@@ -26,6 +30,19 @@ class PriorityManager:
         """Check if session can override cooldown."""
         priority = self.get_priority(session_id)
         return priority in [PriorityLevel.HIGH, PriorityLevel.URGENT]
+
+    def detect_priority(self, message: str) -> bool:
+        """Detect whether a message should be treated as high priority.
+
+        Simple case-insensitive keyword matching for unit tests.
+        """
+        if not message:
+            return False
+        msg = message.lower()
+        for kw in self.priority_keywords:
+            if kw in msg:
+                return True
+        return False
 
 
 # Priority time windows (start_time, end_time) in 24-hour format

@@ -5,6 +5,8 @@ import logging
 
 from .database.connection import init_db
 from .routers import landing
+from .middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware, CORSSecurityMiddleware
+from .middleware.bot_protection import BotProtectionMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+
+
+# Application middleware
+app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(BotProtectionMiddleware)
+app.add_middleware(CORSSecurityMiddleware)
+
+# Ensure CORSMiddleware is outermost so preflight requests are handled
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

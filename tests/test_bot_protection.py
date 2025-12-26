@@ -2,17 +2,42 @@
 Tests for bot protection middleware and CAPTCHA
 """
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
 from app.middleware.bot_protection import captcha_verifier
 
-client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def _clear_middleware_state(client):
+    """Ensure middleware counters are cleared before each test to avoid cross-test interference."""
+    # expose the TestClient provided by conftest to module-level tests
+    globals()['client'] = client
+    # Prefer reset methods if provided by middleware
+    try:
+        mw = getattr(client.app.state, 'security_middleware', None)
+        if mw is not None and hasattr(mw, 'reset_state'):
+            mw.reset_state()
+        else:
+            client.app.state.security_middleware.request_counts.clear()
+    except Exception:
+        pass
+    try:
+        bot = getattr(client.app.state, 'bot_protection_middleware', None)
+        if bot is not None and hasattr(bot, 'reset_state'):
+            bot.reset_state()
+        else:
+            client.app.state.bot_protection_middleware.request_counts.clear()
+            client.app.state.bot_protection_middleware.blocked_ips.clear()
+    except Exception:
+        pass
 
 class TestBotProtection:
     """Test bot protection middleware"""
     
     def test_rate_limiting(self):
         """Test that rate limiting blocks excessive requests"""
+        # Ensure strict rate limiting is enabled for this test
+        # (some CI runs set TESTING_SKIP_STRICT_RATE_LIMIT globally)
+        import os
+        os.environ.pop('TESTING_SKIP_STRICT_RATE_LIMIT', None)
         # Make many requests quickly
         responses = []
         for i in range(110):  # Exceed the 100 requests/minute limit
@@ -24,6 +49,17 @@ class TestBotProtection:
     
     def test_suspicious_sql_injection(self):
         """Test SQL injection detection"""
+        # Reset middleware counters to avoid cross-test rate-limit
+        try:
+            client.app.state.security_middleware.request_counts.clear()
+        except Exception:
+            pass
+        try:
+            client.app.state.bot_protection_middleware.request_counts.clear()
+            client.app.state.bot_protection_middleware.blocked_ips.clear()
+        except Exception:
+            pass
+
         response = client.get("/api/search?q=1' OR '1'='1")
         # Should block or sanitize
         assert response.status_code in [400, 403, 422]
@@ -43,9 +79,19 @@ class TestBotProtection:
     
     def test_missing_user_agent(self):
         """Test that requests without User-Agent are blocked"""
-        import requests
-        response = requests.get(
-            f"http://testserver/auth/login",
+        # Use TestClient to avoid external DNS resolution in CI/Windows
+        try:
+            client.app.state.security_middleware.request_counts.clear()
+        except Exception:
+            pass
+        try:
+            client.app.state.bot_protection_middleware.request_counts.clear()
+            client.app.state.bot_protection_middleware.blocked_ips.clear()
+        except Exception:
+            pass
+
+        response = client.get(
+            "/auth/login",
             headers={}  # No User-Agent
         )
         # Health endpoints should still work
@@ -154,6 +200,11 @@ class TestIPBlocking:
     
     def test_temporary_block_after_rate_limit(self):
         """Test that IPs are temporarily blocked after exceeding rate limit"""
+        # Reset rate-limit counters for clean test run
+        try:
+            client.app.state.security_middleware.request_counts.clear()
+        except Exception:
+            pass
         # Make excessive requests
         for i in range(110):
             response = client.get("/health")

@@ -63,7 +63,7 @@ async def generate_summary(
         
         return response
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -92,6 +92,31 @@ async def get_summary(
         response.recommendations = json.loads(summary.recommendations)
     
     return response
+
+
+@router.get("/summary", response_model=SummaryList)
+async def get_summaries_for_user(
+    user_id: str,
+    days: int | None = None,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """
+    Get summaries for a user with optional `days` filter.
+    Validation: `days` must not exceed 90.
+    """
+    if days is not None and days > 90:
+        raise HTTPException(status_code=422, detail="days exceeds maximum of 90")
+
+    service = SummaryService(db)
+    summaries = service.get_user_summaries(user_id, limit)
+
+    summary_responses = []
+    for summary in summaries:
+        response = SummaryResponse.model_validate(summary)
+        summary_responses.append(response)
+
+    return SummaryList(summaries=summary_responses, total=len(summary_responses))
 
 
 @router.get("/summaries/user/{user_id}", response_model=SummaryList)

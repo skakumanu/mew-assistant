@@ -74,6 +74,7 @@ async def suggest_activity(
         emoji="✅",
         data={
             "request_id": approval_request.id,
+            "suggestion_id": approval_request.id,
             "status": "waiting_for_parent",
             "note": "Your parent will review this soon!"
         }

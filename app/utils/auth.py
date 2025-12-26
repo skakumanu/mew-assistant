@@ -5,7 +5,8 @@ Supports both JWT tokens and API keys for authentication.
 """
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+from jose import jwt
+from jose.exceptions import JWTError, ExpiredSignatureError
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -39,7 +40,8 @@ pwd_context = CryptContext(
 )
 
 # Security scheme
-security = HTTPBearer()
+# Allow manual handling of missing credentials so we can return 401 instead of 403
+security = HTTPBearer(auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -143,25 +145,18 @@ def decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except jwt.ExpiredSignatureError:
-        logger.error(f"Token expired")
+    except ExpiredSignatureError:
+        logger.error("Token expired")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired. Please sign in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.InvalidTokenError as e:
-        logger.error(f"Invalid token: {str(e)}")
+    except JWTError as e:
+        logger.error(f"Invalid JWT: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Could not validate credentials: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except JWTError as e:
-        logger.error(f"JWT error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -180,8 +175,16 @@ async def get_current_user(
         return {"user": current_user.email}
     ```
     """
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
-    
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -190,32 +193,40 @@ async def get_current_user(
     
     try:
         payload = decode_token(token)
-        user_id: str = payload.get("sub")
-        
-        logger.info(f"Token decoded successfully, user_id: {user_id}")
-        
-        if user_id is None:
-            logger.error("No 'sub' in token payload")
+        # Prefer explicit numeric user_id in token payload; fall back to sub (email or id)
+        token_user_id = payload.get("user_id")
+        sub = payload.get("sub")
+
+        logger.info(f"Token decoded successfully, user_id: {token_user_id}, sub: {sub}")
+
+        if token_user_id is None and sub is None:
+            logger.error("No user identifier in token payload")
             raise credentials_exception
-            
+
         # Verify token type
         if payload.get("type") != "access":
             logger.error(f"Invalid token type: {payload.get('type')}")
             raise credentials_exception
-            
     except JWTError as e:
         logger.error(f"JWT decode error: {str(e)}")
         raise credentials_exception
     
-    # Get user from database by ID (sub contains user ID, not email)
-    try:
-        user = db.query(User).filter(User.id == int(user_id)).first()
-    except ValueError:
-        logger.error(f"Invalid user_id format: {user_id}")
-        raise credentials_exception
-    
+    # Get user from database by explicit user_id or by email (sub)
+    user = None
+    if token_user_id is not None:
+        # token_user_id may be a numeric primary key or a string user_id
+        try:
+            # try numeric id first
+            user = db.query(User).filter(User.id == int(token_user_id)).first()
+        except (ValueError, TypeError):
+            # fallback to string user_id column
+            user = db.query(User).filter(User.user_id == str(token_user_id)).first()
+    else:
+        # treat sub as email
+        user = db.query(User).filter(User.email == sub).first()
+
     if user is None:
-        logger.error(f"User not found in database for ID: {user_id}")
+        logger.error(f"User not found in database for token identifiers user_id={token_user_id} sub={sub}")
         raise credentials_exception
     
     if not user.is_active:

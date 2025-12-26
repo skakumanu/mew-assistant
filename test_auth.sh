@@ -33,7 +33,7 @@ register_response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/auth/register
     -d '{
         "username": "test_user_'$(date +%s)'",
         "email": "test'$(date +%s)'@example.com",
-        "password": "TestPass123!",
+        "password": "${TEST_PASSWORD:-TestPass123!}",
         "full_name": "Test User",
         "role": "parent"
     }')
@@ -57,10 +57,10 @@ echo ""
 echo "3️⃣  Testing User Login..."
 login_response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/auth/login" \
     -H "Content-Type: application/json" \
-    -d "{
-        \"email\": \"$TEST_EMAIL\",
-        \"password\": \"TestPass123!\"
-    }")
+        -d "{
+            \"email\": \"$TEST_EMAIL\",
+            \"password\": \"${TEST_PASSWORD:-TestPass123!}\"
+        }")
 
 http_code=$(echo "$login_response" | tail -n1)
 body=$(echo "$login_response" | head -n-1)

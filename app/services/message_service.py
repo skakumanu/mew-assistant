@@ -61,10 +61,18 @@ class MessageService:
             List[Message]: Created message records
         """
         messages = []
-        for msg_data in batch_data.messages:
-            message = self.ingest_message(msg_data)
+        # Accept either a MessageBatchIngest object or a raw list passed by router
+        items = getattr(batch_data, 'messages', None) or batch_data
+        for msg_data in items:
+            # msg_data may be a dict-like (from test client) or a MessageIngest model
+            try:
+                message = self.ingest_message(msg_data)
+            except Exception:
+                # If ingest_message expects a MessageIngest, attempt construction
+                from app.schemas.message import MessageIngest as MI
+                message = self.ingest_message(MI.model_validate(msg_data))
             messages.append(message)
-        
+
         return messages
 
     async def process_incoming_message(
@@ -157,3 +165,51 @@ class MessageService:
         if response.get("success"):
             return response.get("text", "Thanks for your message!")
         return "Thanks for your message! How can I assist you today?"
+
+    def get_unprocessed_messages(self, channel_filter=None, limit: int = 100):
+        """Return unprocessed messages, optionally filtered by channel."""
+        query = self.db.query(Message).filter(Message.processed == False)
+        if channel_filter is not None:
+            # channel_filter may be an Enum or string; compare by value/name
+            try:
+                query = query.filter(Message.channel == channel_filter)
+            except Exception:
+                query = query.filter(Message.channel == str(channel_filter))
+        messages = query.order_by(Message.received_at).limit(limit).all()
+        return messages
+
+    def get_session_messages(self, session_id: int, limit: int = 100):
+        """Return messages for a given session id."""
+        sid = str(session_id)
+        messages = (
+            self.db.query(Message)
+            .filter(Message.session_id == sid)
+            .order_by(Message.received_at)
+            .limit(limit)
+            .all()
+        )
+        return messages
+
+    def get_user_messages(self, sender: str, channel_filter=None, limit: int = 100):
+        """Return messages from a specific sender, optionally filtered by channel."""
+        query = self.db.query(Message).filter(Message.sender == sender)
+        if channel_filter is not None:
+            try:
+                query = query.filter(Message.channel == channel_filter)
+            except Exception:
+                query = query.filter(Message.channel == str(channel_filter))
+        return query.order_by(Message.received_at).limit(limit).all()
+
+    def mark_processed(self, message_id: int):
+        """Mark a message as processed and return the updated record."""
+        message = self.db.query(Message).filter(Message.id == message_id).first()
+        if not message:
+            raise ValueError(f"Message with id {message_id} not found")
+        message.processed = True
+        from datetime import datetime
+
+        message.processed_at = datetime.utcnow()
+        self.db.add(message)
+        self.db.commit()
+        self.db.refresh(message)
+        return message

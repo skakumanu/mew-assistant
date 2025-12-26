@@ -8,6 +8,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Module-level placeholders that tests patch
+APNs = None
+firebase_admin = None
+NotificationRequest = None
+messaging = None
+fb_creds = None
+
 
 class MobilePlatform(str, Enum):
     """Supported mobile platforms"""
@@ -25,7 +32,8 @@ class MobileIntegration:
         self.apns_client = None
         self.fcm_client = None
         logger.info("Mobile integration initialized")
-    
+
+
     async def initialize_apns(self, credentials: Dict[str, Any]) -> bool:
         """
         Initialize Apple Push Notification Service (APNs)
@@ -37,15 +45,18 @@ class MobileIntegration:
             bool: Initialization success status
         """
         try:
-            from aioapns import APNs
-            
-            self.apns_client = APNs(
+            # Prefer module-level APNs (tests patch this), otherwise try import
+            APNs_cls = APNs
+            if APNs_cls is None:
+                from aioapns import APNs as APNs_cls
+
+            self.apns_client = APNs_cls(
                 key=credentials.get('key_path'),
                 key_id=credentials.get('key_id'),
                 team_id=credentials.get('team_id'),
                 topic=credentials.get('topic', 'com.mewassistant.app')
             )
-            
+
             logger.info("Apple Push Notification Service initialized")
             return True
         except Exception as e:
@@ -63,12 +74,16 @@ class MobileIntegration:
             bool: Initialization success status
         """
         try:
-            import firebase_admin
-            from firebase_admin import credentials as fb_creds
-            
-            cred = fb_creds.Certificate(credentials.get('service_account_path'))
-            firebase_admin.initialize_app(cred)
-            
+            # Prefer patched module-level objects when tests stub them
+            firebase_mod = firebase_admin
+            fb_credentials = fb_creds
+            if firebase_mod is None or fb_credentials is None:
+                import firebase_admin as firebase_mod
+                from firebase_admin import credentials as fb_credentials
+
+            cred = fb_credentials.Certificate(credentials.get('service_account_path'))
+            firebase_mod.initialize_app(cred)
+
             self.fcm_client = True
             logger.info("Firebase Cloud Messaging initialized")
             return True
@@ -132,27 +147,24 @@ class MobileIntegration:
             return False
         
         try:
-            from aioapns import NotificationRequest
-            
-            alert = {
-                'title': title,
-                'body': body
-            }
-            
-            notification = NotificationRequest(
+            # Prefer patched NotificationRequest in module scope for tests
+            NR = NotificationRequest
+            if NR is None:
+                from aioapns import NotificationRequest as NR
+
+            alert = {'title': title, 'body': body}
+            notification = NR(
                 device_token=device_token,
                 message={
-                    'aps': {
-                        'alert': alert,
-                        'sound': sound,
-                        'badge': badge if badge is not None else 0
-                    }
+                    'aps': {'alert': alert, 'sound': sound, 'badge': badge if badge is not None else 0}
                 }
             )
-            
+
             if data:
-                notification.message.update(data)
-            
+                # Ensure message exists and merge
+                if hasattr(notification, 'message') and isinstance(notification.message, dict):
+                    notification.message.update(data)
+
             await self.apns_client.send_notification(notification)
             logger.info(f"APNs notification sent to device: {device_token[:8]}...")
             return True
@@ -174,28 +186,16 @@ class MobileIntegration:
             return False
         
         try:
-            from firebase_admin import messaging
-            
-            notification = messaging.Notification(
-                title=title,
-                body=body
-            )
-            
-            android_config = messaging.AndroidConfig(
-                notification=messaging.AndroidNotification(
-                    sound=sound,
-                    priority='high'
-                )
-            )
-            
-            message = messaging.Message(
-                notification=notification,
-                token=device_token,
-                data=data or {},
-                android=android_config
-            )
-            
-            response = messaging.send(message)
+            # Prefer patched messaging in module scope for tests
+            messaging_mod = messaging
+            if messaging_mod is None:
+                from firebase_admin import messaging as messaging_mod
+
+            notification = messaging_mod.Notification(title=title, body=body)
+            android_config = messaging_mod.AndroidConfig(notification=messaging_mod.AndroidNotification(sound=sound, priority='high'))
+
+            message = messaging_mod.Message(notification=notification, token=device_token, data=data or {}, android=android_config)
+            response = messaging_mod.send(message)
             logger.info(f"FCM notification sent: {response}")
             return True
         except Exception as e:
@@ -384,3 +384,8 @@ class MobileIntegration:
         except Exception as e:
             logger.error(f"Failed to schedule reminder: {e}")
             return False
+
+
+def get_mobile_integration() -> MobileIntegration:
+    """Factory used by tests to get a MobileIntegration instance."""
+    return MobileIntegration()
