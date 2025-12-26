@@ -11,7 +11,7 @@ router = APIRouter(tags=["Debug"])
 @router.get("/debug-calendar", response_class=HTMLResponse)
 async def debug_calendar_page():
     """Debug page with big buttons to test the API"""
-    
+
     html = """
     <!DOCTYPE html>
     <html>
@@ -190,5 +190,5 @@ async def debug_calendar_page():
     </body>
     </html>
     """
-    
+
     return HTMLResponse(content=html)

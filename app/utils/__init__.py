@@ -1,4 +1,5 @@
 """Utilities package for Mew Assistant."""
+
 from .cooldown import *
 from .priority import *
 

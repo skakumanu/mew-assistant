@@ -2,8 +2,8 @@
 WhatsApp integration using Twilio WhatsApp API.
 """
 
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 from app.utils.config import settings
 from app.utils.logger import get_logger
@@ -15,11 +15,11 @@ class WhatsAppIntegration:
     """WhatsApp integration using Twilio."""
 
     def __init__(self):
-        self.account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
-        self.auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
-        self.whatsapp_number = getattr(settings, 'TWILIO_WHATSAPP_NUMBER', '')
+        self.account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
+        self.auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
+        self.whatsapp_number = getattr(settings, "TWILIO_WHATSAPP_NUMBER", "")
         self.client = None
-        
+
         self._initialize_client()
 
     def _initialize_client(self):
@@ -27,6 +27,7 @@ class WhatsAppIntegration:
         try:
             if self.account_sid and self.auth_token:
                 from twilio.rest import Client
+
                 self.client = Client(self.account_sid, self.auth_token)
                 logger.info("Twilio WhatsApp client initialized")
         except ImportError:
@@ -54,14 +55,14 @@ class WhatsAppIntegration:
                 "from_": from_number,
                 "to": to_number,
             }
-            
+
             if media_url:
                 kwargs["media_url"] = [media_url]
 
             msg = self.client.messages.create(**kwargs)
 
             logger.info(f"WhatsApp message sent to {to_number}, SID: {msg.sid}")
-            
+
             return {
                 "success": True,
                 "message_sid": msg.sid,

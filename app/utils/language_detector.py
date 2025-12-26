@@ -3,6 +3,7 @@
 This is not a production detector — it simply uses keyword heuristics
 to return a language code so the benchmark tests can run.
 """
+
 from typing import Literal
 
 

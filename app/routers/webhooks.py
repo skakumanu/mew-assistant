@@ -2,10 +2,11 @@
 Webhook endpoints for receiving external messages (SMS, WhatsApp, Email).
 """
 
-from fastapi import APIRouter, Request, Form, HTTPException, Depends
-from sqlalchemy.orm import Session
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.integrations import SMSIntegration, WhatsAppIntegration
@@ -28,11 +29,11 @@ async def receive_sms(
     To: str = Form(...),
     Body: str = Form(...),
     NumMedia: Optional[str] = Form("0"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Webhook endpoint for receiving incoming SMS from Twilio.
-    
+
     This endpoint is called by Twilio when an SMS is received.
     Configure in Twilio Console: Account > Phone Numbers > Your Number > Messaging > Webhook
     """
@@ -45,11 +46,11 @@ async def receive_sms(
             "Body": Body,
             "NumMedia": NumMedia,
         }
-        
+
         parsed_data = sms_integration.parse_incoming_sms(webhook_data)
-        
+
         logger.info(f"Received SMS from {From}: {Body[:50]}...")
-        
+
         # Process the message
         response = await message_service.process_incoming_message(
             source="sms",
@@ -57,10 +58,10 @@ async def receive_sms(
             message_body=parsed_data["body"],
             message_id=parsed_data["message_sid"],
         )
-        
+
         # Return TwiML response
         twiml_response = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{response.get("reply", "Message received")}</Message></Response>'
-        
+
         return twiml_response
 
     except Exception as e:
@@ -77,11 +78,11 @@ async def receive_whatsapp(
     Body: str = Form(...),
     NumMedia: Optional[str] = Form("0"),
     ProfileName: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Webhook endpoint for receiving incoming WhatsApp messages from Twilio.
-    
+
     Configure in Twilio Console: Programmable Messaging > WhatsApp > Sandbox Settings
     """
     message_service = MessageService(db)
@@ -94,11 +95,11 @@ async def receive_whatsapp(
             "NumMedia": NumMedia,
             "ProfileName": ProfileName,
         }
-        
+
         parsed_data = whatsapp_integration.parse_incoming_message(webhook_data)
-        
+
         logger.info(f"Received WhatsApp from {ProfileName or From}: {Body[:50]}...")
-        
+
         # Process the message
         response = await message_service.process_incoming_message(
             source="whatsapp",
@@ -107,15 +108,17 @@ async def receive_whatsapp(
             message_id=parsed_data["message_sid"],
             profile_name=parsed_data.get("profile_name"),
         )
-        
+
         # Return TwiML response
         twiml_response = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{response.get("reply", "Message received")}</Message></Response>'
-        
+
         return twiml_response
 
     except Exception as e:
         logger.error(f"Error processing incoming WhatsApp: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process WhatsApp message")
+        raise HTTPException(
+            status_code=500, detail="Failed to process WhatsApp message"
+        )
 
 
 @router.get("/sms/status")
@@ -129,10 +132,10 @@ async def sms_status(
     """
     try:
         logger.info(f"SMS {MessageSid} status: {MessageStatus}")
-        
+
         if ErrorCode:
             logger.error(f"SMS {MessageSid} error: {ErrorCode}")
-        
+
         return {"status": "received"}
 
     except Exception as e:

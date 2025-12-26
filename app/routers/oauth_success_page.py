@@ -1,5 +1,6 @@
 """Simple success page for OAuth flows"""
 
+
 def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
     """
     Returns a simple, user-friendly success page after OAuth login.

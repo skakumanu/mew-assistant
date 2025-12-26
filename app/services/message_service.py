@@ -2,13 +2,14 @@
 Message service for handling incoming messages from multiple channels.
 """
 
-from typing import Dict, Any, Optional, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy.orm import Session
 
 from app.database.models import Message
-from app.schemas.message import MessageIngest, MessageBatchIngest
 from app.integrations import AIIntegration
+from app.schemas.message import MessageBatchIngest, MessageIngest
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,10 +25,10 @@ class MessageService:
     def ingest_message(self, message_data: MessageIngest) -> Message:
         """
         Ingest a new message and store in database.
-        
+
         Args:
             message_data: MessageIngest schema with message details
-            
+
         Returns:
             Message: Created message record
         """
@@ -40,29 +41,31 @@ class MessageService:
             raw_content=message_data.raw_content,
             session_id=message_data.session_id,
             received_at=message_data.received_at or datetime.utcnow(),
-            processed=False
+            processed=False,
         )
-        
+
         self.db.add(message)
         self.db.commit()
         self.db.refresh(message)
-        
-        logger.info(f"Ingested message {message.id} from {message_data.sender} via {message_data.channel}")
+
+        logger.info(
+            f"Ingested message {message.id} from {message_data.sender} via {message_data.channel}"
+        )
         return message
-    
+
     def ingest_batch(self, batch_data: MessageBatchIngest) -> List[Message]:
         """
         Ingest multiple messages in batch.
-        
+
         Args:
             batch_data: MessageBatchIngest with list of messages
-            
+
         Returns:
             List[Message]: Created message records
         """
         messages = []
         # Accept either a MessageBatchIngest object or a raw list passed by router
-        items = getattr(batch_data, 'messages', None) or batch_data
+        items = getattr(batch_data, "messages", None) or batch_data
         for msg_data in items:
             # msg_data may be a dict-like (from test client) or a MessageIngest model
             try:
@@ -70,6 +73,7 @@ class MessageService:
             except Exception:
                 # If ingest_message expects a MessageIngest, attempt construction
                 from app.schemas.message import MessageIngest as MI
+
                 message = self.ingest_message(MI.model_validate(msg_data))
             messages.append(message)
 
@@ -102,7 +106,7 @@ class MessageService:
             # Analyze message intent
             analysis = await self.ai_integration.analyze_message(
                 message=message_body,
-                context=f"Source: {source}, From: {profile_name or from_contact}"
+                context=f"Source: {source}, From: {profile_name or from_contact}",
             )
 
             intent = "unknown"
@@ -154,13 +158,14 @@ class MessageService:
 
     async def _handle_report_request(self, message: str) -> str:
         """Handle report/summary requests."""
-        return "I'll generate a report for you. What time period would you like covered?"
+        return (
+            "I'll generate a report for you. What time period would you like covered?"
+        )
 
     async def _handle_general_message(self, message: str) -> str:
         """Handle general messages."""
         response = await self.ai_integration.generate_response(
-            message=message,
-            conversation_history=[]
+            message=message, conversation_history=[]
         )
         if response.get("success"):
             return response.get("text", "Thanks for your message!")

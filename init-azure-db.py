@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Initialize Azure PostgreSQL database with credentials from environment."""
-import psycopg2
 import os
 import sys
+
+import psycopg2
 
 # Azure PostgreSQL settings - MUST be set in environment
 DB_HOST = os.getenv("DB_HOST", "mew-db-dev.postgres.database.azure.com")
@@ -21,11 +22,11 @@ try:
         user=DB_USER,
         password=DB_PASSWORD,
         database="postgres",  # Connect to default DB first
-        sslmode="require"
+        sslmode="require",
     )
     conn.autocommit = True
     cursor = conn.cursor()
-    
+
     # Create database if it doesn't exist
     cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (DB_NAME,))
     if not cursor.fetchone():
@@ -34,13 +35,13 @@ try:
         print("✅ Database created")
     else:
         print(f"✅ Database {DB_NAME} already exists")
-    
+
     cursor.close()
     conn.close()
-    
+
     print("✅ Database initialization complete!")
     sys.exit(0)
-    
+
 except Exception as e:
     print(f"❌ Error: {e}")
     sys.exit(1)

@@ -3,8 +3,9 @@
 This implementation is intentionally small: it extracts simple intent
 and entities from plain text for unit tests and benchmarks.
 """
-from typing import Dict
+
 import re
+from typing import Dict
 
 
 def parse_message(text: str) -> Dict[str, str]:

@@ -3,18 +3,19 @@ Simple, bulletproof OAuth 2.0 implementation
 No complex libraries - just direct HTTP calls
 """
 
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import RedirectResponse, HTMLResponse
-from sqlalchemy.orm import Session
 import logging
-import httpx
 from urllib.parse import urlencode
 
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.orm import Session
+
 from ..database.connection import get_db
-from ..utils.log_sanitizer import sanitize_email, sanitize_user_id
-from ..database.models import User, FederatedIdentity, UserRole
-from ..utils.config import settings
+from ..database.models import FederatedIdentity, User, UserRole
 from ..utils.auth import create_access_token
+from ..utils.config import settings
+from ..utils.log_sanitizer import sanitize_email, sanitize_user_id
 from .oauth_success_page import get_success_page
 
 logger = logging.getLogger(__name__)
@@ -23,21 +24,21 @@ router = APIRouter(prefix="/auth", tags=["OAuth Simple"])
 
 # OAuth configurations
 GOOGLE_CONFIG = {
-    'auth_url': 'https://accounts.google.com/o/oauth2/v2/auth',
-    'token_url': 'https://oauth2.googleapis.com/token',
-    'userinfo_url': 'https://www.googleapis.com/oauth2/v2/userinfo',
-    'client_id': settings.GOOGLE_CLIENT_ID,
-    'client_secret': settings.GOOGLE_CLIENT_SECRET,
-    'scope': 'openid email profile https://www.googleapis.com/auth/calendar.readonly'
+    "auth_url": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_url": "https://oauth2.googleapis.com/token",
+    "userinfo_url": "https://www.googleapis.com/oauth2/v2/userinfo",
+    "client_id": settings.GOOGLE_CLIENT_ID,
+    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+    "scope": "openid email profile https://www.googleapis.com/auth/calendar.readonly",
 }
 
 MICROSOFT_CONFIG = {
-    'auth_url': 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-    'token_url': 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
-    'userinfo_url': 'https://graph.microsoft.com/v1.0/me',
-    'client_id': settings.MICROSOFT_CLIENT_ID,
-    'client_secret': settings.MICROSOFT_CLIENT_SECRET,
-    'scope': 'openid email profile User.Read'
+    "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    "token_url": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    "userinfo_url": "https://graph.microsoft.com/v1.0/me",
+    "client_id": settings.MICROSOFT_CLIENT_ID,
+    "client_secret": settings.MICROSOFT_CLIENT_SECRET,
+    "scope": "openid email profile User.Read",
 }
 
 
@@ -45,7 +46,7 @@ MICROSOFT_CONFIG = {
 async def simple_login_page():
     """Simple OAuth login page"""
     base_url = settings.BASE_URL or "http://localhost:8888"
-    
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -143,121 +144,126 @@ async def google_login():
     """Initiate Google OAuth flow"""
     base_url = settings.BASE_URL or "http://localhost:8888"
     redirect_uri = f"{base_url}/auth/simple/google/callback"
-    
+
     params = {
-        'client_id': GOOGLE_CONFIG['client_id'],
-        'redirect_uri': redirect_uri,
-        'response_type': 'code',
-        'scope': GOOGLE_CONFIG['scope'],
-        'access_type': 'offline',
-        'prompt': 'consent'
+        "client_id": GOOGLE_CONFIG["client_id"],
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": GOOGLE_CONFIG["scope"],
+        "access_type": "offline",
+        "prompt": "consent",
     }
-    
+
     auth_url = f"{GOOGLE_CONFIG['auth_url']}?{urlencode(params)}"
     logger.info(f"Redirecting to Google OAuth: {auth_url}")
     return RedirectResponse(url=auth_url)
 
 
 @router.get("/simple/google/callback")
-async def google_callback(request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)):
+async def google_callback(
+    request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)
+):
     """Handle Google OAuth callback"""
     logger.info("=== GOOGLE CALLBACK STARTED ===")
     logger.info(f"Code present: {code is not None}, Error: {error}")
-    
+
     try:
         if error:
             logger.error(f"OAuth error received: {error}")
             raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
-        
+
         if not code:
             logger.error("No authorization code received")
-            raise HTTPException(status_code=400, detail="No authorization code received")
-        
+            raise HTTPException(
+                status_code=400, detail="No authorization code received"
+            )
+
         logger.info(f"Received authorization code: {code[:10]}...")
-        
+
         # Exchange code for token
         base_url = settings.BASE_URL or "http://localhost:8888"
         redirect_uri = f"{base_url}/auth/simple/google/callback"
-        
+
         token_data = {
-            'client_id': GOOGLE_CONFIG['client_id'],
-            'client_secret': GOOGLE_CONFIG['client_secret'],
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': redirect_uri
+            "client_id": GOOGLE_CONFIG["client_id"],
+            "client_secret": GOOGLE_CONFIG["client_secret"],
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri,
         }
-        
+
         logger.info(f"Exchanging code for token at {GOOGLE_CONFIG['token_url']}")
-        
+
         async with httpx.AsyncClient() as client:
             # Get access token
             token_response = await client.post(
-                GOOGLE_CONFIG['token_url'],
+                GOOGLE_CONFIG["token_url"],
                 data=token_data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            
+
             logger.info(f"Token response status: {token_response.status_code}")
             logger.info(f"Token response: {token_response.text[:200]}")
-            
+
             if token_response.status_code != 200:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Failed to get access token: {token_response.text}"
+                    detail=f"Failed to get access token: {token_response.text}",
                 )
-            
+
             token_json = token_response.json()
-            access_token = token_json.get('access_token')
-            
+            access_token = token_json.get("access_token")
+
             if not access_token:
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"No access token in response: {token_json}"
+                    status_code=400, detail=f"No access token in response: {token_json}"
                 )
-            
+
             logger.info("Successfully obtained access token")
-            
+
             # Get user info
             userinfo_response = await client.get(
-                GOOGLE_CONFIG['userinfo_url'],
-                headers={'Authorization': f'Bearer {access_token}'}
+                GOOGLE_CONFIG["userinfo_url"],
+                headers={"Authorization": f"Bearer {access_token}"},
             )
-            
+
             if userinfo_response.status_code != 200:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Failed to get user info: {userinfo_response.text}"
+                    detail=f"Failed to get user info: {userinfo_response.text}",
                 )
-            
+
             user_info = userinfo_response.json()
-            logger.info(f"User info retrieved: {sanitize_email(user_info.get('email'))}")
-        
+            logger.info(
+                f"User info retrieved: {sanitize_email(user_info.get('email'))}"
+            )
+
         # Find or create user
-        email = user_info.get('email')
+        email = user_info.get("email")
         if not email:
             raise HTTPException(status_code=400, detail="No email in user info")
-        
+
         user = db.query(User).filter(User.email == email).first()
-        
+
         if not user:
             # Create new user
             user = User(
                 email=email,
-                full_name=user_info.get('name', email.split('@')[0]),
+                full_name=user_info.get("name", email.split("@")[0]),
                 role=UserRole.PARENT,
-                is_active=True
+                is_active=True,
             )
             db.add(user)
             db.flush()
-            
+
             # Create federated identity with OAuth tokens
             fed_identity = FederatedIdentity(
                 user_id=user.id,
-                provider='google',
-                provider_user_id=user_info.get('sub') or user_info.get('id'),
+                provider="google",
+                provider_user_id=user_info.get("sub") or user_info.get("id"),
                 email=email,
                 access_token=access_token,
-                refresh_token=token_json.get('refresh_token')
+                refresh_token=token_json.get("refresh_token"),
             )
             db.add(fed_identity)
             db.flush()
@@ -266,53 +272,58 @@ async def google_callback(request: Request, code: str = None, error: str = None,
             logger.info(f"Created new user: {sanitize_email(email)}")
         else:
             # Update federated identity with new tokens
-            fed_identity = db.query(FederatedIdentity).filter(
-                FederatedIdentity.user_id == user.id,
-                FederatedIdentity.provider == 'google'
-            ).first()
-            
+            fed_identity = (
+                db.query(FederatedIdentity)
+                .filter(
+                    FederatedIdentity.user_id == user.id,
+                    FederatedIdentity.provider == "google",
+                )
+                .first()
+            )
+
             if not fed_identity:
                 fed_identity = FederatedIdentity(
                     user_id=user.id,
-                    provider='google',
-                    provider_user_id=user_info.get('sub') or user_info.get('id'),
+                    provider="google",
+                    provider_user_id=user_info.get("sub") or user_info.get("id"),
                     email=email,
                     access_token=access_token,
-                    refresh_token=token_json.get('refresh_token')
+                    refresh_token=token_json.get("refresh_token"),
                 )
                 db.add(fed_identity)
             else:
                 # Update tokens
                 fed_identity.access_token = access_token
-                if token_json.get('refresh_token'):
-                    fed_identity.refresh_token = token_json.get('refresh_token')
-            
+                if token_json.get("refresh_token"):
+                    fed_identity.refresh_token = token_json.get("refresh_token")
+
             db.flush()
             db.refresh(fed_identity)
             db.commit()
-            
+
         logger.info(f"User logged in: {sanitize_email(email)}")
-        
+
         # Generate JWT token
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
-        
-        logger.info(f"Created JWT token for user {sanitize_user_id(user.id)}, redirecting to /calendar with token")
+
+        logger.info(
+            f"Created JWT token for user {sanitize_user_id(user.id)}, redirecting to /calendar with token"
+        )
         logger.info(f"Token length: {len(jwt_token)}, starts with: {jwt_token[:20]}")
-        
+
         # Redirect to calendar page with token in URL
         redirect_url = f"/calendar?token={jwt_token}&name={user.full_name}"
         logger.info(f"Redirect URL: {redirect_url[:100]}...")
-        return RedirectResponse(
-            url=redirect_url,
-            status_code=303
-        )
-        
+        return RedirectResponse(url=redirect_url, status_code=303)
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
+        )
 
 
 @router.get("/simple/microsoft")
@@ -320,140 +331,149 @@ async def microsoft_login():
     """Initiate Microsoft OAuth flow"""
     base_url = settings.BASE_URL or "http://localhost:8888"
     redirect_uri = f"{base_url}/auth/simple/microsoft/callback"
-    
+
     params = {
-        'client_id': MICROSOFT_CONFIG['client_id'],
-        'redirect_uri': redirect_uri,
-        'response_type': 'code',
-        'scope': MICROSOFT_CONFIG['scope'],
-        'response_mode': 'query'
+        "client_id": MICROSOFT_CONFIG["client_id"],
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": MICROSOFT_CONFIG["scope"],
+        "response_mode": "query",
     }
-    
+
     auth_url = f"{MICROSOFT_CONFIG['auth_url']}?{urlencode(params)}"
     logger.info(f"Redirecting to Microsoft OAuth: {auth_url}")
     return RedirectResponse(url=auth_url)
 
 
 @router.get("/simple/microsoft/callback")
-async def microsoft_callback(request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)):
+async def microsoft_callback(
+    request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)
+):
     """Handle Microsoft OAuth callback"""
     try:
         if error:
             raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
-        
+
         if not code:
-            raise HTTPException(status_code=400, detail="No authorization code received")
-        
+            raise HTTPException(
+                status_code=400, detail="No authorization code received"
+            )
+
         logger.info(f"Received authorization code: {code[:10]}...")
-        
+
         # Exchange code for token
         base_url = settings.BASE_URL or "http://localhost:8888"
         redirect_uri = f"{base_url}/auth/simple/microsoft/callback"
-        
+
         token_data = {
-            'client_id': MICROSOFT_CONFIG['client_id'],
-            'client_secret': MICROSOFT_CONFIG['client_secret'],
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': redirect_uri
+            "client_id": MICROSOFT_CONFIG["client_id"],
+            "client_secret": MICROSOFT_CONFIG["client_secret"],
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri,
         }
-        
+
         logger.info(f"Exchanging code for token at {MICROSOFT_CONFIG['token_url']}")
-        
+
         async with httpx.AsyncClient() as client:
             # Get access token
             token_response = await client.post(
-                MICROSOFT_CONFIG['token_url'],
+                MICROSOFT_CONFIG["token_url"],
                 data=token_data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            
+
             logger.info(f"Token response status: {token_response.status_code}")
             logger.info(f"Token response: {token_response.text[:200]}")
-            
+
             if token_response.status_code != 200:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Failed to get access token: {token_response.text}"
+                    detail=f"Failed to get access token: {token_response.text}",
                 )
-            
+
             token_json = token_response.json()
-            access_token = token_json.get('access_token')
-            
+            access_token = token_json.get("access_token")
+
             if not access_token:
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"No access token in response: {token_json}"
+                    status_code=400, detail=f"No access token in response: {token_json}"
                 )
-            
+
             logger.info("Successfully obtained access token")
-            
+
             # Get user info
             userinfo_response = await client.get(
-                MICROSOFT_CONFIG['userinfo_url'],
-                headers={'Authorization': f'Bearer {access_token}'}
+                MICROSOFT_CONFIG["userinfo_url"],
+                headers={"Authorization": f"Bearer {access_token}"},
             )
-            
+
             if userinfo_response.status_code != 200:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Failed to get user info: {userinfo_response.text}"
+                    detail=f"Failed to get user info: {userinfo_response.text}",
                 )
-            
+
             user_info = userinfo_response.json()
-            logger.info(f"User info retrieved: {user_info.get('mail') or user_info.get('userPrincipalName')}")
-        
+            logger.info(
+                f"User info retrieved: {user_info.get('mail') or user_info.get('userPrincipalName')}"
+            )
+
         # Find or create user
-        email = user_info.get('mail') or user_info.get('userPrincipalName')
+        email = user_info.get("mail") or user_info.get("userPrincipalName")
         if not email:
             raise HTTPException(status_code=400, detail="No email in user info")
-        
+
         user = db.query(User).filter(User.email == email).first()
-        
+
         if not user:
             # Create new user
             user = User(
                 email=email,
-                full_name=user_info.get('displayName', email.split('@')[0]),
+                full_name=user_info.get("displayName", email.split("@")[0]),
                 role=UserRole.PARENT,
-                is_active=True
+                is_active=True,
             )
             db.add(user)
             db.flush()
-            
+
             # Create federated identity
             fed_identity = FederatedIdentity(
                 user_id=user.id,
-                provider='microsoft',
-                provider_user_id=user_info.get('id'),
-                email=email
+                provider="microsoft",
+                provider_user_id=user_info.get("id"),
+                email=email,
             )
             db.add(fed_identity)
             db.commit()
             logger.info(f"Created new user: {sanitize_email(email)}")
         else:
             # Update federated identity if needed
-            fed_identity = db.query(FederatedIdentity).filter(
-                FederatedIdentity.user_id == user.id,
-                FederatedIdentity.provider == 'microsoft'
-            ).first()
-            
+            fed_identity = (
+                db.query(FederatedIdentity)
+                .filter(
+                    FederatedIdentity.user_id == user.id,
+                    FederatedIdentity.provider == "microsoft",
+                )
+                .first()
+            )
+
             if not fed_identity:
                 fed_identity = FederatedIdentity(
                     user_id=user.id,
-                    provider='microsoft',
-                    provider_user_id=user_info.get('id'),
-                    email=email
+                    provider="microsoft",
+                    provider_user_id=user_info.get("id"),
+                    email=email,
                 )
                 db.add(fed_identity)
                 db.commit()
-            
+
             logger.info(f"User logged in: {sanitize_email(email)}")
-        
+
         # Generate JWT token
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
-        
+
         # Return simple success page with auto-download
         html_content = get_success_page(user.full_name, user.email, jwt_token)
         return HTMLResponse(content=html_content)
@@ -461,4 +481,6 @@ async def microsoft_callback(request: Request, code: str = None, error: str = No
         raise
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
+        )

@@ -2,6 +2,7 @@
 Basic smoke tests for Mew Assistant.
 Tests core functionality without requiring full implementation details.
 """
+
 import pytest
 from fastapi import status
 
@@ -38,22 +39,26 @@ def test_invalid_endpoint(client):
 def test_database_models_exist():
     """Test that database models module exists."""
     from app.database import models
+
     assert models is not None
 
 
 def test_schemas_exist():
     """Test that schema modules exist."""
     from app import schemas
+
     assert schemas is not None
 
 
 def test_services_exist():
     """Test that service modules exist."""
     from app import services
+
     assert services is not None
 
 
 def test_utils_exist():
     """Test that utility modules exist."""
     from app import utils
+
     assert utils is not None

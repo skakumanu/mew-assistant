@@ -3,15 +3,16 @@ OAuth authentication router using fastapi-sso
 Proven, production-ready federated login implementation
 """
 
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-from fastapi_sso.sso.google import GoogleSSO
-from fastapi_sso.sso.microsoft import MicrosoftSSO
 import logging
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi_sso.sso.google import GoogleSSO
+from fastapi_sso.sso.microsoft import MicrosoftSSO
+from sqlalchemy.orm import Session
+
 from ..database.connection import get_db
-from ..database.models import User, FederatedIdentity, UserRole
+from ..database.models import FederatedIdentity, User, UserRole
 from ..services.auth_service import AuthService
 from ..utils.config import settings
 
@@ -24,14 +25,14 @@ google_sso = GoogleSSO(
     client_id=settings.GOOGLE_CLIENT_ID,
     client_secret=settings.GOOGLE_CLIENT_SECRET,
     redirect_uri=f"{settings.BASE_URL}/auth/google/callback",
-    allow_insecure_http=settings.ENVIRONMENT == "development"
+    allow_insecure_http=settings.ENVIRONMENT == "development",
 )
 
 microsoft_sso = MicrosoftSSO(
     client_id=settings.MICROSOFT_CLIENT_ID,
     client_secret=settings.MICROSOFT_CLIENT_SECRET,
     redirect_uri=f"{settings.BASE_URL}/auth/microsoft/callback",
-    allow_insecure_http=settings.ENVIRONMENT == "development"
+    allow_insecure_http=settings.ENVIRONMENT == "development",
 )
 
 
@@ -147,25 +148,27 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     try:
         async with google_sso:
             user = await google_sso.verify_and_process(request)
-        
+
         if not user:
-            raise HTTPException(status_code=400, detail="Failed to authenticate with Google")
-        
+            raise HTTPException(
+                status_code=400, detail="Failed to authenticate with Google"
+            )
+
         logger.info(f"Google user authenticated: {user.email}")
-        
+
         # Process federated identity
         federated_user = await process_federated_identity(
             provider="google",
             provider_user_id=user.id,
             email=user.email,
             full_name=user.display_name or user.email,
-            db=db
+            db=db,
         )
-        
+
         # Generate JWT token
         auth_service = AuthService(db)
         jwt_token = auth_service.create_access_token(data={"sub": federated_user.email})
-        
+
         # Return success page with token
         html_content = f"""
         <html>
@@ -190,10 +193,12 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         </html>
         """
         return HTMLResponse(content=html_content)
-        
+
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
+        )
 
 
 @router.get("/microsoft/authorize")
@@ -213,25 +218,27 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
     try:
         async with microsoft_sso:
             user = await microsoft_sso.verify_and_process(request)
-        
+
         if not user:
-            raise HTTPException(status_code=400, detail="Failed to authenticate with Microsoft")
-        
+            raise HTTPException(
+                status_code=400, detail="Failed to authenticate with Microsoft"
+            )
+
         logger.info(f"Microsoft user authenticated: {user.email}")
-        
+
         # Process federated identity
         federated_user = await process_federated_identity(
             provider="microsoft",
             provider_user_id=user.id,
             email=user.email,
             full_name=user.display_name or user.email,
-            db=db
+            db=db,
         )
-        
+
         # Generate JWT token
         auth_service = AuthService(db)
         jwt_token = auth_service.create_access_token(data={"sub": federated_user.email})
-        
+
         # Return success page
         html_content = f"""
         <html>
@@ -256,53 +263,53 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
         </html>
         """
         return HTMLResponse(content=html_content)
-        
+
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
+        )
 
 
 async def process_federated_identity(
-    provider: str,
-    provider_user_id: str,
-    email: str,
-    full_name: str,
-    db: Session
+    provider: str, provider_user_id: str, email: str, full_name: str, db: Session
 ) -> User:
     """Process federated identity and create/update user"""
-    
+
     # Check if federated identity exists
-    fed_identity = db.query(FederatedIdentity).filter(
-        FederatedIdentity.provider == provider,
-        FederatedIdentity.provider_user_id == provider_user_id
-    ).first()
-    
+    fed_identity = (
+        db.query(FederatedIdentity)
+        .filter(
+            FederatedIdentity.provider == provider,
+            FederatedIdentity.provider_user_id == provider_user_id,
+        )
+        .first()
+    )
+
     if fed_identity:
         # Return existing user
         return fed_identity.user
-    
+
     # Check if user exists with this email
     user = db.query(User).filter(User.email == email).first()
-    
+
     if not user:
         # Create new user
         user = User(
             email=email,
             full_name=full_name,
             role=UserRole.PARENT,  # Default role
-            is_active=True
+            is_active=True,
         )
         db.add(user)
         db.flush()
-    
+
     # Create federated identity link
     fed_identity = FederatedIdentity(
-        user_id=user.id,
-        provider=provider,
-        provider_user_id=provider_user_id
+        user_id=user.id, provider=provider, provider_user_id=provider_user_id
     )
     db.add(fed_identity)
     db.commit()
     db.refresh(user)
-    
+
     return user

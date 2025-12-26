@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -7,6 +7,7 @@ from app.services.oauth_service import OAuthService
 from app.utils.log_sanitizer import sanitize_for_log
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
+
 
 @router.get("/login", response_class=HTMLResponse)
 async def oauth_login_page(request: Request):
@@ -212,18 +213,30 @@ async def oauth_login_page(request: Request):
 """
     return HTMLResponse(content=html_content)
 
+
 # OAuth Provider Login Endpoints
 @router.get("/login/{provider}")
-async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = Depends(get_db)):
+async def oauth_provider_login(
+    provider: str, redirect_uri: str, db: Session = Depends(get_db)
+):
     """Initiate OAuth flow for a provider"""
     try:
         auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
         return RedirectResponse(url=auth_url)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"OAuth authentication failed: {str(e)}"
+        )
+
 
 @router.get("/callback/{provider}")
-async def oauth_callback(request: Request, provider: str, code: str, state: str = None, db: Session = Depends(get_db)):
+async def oauth_callback(
+    request: Request,
+    provider: str,
+    code: str,
+    state: str = None,
+    db: Session = Depends(get_db),
+):
     """Handle OAuth callback from provider"""
     try:
         # Reconstruct the redirect_uri that was used in the authorization request
@@ -231,12 +244,16 @@ async def oauth_callback(request: Request, provider: str, code: str, state: str 
         scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
         host = request.headers.get("host") or request.url.netloc
         redirect_uri = f"{scheme}://{host}/auth/oauth/callback/{provider}"
-        
-        print(f"[OAuth Callback] Provider: {sanitize_for_log(provider)}, redirect_uri: {sanitize_for_log(redirect_uri)}")
-        print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {sanitize_for_log(request.headers.get('x-forwarded-proto'))}, scheme: {sanitize_for_log(request.url.scheme)}")
-        
+
+        print(
+            f"[OAuth Callback] Provider: {sanitize_for_log(provider)}, redirect_uri: {sanitize_for_log(redirect_uri)}"
+        )
+        print(
+            f"[OAuth Callback] Headers - X-Forwarded-Proto: {sanitize_for_log(request.headers.get('x-forwarded-proto'))}, scheme: {sanitize_for_log(request.url.scheme)}"
+        )
+
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
-        
+
         # Redirect to dashboard with token in URL so JavaScript can access it
         # The dashboard will save it to localStorage
         dashboard_url = f"/auth/oauth/dashboard?token={result['access_token']}"
@@ -246,16 +263,20 @@ async def oauth_callback(request: Request, provider: str, code: str, state: str 
             value=result["access_token"],
             httponly=True,
             secure=True,
-            samesite="lax"
+            samesite="lax",
         )
         return response
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"OAuth authentication failed: {str(e)}"
+        )
+
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     """OAuth callback and dashboard"""
-    return HTMLResponse(content="""
+    return HTMLResponse(
+        content="""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -395,4 +416,5 @@ async def dashboard(request: Request):
     </script>
 </body>
 </html>
-""")
+"""
+    )

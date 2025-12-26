@@ -11,13 +11,13 @@ This package contains integrations for:
 - Voice (Azure Speech Services - 100+ languages)
 """
 
-from .email_integration import EmailIntegration
-from .sms_integration import SMSIntegration
-from .whatsapp_integration import WhatsAppIntegration
 from .ai_integration import AIIntegration
 from .calendar_integration import CalendarIntegration
+from .email_integration import EmailIntegration
 from .mobile_integration import MobileIntegration
+from .sms_integration import SMSIntegration
 from .voice_integration import VoiceIntegration
+from .whatsapp_integration import WhatsAppIntegration
 
 __all__ = [
     "EmailIntegration",

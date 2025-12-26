@@ -6,16 +6,19 @@ SECURITY WARNING: This script contains default passwords for initial setup.
 These should be changed immediately after first login.
 For production use, set SUPERUSER_PASSWORD and ADMIN_PASSWORD environment variables.
 """
-import sys
 import os
 import secrets
 import string
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from datetime import datetime
 
 from app.database.connection import SessionLocal
 from app.database.models import User
 from app.utils.auth import get_password_hash
-from datetime import datetime
+
 
 def generate_secure_password(length=16):
     """Generate a secure random password"""

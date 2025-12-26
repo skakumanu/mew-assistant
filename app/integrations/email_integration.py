@@ -9,10 +9,10 @@ Supports:
 """
 
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Any, Dict, List, Optional
 
 from app.utils.config import settings
 from app.utils.logger import get_logger
@@ -24,15 +24,15 @@ class EmailIntegration:
     """Email integration for SMTP/IMAP operations."""
 
     def __init__(self):
-        self.smtp_server = getattr(settings, 'SMTP_SERVER', 'smtp.gmail.com')
-        self.smtp_port = getattr(settings, 'SMTP_PORT', 587)
-        self.smtp_user = getattr(settings, 'SMTP_USER', '')
-        self.smtp_password = getattr(settings, 'SMTP_PASSWORD', '')
-        
-        self.imap_server = getattr(settings, 'IMAP_SERVER', 'imap.gmail.com')
-        self.imap_port = getattr(settings, 'IMAP_PORT', 993)
-        self.imap_user = getattr(settings, 'IMAP_USER', '')
-        self.imap_password = getattr(settings, 'IMAP_PASSWORD', '')
+        self.smtp_server = getattr(settings, "SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = getattr(settings, "SMTP_PORT", 587)
+        self.smtp_user = getattr(settings, "SMTP_USER", "")
+        self.smtp_password = getattr(settings, "SMTP_PASSWORD", "")
+
+        self.imap_server = getattr(settings, "IMAP_SERVER", "imap.gmail.com")
+        self.imap_port = getattr(settings, "IMAP_PORT", 993)
+        self.imap_user = getattr(settings, "IMAP_USER", "")
+        self.imap_password = getattr(settings, "IMAP_PASSWORD", "")
 
     async def send_email(
         self,
@@ -64,13 +64,13 @@ class EmailIntegration:
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.smtp_user, self.smtp_password)
-                
+
                 recipients = [to_email]
                 if cc:
                     recipients.extend(cc)
                 if bcc:
                     recipients.extend(bcc)
-                
+
                 server.send_message(msg, to_addrs=recipients)
 
             logger.info(f"Email sent successfully to {to_email}")

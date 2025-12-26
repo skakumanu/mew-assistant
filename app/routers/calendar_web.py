@@ -14,7 +14,7 @@ async def calendar_page(request: Request):
     Simple web page to view calendar.
     No downloads, no complexity - just a webpage!
     """
-    
+
     html = """
     <!DOCTYPE html>
     <html>
@@ -264,21 +264,21 @@ async def calendar_page(request: Request):
     </body>
     </html>
     """
-    
+
     return HTMLResponse(content=html)
 
 
 @router.get("/test-token")
 async def test_token():
     """Debug endpoint to test token generation"""
-    from ..utils.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-    
+    from ..utils.auth import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
+
     test_data = {"sub": "test", "email": "test@test.com", "role": "user"}
     token = create_access_token(test_data)
-    
+
     return {
         "token_length": len(token),
         "token_preview": token[:50] + "...",
         "expire_minutes_setting": ACCESS_TOKEN_EXPIRE_MINUTES,
-        "expire_days": ACCESS_TOKEN_EXPIRE_MINUTES / 1440
+        "expire_days": ACCESS_TOKEN_EXPIRE_MINUTES / 1440,
     }

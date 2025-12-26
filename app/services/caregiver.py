@@ -1,17 +1,18 @@
 """
 Caregiver service for support and summaries.
 """
-from typing import Dict
+
 from datetime import datetime
+from typing import Dict
 
 
 class CaregiverService:
     """Service for managing caregiver summaries and support."""
-    
+
     def __init__(self):
         """Initialize caregiver service."""
         self.summaries = {}
-    
+
     def generate_summary(self, user_id: str, period: str = "daily") -> Dict:
         """Generate a caregiver summary."""
         return {
@@ -21,9 +22,9 @@ class CaregiverService:
             "generated_at": datetime.utcnow().isoformat(),
             "activities": [],
             "notes": [],
-            "recommendations": []
+            "recommendations": [],
         }
-    
+
     def get_summary(self, summary_id: str) -> Dict:
         """Get a specific summary."""
         return self.summaries.get(summary_id, {})
@@ -36,7 +37,7 @@ class CaregiverService:
             "date": date,
             "summary": [],
             "activities": [],
-            "period": "day"
+            "period": "day",
         }
         return summary
 
@@ -48,11 +49,13 @@ class CaregiverService:
             "start_date": start_date,
             "summary": [],
             "activities": [],
-            "period": "week"
+            "period": "week",
         }
         return summary
 
-    def create_medication_reminder(self, user_id: str, medication_name: str, time: str, frequency: str) -> Dict:
+    def create_medication_reminder(
+        self, user_id: str, medication_name: str, time: str, frequency: str
+    ) -> Dict:
         """Create a simple medication reminder stub."""
         reminder_id = f"reminder_{user_id}_{medication_name}_{time}"
         reminder = {
@@ -61,7 +64,7 @@ class CaregiverService:
             "medication_name": medication_name,
             "time": time,
             "frequency": frequency,
-            "status": "reminder_created"
+            "status": "reminder_created",
         }
         # store in memory for get_summary compatibility
         self.summaries[reminder_id] = reminder
