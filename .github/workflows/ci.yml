@@ -141,6 +141,7 @@ jobs:
         DATABASE_URL: postgresql://mew:test_password@localhost:5432/mew_test
         JWT_SECRET_KEY: test_secret_key_for_ci
         ENVIRONMENT: test
+        SECRET_KEY: test-secret
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -212,6 +213,7 @@ jobs:
         REDIS_URL: redis://localhost:6379
         JWT_SECRET_KEY: test_secret_key_for_ci
         ENVIRONMENT: test
+        SECRET_KEY: test-secret
 
   build:
     name: Build Container Image
@@ -262,16 +264,19 @@ jobs:
       run: pytest tests/compliance/test_coppa_compliance.py -v
       env:
         DATABASE_URL: sqlite:///./test.db
+        SECRET_KEY: test-secret
     
     - name: Run HIPAA compliance tests
       run: pytest tests/compliance/test_hipaa_compliance.py -v
       env:
         DATABASE_URL: sqlite:///./test.db
+        SECRET_KEY: test-secret
     
     - name: Run GDPR compliance tests
       run: pytest tests/compliance/test_gdpr_compliance.py -v
       env:
         DATABASE_URL: sqlite:///./test.db
+        SECRET_KEY: test-secret
     
     - name: Generate compliance report
       if: always()
