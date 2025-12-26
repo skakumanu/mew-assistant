@@ -30,13 +30,16 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
 
         except MewException as e:
             logger.warning(
-                f"MewException: {e.message}",
+                "MewException while handling request",
                 extra={
-                    "error_code": e.error_code,
-                    "status_code": e.status_code,
-                    "details": e.details,
-                    "path": request.url.path,
-                    "method": request.method,
+                    "extra_data": {
+                        "error_code": e.error_code,
+                        "status_code": e.status_code,
+                        "details": e.details,
+                        "path": request.url.path,
+                        "method": request.method,
+                        "message": str(e.message),
+                    }
                 },
             )
             return JSONResponse(
@@ -52,9 +55,11 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             logger.error(
-                f"Unhandled exception: {str(e)}",
+                "Unhandled exception while processing request",
                 exc_info=True,
-                extra={"path": request.url.path, "method": request.method},
+                extra={
+                    "extra_data": {"path": request.url.path, "method": request.method}
+                },
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -81,13 +86,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
 
         logger.info(
-            f"Request started: {request.method} {request.url.path}",
+            "Request started",
             extra={
                 "request_id": request_id,
-                "method": request.method,
-                "path": request.url.path,
-                "query_params": dict(request.query_params),
-                "client_host": request.client.host if request.client else None,
+                "extra_data": {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "query_params": dict(request.query_params),
+                    "client_host": request.client.host if request.client else None,
+                },
             },
         )
 
@@ -96,13 +103,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         duration = time.time() - start_time
 
         logger.info(
-            f"Request completed: {request.method} {request.url.path}",
+            "Request completed",
             extra={
                 "request_id": request_id,
-                "method": request.method,
-                "path": request.url.path,
-                "status_code": response.status_code,
-                "duration_ms": round(duration * 1000, 2),
+                "extra_data": {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": response.status_code,
+                    "duration_ms": round(duration * 1000, 2),
+                },
             },
         )
 
