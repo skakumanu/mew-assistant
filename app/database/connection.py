@@ -69,9 +69,43 @@ async def init_db():
     try:
         from .models import Base as ModelsBase
 
-        # Create all tables
-        ModelsBase.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
+        # To avoid races when multiple processes/containers try to create the
+        # schema concurrently (which can cause duplicate CREATE TYPE errors in
+        # PostgreSQL), acquire a PostgreSQL advisory lock before running
+        # `create_all`. The lock is a no-op for SQLite.
+        if not DATABASE_URL.startswith("sqlite"):
+            try:
+                with engine.connect() as conn:
+                    # Use a stable advisory lock key. Use pg_try_advisory_lock
+                    # to avoid blocking CI indefinitely; if lock not available,
+                    # wait a short time and retry a few times.
+                    acquired = False
+                    import time
+
+                    for _ in range(5):
+                        res = conn.execute(
+                            "SELECT pg_try_advisory_lock(436901387)"
+                        ).scalar()
+                        if res:
+                            acquired = True
+                            break
+                        time.sleep(1)
+
+                    if not acquired:
+                        logger.warning("Could not acquire advisory lock; proceeding without lock")
+                    else:
+                        try:
+                            ModelsBase.metadata.create_all(bind=engine)
+                        finally:
+                            conn.execute("SELECT pg_advisory_unlock(436901387)")
+                        logger.info("Database tables created successfully (with advisory lock)")
+            except Exception as ex:
+                logger.warning(f"Schema initialization attempt failed: {ex}")
+                logger.info("Database tables will be created when connection is available.")
+        else:
+            # SQLite or other file-based DBs: run create_all directly
+            ModelsBase.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully (sqlite)")
     except Exception as e:
         logger.warning(f"Could not initialize database: {e}")
         logger.info("Database tables will be created when connection is available.")
