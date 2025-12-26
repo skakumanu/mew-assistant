@@ -7,6 +7,7 @@ import json
 import logging
 import sys
 import traceback
+import os
 from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -39,13 +40,29 @@ class StructuredFormatter(logging.Formatter):
         if user_id:
             log_data["user_id"] = user_id
 
-        # Add exception info if present
+        # Add exception info if present. Only include full traceback when
+        # explicitly enabled by environment variable to avoid exposing stack
+        # traces in production logs. Set LOG_INCLUDE_TRACEBACK=true for
+        # development or when an internal support workflow requires it.
         if record.exc_info:
-            log_data["exception"] = {
-                "type": record.exc_info[0].__name__,
-                "message": str(record.exc_info[1]),
-                "traceback": traceback.format_exception(*record.exc_info),
-            }
+            exc_type = record.exc_info[0].__name__
+            exc_message = str(record.exc_info[1])
+
+            exception_info = {"type": exc_type, "message": exc_message}
+
+            include_tb = os.getenv("LOG_INCLUDE_TRACEBACK", "false").lower() in (
+                "1",
+                "true",
+                "yes",
+            )
+
+            if include_tb:
+                # Keep traceback content but keep it intentionally optional
+                exception_info["traceback"] = traceback.format_exception(
+                    *record.exc_info
+                )
+
+            log_data["exception"] = exception_info
 
         # Add extra fields
         if hasattr(record, "extra_data"):

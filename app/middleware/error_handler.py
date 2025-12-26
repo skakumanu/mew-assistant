@@ -127,15 +127,32 @@ async def sqlalchemy_exception_handler(
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle all unhandled exceptions"""
+    # Avoid including full tracebacks in structured logs by default.
+    # Include only exception type and message; keep full traceback out
+    # of logs unless explicitly enabled via `LOG_INCLUDE_TRACEBACK`.
+    tb_allowed = False
+    try:
+        import os
+
+        tb_allowed = os.getenv("LOG_INCLUDE_TRACEBACK", "false").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+    except Exception:
+        tb_allowed = False
+
+    extra_data = {
+        "path": request.url.path,
+        "error_type": exc.__class__.__name__,
+    }
+
+    if tb_allowed:
+        extra_data["traceback"] = traceback.format_exc()
+
     logger.error(
-        f"Unhandled exception: {str(exc)}",
-        extra={
-            "extra_data": {
-                "path": request.url.path,
-                "error_type": exc.__class__.__name__,
-                "traceback": traceback.format_exc(),
-            }
-        },
+        "Unhandled exception",
+        extra={"extra_data": extra_data},
         exc_info=True,
     )
 
