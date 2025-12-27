@@ -31,6 +31,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 black isort mypy pylint bandit
         pip install -r requirements.txt
+        python -m pip install -e .
     
     - name: Run Black (code formatting check)
       run: black --check app/ tests/
@@ -64,13 +65,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install bandit safety
         pip install -r requirements.txt
+        python -m pip install -e .
     
     - name: Run Bandit (security linter)
       run: bandit -r app/ -f json -o bandit-report.json
       continue-on-error: true
     
     - name: Run Safety (dependency vulnerability check)
-      run: safety check --json --output safety-report.json
+      run: safety check --json > safety-report.json
       continue-on-error: true
     
     - name: Upload security reports
@@ -127,6 +129,7 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov pytest-xdist pytest-timeout
         pip install argon2-cffi
+        python -m pip install -e .
     
     - name: Run tests with pytest
       run: |
@@ -206,6 +209,7 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio httpx
         pip install argon2-cffi
+        python -m pip install -e .
     
     - name: Run integration tests
       run: |

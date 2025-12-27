@@ -91,21 +91,13 @@ def create_admin_users():
             print("export SUPERUSER_PASSWORD='your-secure-password'")
             print("export ADMIN_PASSWORD='your-secure-password'")
             print("="*60)
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
-            )
-            db.add(admin)
-            print("✓ Created admin: skakumanu@hotmail.com")
-        else:
-            admin.role = "ADMIN"
-            print("✓ Updated to admin: skakumanu@hotmail.com")
         
         db.commit()
         
-        print("\n=== Admin Credentials ===")
-        print(f"Superuser: skakumanu@gmail.com / Mew@Super2024!")
-        print(f"Admin: skakumanu@hotmail.com / Mew@Admin2024!")
-        print("\nPlease change these passwords after first login!")
+        if not passwords_to_show:
+            print("No new passwords generated — existing accounts were updated.")
+        else:
+            print("\nPlease change these passwords after first login!")
         
     except Exception as e:
         print(f"Error: {e}")

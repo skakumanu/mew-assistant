@@ -5,9 +5,9 @@ Provides consistent logging with context and request tracking
 
 import json
 import logging
+import os
 import sys
 import traceback
-import os
 from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Dict, Optional
