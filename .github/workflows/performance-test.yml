@@ -12,6 +12,8 @@ jobs:
   load-test:
     name: Load Testing with Locust
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     
     services:
       postgres:
@@ -41,7 +43,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install locust
-        python -m pip install -e .
     
     - name: Start application
       run: |
@@ -74,6 +75,8 @@ jobs:
   benchmark:
     name: API Benchmarking
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     
     steps:
     - uses: actions/checkout@v4

@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     
     strategy:
       matrix:
@@ -28,7 +30,6 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov
         pip install argon2-cffi
-        python -m pip install -e .
     
     - name: Run tests with pytest
       run: |

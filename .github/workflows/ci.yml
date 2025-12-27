@@ -10,6 +10,8 @@ jobs:
   lint:
     name: Code Linting
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     steps:
     - uses: actions/checkout@v4
     
@@ -31,7 +33,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 black isort mypy pylint bandit
         pip install -r requirements.txt
-        python -m pip install -e .
     
     - name: Run Black (code formatting check)
       run: black --check app/ tests/
@@ -52,6 +53,8 @@ jobs:
   security:
     name: Security Scanning
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     steps:
     - uses: actions/checkout@v4
     
@@ -65,7 +68,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install bandit safety
         pip install -r requirements.txt
-        python -m pip install -e .
     
     - name: Run Bandit (security linter)
       run: bandit -r app/ -f json -o bandit-report.json
@@ -87,6 +89,8 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     
     strategy:
       matrix:
@@ -129,7 +133,6 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov pytest-xdist pytest-timeout
         pip install argon2-cffi
-        python -m pip install -e .
     
     - name: Run tests with pytest
       run: |
@@ -168,6 +171,8 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     needs: [test]
     
     services:
@@ -209,7 +214,6 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-asyncio httpx
         pip install argon2-cffi
-        python -m pip install -e .
     
     - name: Run integration tests
       run: |

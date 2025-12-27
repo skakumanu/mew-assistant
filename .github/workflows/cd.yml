@@ -13,6 +13,8 @@ jobs:
   guardrail-gates:
     name: 🛡️ Mandatory Guardrail Checks
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     steps:
     - uses: actions/checkout@v4
     
@@ -26,7 +28,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest bandit safety
-        python -m pip install -e .
     
     - name: 🔒 Security Guardrails (MANDATORY)
       run: |
