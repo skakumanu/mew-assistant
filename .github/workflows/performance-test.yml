@@ -43,6 +43,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install locust
+
+    - name: Ensure SECRET_KEY
+      run: |
+        if [ -z "${{ secrets.SECRET_KEY }}" ]; then
+          python - <<'PY'
+import secrets
+print("SECRET_KEY=" + secrets.token_urlsafe(32))
+PY
+        else
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}"
+        fi >> $GITHUB_ENV
     
     - name: Start application
       run: |
@@ -50,7 +61,7 @@ jobs:
         sleep 10
       env:
         DATABASE_URL: postgresql://mew:test_password@localhost:5432/mew_test
-        SECRET_KEY: test-secret
+        
     
     - name: Run load tests
       run: |
@@ -97,6 +108,9 @@ jobs:
         pytest tests/performance/test_benchmarks.py \
           --benchmark-only \
           --benchmark-json=benchmark-results.json
+      env:
+        DATABASE_URL: sqlite:///./test-benchmark-${{ github.run_id }}.db
+        SECRET_KEY: ${{ env.SECRET_KEY }}
     
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
