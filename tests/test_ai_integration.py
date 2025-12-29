@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from app.schemas.schedule import ScheduleConflict, ScheduleCreate
+from app.schemas.schedule import ScheduleCreate
 from app.services.ai_service import AIService
 
 

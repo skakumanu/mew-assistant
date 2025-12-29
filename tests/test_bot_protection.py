@@ -6,6 +6,9 @@ import pytest
 
 from app.middleware.bot_protection import captcha_verifier
 
+# Provided by the test `conftest.py` fixture; define here for linters
+client = None
+
 
 @pytest.fixture(autouse=True)
 def _clear_middleware_state(client):

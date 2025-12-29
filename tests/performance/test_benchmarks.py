@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from app.services.session_service import SessionService
+# SessionService import removed (unused in benchmarks)
 from app.utils.cooldown import CooldownDetector
 from app.utils.smart_approval import SmartApprovalEngine
 

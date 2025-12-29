@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app.middleware.security import (EncryptionHelper, InputSanitizer,
                                      SecurityMiddleware,
                                      SQLInjectionPrevention, XSSPrevention)
-from app.utils.exceptions import RateLimitExceeded, SecurityViolationError
+from app.utils.exceptions import SecurityViolationError
 
 
 @pytest.fixture

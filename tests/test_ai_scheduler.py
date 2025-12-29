@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from app.database.models import (ActivityType, PriorityLevel, ScheduleEntry,
-                                 SessionStatus, User)
+                                 SessionStatus)
 from app.services.ai_scheduler_service import AISchedulerService
 
 

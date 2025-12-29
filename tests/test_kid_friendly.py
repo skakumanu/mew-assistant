@@ -8,8 +8,7 @@ from datetime import datetime, timedelta
 import pytest
 from fastapi import status
 
-from app.schemas.kid_friendly import (ChangeReason, EmojiReaction,
-                                      KidActivitySuggestion, TimeOfDay)
+from app.schemas.kid_friendly import (KidActivitySuggestion,)
 from app.utils.content_filter import ContentFilter
 
 
