@@ -67,7 +67,7 @@ class SmartApprovalService:
         """Check if request matches any auto-approval rules."""
         rules = (
             self.db.query(ApprovalRule)
-            .filter(ApprovalRule.user_id == parent.id, ApprovalRule.is_active == True)
+            .filter(ApprovalRule.user_id == parent.id, ApprovalRule.is_active.is_(True))
             .all()
         )
 
@@ -382,7 +382,7 @@ class SmartApprovalService:
                 {
                     "rule_type": "time_range",
                     "name": "Auto-approve morning activities",
-                    "description": f"Auto-approve low-risk activities during morning hours",
+                    "description": "Auto-approve low-risk activities during morning hours",
                     "params": {"time_start": "06:00", "time_end": "12:00"},
                     "confidence": min(morning_count / 20, 1.0),
                 }

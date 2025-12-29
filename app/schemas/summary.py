@@ -58,7 +58,11 @@ class SummaryResponse(BaseModel):
                 "id": 1,
                 "session_id": 42,
                 "user_id": "user_12345",
-                "summary_text": "This week included 3 tutoring sessions focusing on mathematics and reading comprehension. Student showed significant improvement in algebra.",
+                "summary_text": (
+                    "This week included 3 tutoring sessions focusing on mathematics and "
+                    "reading comprehension. Student showed significant improvement in "
+                    "algebra."
+                ),
                 "key_points": [
                     "3 tutoring sessions completed",
                     "Math: Improved algebra understanding",

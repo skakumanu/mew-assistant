@@ -47,13 +47,13 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
                 margin: 25px 0;
                 border: 2px solid #4caf50;
             }}
-            .big-box .title {{ 
-                font-size: 20px; 
-                font-weight: bold; 
-                color: #2e7d32; 
-                margin-bottom: 15px; 
+            .big-box .title {{
+                font-size: 20px;
+                font-weight: bold;
+                color: #2e7d32;
+                margin-bottom: 15px;
             }}
-            .big-box .step {{ 
+            .big-box .step {{
                 background: white;
                 padding: 12px;
                 margin: 8px 0;
@@ -77,49 +77,52 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
                 Hi {user_name}!<br>
                 Your Google Calendar is connected.
             </p>
-            
+
             <div class="big-box">
                 <div class="title">🎯 Next: View Your Calendar</div>
                 <div class="step">1️⃣ Download the calendar viewer file</div>
                 <div class="step">2️⃣ Open it in your browser</div>
                 <div class="step">3️⃣ Click "Show My Events"</div>
             </div>
-            
+
             <div class="countdown" id="countdown">
                 Downloading calendar viewer in <span id="timer">5</span> seconds...
             </div>
-            
+
             <p class="note">
                 💡 Can't find the download?<br>
                 Check your Downloads folder for<br>
                 <strong>calendar-simple.html</strong>
             </p>
         </div>
-        
+
         <script>
             // Save login info silently
             localStorage.setItem('mew_token', '{jwt_token}');
             localStorage.setItem('mew_user', '{user_email}');
             localStorage.setItem('mew_name', '{user_name}');
-            
+
             // Auto-download the simple calendar viewer after 5 seconds
             let seconds = 5;
             const timer = setInterval(() => {{
                 seconds--;
                 document.getElementById('timer').textContent = seconds;
-                
+
                 if (seconds <= 0) {{
                     clearInterval(timer);
                     document.getElementById('countdown').innerHTML = '⬇️ Downloading now...';
-                    
+
                     // Trigger download
                     const link = document.createElement('a');
-                    link.href = 'https://raw.githubusercontent.com/skakumanu/mew-assistant/feature/customerzerosetup/calendar-simple.html';
+                    link.href = 'https://raw.githubusercontent.com/skakumanu/mew-assistant/' +
+                                'feature/customerzerosetup/calendar-simple.html';
                     link.download = 'calendar-simple.html';
                     link.click();
-                    
+
                     setTimeout(() => {{
-                        document.getElementById('countdown').innerHTML = '✅ Download started!<br><small style="color:#666;">Open the file from your Downloads folder</small>';
+                        const msg = '✅ Download started!<br><small style="color:#666;">' +
+                            'Open the file from your Downloads folder</small>';
+                        document.getElementById('countdown').innerHTML = msg;
                     }}, 1000);
                 }}
             }}, 1000);

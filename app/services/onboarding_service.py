@@ -5,7 +5,6 @@ Handles seamless registration across all channels with minimal friction
 
 import re
 import secrets
-from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 from sqlalchemy import select
@@ -61,17 +60,9 @@ class OnboardingService:
 
         # Generate magic token (valid for 15 minutes)
         magic_token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(minutes=15)
 
-        # Create pending registration
-        pending = {
-            "channel": channel,
-            "identifier": identifier,
-            "name": name,
-            "magic_token": magic_token,
-            "expires_at": expires_at,
-            "metadata": metadata or {},
-        }
+        # Pending registration data prepared for eventual persistence or caching.
+        # In this simplified flow we do not persist it; keep values in local scope.
 
         # Send magic link/code based on channel
         if channel in ["email", "gmail", "outlook"]:
@@ -261,13 +252,13 @@ class OnboardingService:
             subject="✨ Your Mew Assistant Magic Link",
             body=f"""
             Hi {name or 'there'}!
-            
+
             Click below to sign in to Mew Assistant (no password needed):
-            
+
             {magic_link}
-            
+
             This link expires in 15 minutes.
-            
+
             Welcome aboard! 🎉
             """,
             html=True,

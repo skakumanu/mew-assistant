@@ -101,7 +101,7 @@ class SessionService:
             else:
                 raise PermissionError(
                     f"Session in cooldown until {cooldown_until}. "
-                    f"Use override_cooldown=true for urgent sessions."
+                    "Use override_cooldown=true for urgent sessions."
                 )
 
         # Confirm session

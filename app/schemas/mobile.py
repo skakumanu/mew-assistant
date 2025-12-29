@@ -6,6 +6,8 @@ Pydantic models for mobile device integration
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+from datetime import datetime
+from enum import Enum
 
 
 class DeviceRegistrationRequest(BaseModel):
@@ -172,11 +174,6 @@ class ScheduledReminderResponse(BaseModel):
     success: bool
     scheduled_time: str
     message: str
-
-
-from datetime import datetime
-# Additional schemas for enhanced mobile API
-from enum import Enum
 
 
 class MobilePlatform(str, Enum):

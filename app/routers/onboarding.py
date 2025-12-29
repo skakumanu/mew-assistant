@@ -11,7 +11,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from ..database.connection import get_db
-from ..database.models import Session, User, UserRole
+from ..database.models import Session as SessionModel, User, UserRole
 from ..schemas.auth import UserCreate
 from ..services.auth_service import AuthService
 from ..utils.notifications import NotificationService
@@ -81,12 +81,13 @@ async def quick_onboard(
     img.save(buffer, format="PNG")
     qr_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-    # Store onboarding session
-    session = UserSession(
-        user_id=user.id,
-        session_token=onboarding_token,
-        device_info=f"Onboarding via {data.channel}",
-        expires_at=datetime.utcnow() + timedelta(hours=24),
+    # Store onboarding session (mapped to `sessions` table)
+    session = SessionModel(
+        user_id=str(user.id),
+        session_id=onboarding_token,
+        title="Onboarding",
+        description=f"Onboarding via {data.channel}",
+        scheduled_at=datetime.utcnow() + timedelta(hours=24),
     )
     db.add(session)
     db.commit()
@@ -106,8 +107,8 @@ async def quick_onboard(
             f"""
             <h2>Welcome {data.name}!</h2>
             <p>Your Mew Assistant is ready! Click the button below to complete setup:</p>
-            <a href="{magic_link}" style="background: #4CAF50; color: white; padding: 15px 32px; 
-               text-decoration: none; display: inline-block; margin: 4px 2px; cursor: pointer; 
+            <a href="{magic_link}" style="background: #4CAF50; color: white; padding: 15px 32px;
+               text-decoration: none; display: inline-block; margin: 4px 2px; cursor: pointer;
                border-radius: 4px;">Complete Setup</a>
             <p>Or scan this QR code with your phone:</p>
             <img src="data:image/png;base64,{qr_base64}" alt="Setup QR Code" />
@@ -124,13 +125,13 @@ async def quick_onboard(
         qr_code=f"data:image/png;base64,{qr_base64}",
         simple_instructions=f"""
         🎉 You're almost there, {data.name}!
-        
+
         We sent you a magic link to {data.contact}
-        
+
         ✅ Just click the link or scan the QR code
         ✅ Connect your calendar (optional - takes 2 clicks)
         ✅ Start using Mew!
-        
+
         No passwords to remember. No complicated setup.
         """,
     )
@@ -142,10 +143,10 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
 
     # Verify token (simplified - in production use proper token validation)
     session = (
-        db.query(UserSession)
+        db.query(SessionModel)
         .filter(
-            UserSession.session_token == token,
-            UserSession.expires_at > datetime.utcnow(),
+            SessionModel.session_id == token,
+            SessionModel.scheduled_at > datetime.utcnow(),
         )
         .first()
     )
@@ -172,8 +173,8 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
         <title>Welcome to Mew Assistant</title>
         <style>
             body {{ font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }}
-            .button {{ background: #4CAF50; color: white; padding: 15px 32px; 
-                      text-decoration: none; display: inline-block; margin: 10px 0; 
+            .button {{ background: #4CAF50; color: white; padding: 15px 32px;
+                      text-decoration: none; display: inline-block; margin: 10px 0;
                       cursor: pointer; border: none; border-radius: 4px; font-size: 16px; }}
             .option {{ border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 8px; }}
             h1 {{ color: #333; }}
@@ -182,9 +183,9 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
     <body>
         <h1>🎉 Welcome {user.full_name}!</h1>
         <p>Your Mew Assistant is ready to help with scheduling and caregiving tasks!</p>
-        
+
         <h2>Quick Setup (Optional)</h2>
-        
+
         <div class="option">
             <h3>📅 Connect Your Calendar</h3>
             <p>Let Mew help you manage schedules automatically</p>
@@ -192,49 +193,49 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
             <button class="button" onclick="connectApple()">Connect Apple Calendar</button>
             <button class="button" onclick="skip()">Skip for now</button>
         </div>
-        
+
         <div class="option">
             <h3>🗣️ Enable Voice Commands</h3>
             <p>Talk to Mew through Siri, Alexa, or Google Assistant</p>
             <button class="button" onclick="setupVoice()">Setup Voice</button>
             <button class="button" onclick="skip()">Skip for now</button>
         </div>
-        
+
         <div class="option">
             <h3>👨‍👩‍👧‍👦 Add Family Members</h3>
             <p>Add kids, caregivers, or other family members</p>
             <button class="button" onclick="addFamily()">Add Family</button>
             <button class="button" onclick="skip()">Skip for now</button>
         </div>
-        
+
         <br><br>
-        <button class="button" style="background: #2196F3; font-size: 20px;" 
+        <button class="button" style="background: #2196F3; font-size: 20px;"
                 onclick="startUsing()">🚀 Start Using Mew Now!</button>
-        
+
         <script>
             const apiUrl = window.location.origin;
             const token = "{token}";
-            
+
             function connectGoogle() {{
                 window.location.href = `${{apiUrl}}/calendar/google/auth?token=${{token}}`;
             }}
-            
+
             function connectApple() {{
                 window.location.href = `${{apiUrl}}/calendar/apple/auth?token=${{token}}`;
             }}
-            
+
             function setupVoice() {{
                 window.location.href = `${{apiUrl}}/voice/setup?token=${{token}}`;
             }}
-            
+
             function addFamily() {{
                 window.location.href = `${{apiUrl}}/family/setup?token=${{token}}`;
             }}
-            
+
             function skip() {{
                 alert('No problem! You can set this up anytime from Settings.');
             }}
-            
+
             function startUsing() {{
                 window.location.href = `${{apiUrl}}/dashboard?token=${{token}}`;
             }}
@@ -251,11 +252,11 @@ async def sms_onboard_flow():
     return {
         "instructions": """
         SMS Onboarding (Super Simple!):
-        
+
         1. Text: "START <your name>" to +1-XXX-MEW-HELP
         2. Reply with your preferred language (or skip)
         3. Done! You'll get a link to connect your calendar
-        
+
         Example:
         You: "START John Smith"
         Mew: "Hi John! 👋 Reply with your language (English/Spanish/French) or say SKIP"
@@ -305,7 +306,7 @@ async def voice_onboard_flow():
 async def complete_onboarding(token: str, db: Session = Depends(get_db)):
     """Mark onboarding as complete"""
 
-    session = db.query(UserSession).filter(UserSession.session_token == token).first()
+    session = db.query(SessionModel).filter(SessionModel.session_id == token).first()
 
     if not session:
         raise HTTPException(status_code=404, detail="Invalid onboarding token")

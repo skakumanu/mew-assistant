@@ -125,7 +125,7 @@ async def get_ios_shortcuts(current_user: User = Depends(get_current_user)):
                     },
                     {
                         "type": "api_call",
-                        "endpoint": f"/voice/command",
+                        "endpoint": "/voice/command",
                         "method": "POST",
                     },
                 ],

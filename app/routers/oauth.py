@@ -48,7 +48,8 @@ async def oauth_login_page():
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont,
+                    'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 display: flex;
                 justify-content: center;
@@ -105,20 +106,20 @@ async def oauth_login_page():
             <div class="logo">🐱</div>
             <h1>Mew Assistant</h1>
             <p class="subtitle">Sign in to manage your family schedule</p>
-            
+
             <a href="/auth/google/authorize" class="btn btn-google">
                 <span>Sign in with Google</span>
             </a>
-            
+
             <a href="/auth/microsoft/authorize" class="btn btn-microsoft">
                 <span>Sign in with Microsoft</span>
             </a>
-            
+
             <div id="success-message" style="display: none;" class="success">
                 ✓ Login successful! Redirecting...
             </div>
         </div>
-        
+
         <script>
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('success') === 'true') {

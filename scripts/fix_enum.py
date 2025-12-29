@@ -19,8 +19,8 @@ try:
     # Check if 'parent' exists in userrole enum
     cur.execute(
         """
-        SELECT 1 FROM pg_enum 
-        WHERE enumlabel = 'parent' 
+        SELECT 1 FROM pg_enum
+        WHERE enumlabel = 'parent'
         AND enumtypid = 'userrole'::regtype
     """
     )

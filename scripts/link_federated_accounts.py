@@ -43,7 +43,7 @@ def link_accounts():
             else:
                 print(f"✓ {superuser.email} already linked to Google")
         else:
-            print(f"⚠ Superuser skakumanu@gmail.com not found")
+            print("⚠ Superuser skakumanu@gmail.com not found")
 
         # Get admin user
         admin = session.execute(
@@ -72,7 +72,7 @@ def link_accounts():
             else:
                 print(f"✓ {admin.email} already linked to Microsoft")
         else:
-            print(f"⚠ Admin user skakumanu@hotmail.com not found")
+            print("⚠ Admin user skakumanu@hotmail.com not found")
 
         session.commit()
         print("\n✅ Federated account linking complete!")

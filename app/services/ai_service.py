@@ -80,7 +80,7 @@ class AIService:
                                     type="insufficient_travel_time",
                                     schedule1_id=i,
                                     schedule2_id=j,
-                                    message=f"Insufficient travel time between locations",
+                                    message="Insufficient travel time between locations",
                                     severity="high",
                                     suggested_resolution="Increase buffer time or reorder activities",
                                 )

@@ -63,7 +63,7 @@ class NotificationService:
                 )
             elif channel == "sms":
                 results["sms"] = await self.send_sms(
-                    to=f"+1234567890", message=message  # TODO: Get actual phone
+                    to="+1234567890", message=message  # TODO: Get actual phone
                 )
             elif channel == "push":
                 results["push"] = await self.send_push(

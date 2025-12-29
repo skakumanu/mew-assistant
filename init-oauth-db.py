@@ -27,9 +27,9 @@ def run_migration():
         # Check if columns already exist
         cursor.execute(
             """
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'federated_identities' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'federated_identities'
             AND column_name IN ('access_token', 'refresh_token', 'token_expires_at');
         """
         )
@@ -47,7 +47,7 @@ def run_migration():
         # Add columns if they don't exist
         cursor.execute(
             """
-            ALTER TABLE federated_identities 
+            ALTER TABLE federated_identities
             ADD COLUMN IF NOT EXISTS access_token TEXT,
             ADD COLUMN IF NOT EXISTS refresh_token TEXT,
             ADD COLUMN IF NOT EXISTS token_expires_at TIMESTAMP;

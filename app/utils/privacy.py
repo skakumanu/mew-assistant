@@ -162,7 +162,7 @@ class PrivacyGuardrails:
                 "Limited data collection to operational necessity",
                 "No public profile or social features",
             ]
-            logger.info(f"COPPA restrictions applied for user under 13")
+            logger.info("COPPA restrictions applied for user under 13")
 
         return result
 

@@ -10,7 +10,7 @@ if not db_url:
     print("ERROR: DATABASE_URL not set")
     sys.exit(1)
 
-print(f"Connecting to database...")
+print("Connecting to database...")
 
 try:
     conn = psycopg2.connect(db_url)
@@ -21,7 +21,7 @@ try:
     # Add OAuth token columns
     cursor.execute(
         """
-        ALTER TABLE federated_identities 
+        ALTER TABLE federated_identities
         ADD COLUMN IF NOT EXISTS access_token TEXT,
         ADD COLUMN IF NOT EXISTS refresh_token TEXT,
         ADD COLUMN IF NOT EXISTS token_expires_at TIMESTAMP;

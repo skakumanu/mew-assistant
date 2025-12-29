@@ -62,9 +62,15 @@ async def suggest_activity(
         emoji=request.emoji,
     )
 
+    # use fallback if parent's display_name is None
+    parent_name = (parent.display_name or "your parent") if parent else "your parent"
+
     return SimplifiedResponse(
         success=True,
-        message=f"Great idea! 🎉 I'll ask {parent.display_name if parent else 'your parent'} about {request.activity_name}!",
+        # keep lines short for flake8 E501
+        message=(
+            "Great idea! 🎉 I'll ask " + parent_name + " about " + request.activity_name + "!"
+        ),
         emoji="✅",
         data={
             "request_id": approval_request.id,
@@ -194,9 +200,14 @@ async def request_schedule_change(
         emoji="🤔",
     )
 
+    parent_name = (parent.display_name or "your parent") if parent else "your parent"
+
     return SimplifiedResponse(
         success=True,
-        message=f"Got it! 👍 I'll ask {parent.display_name if parent else 'your parent'} about this. No changes yet!",
+        # keep lines short for flake8 E501
+        message=(
+            "Got it! 👍 I'll ask " + parent_name + " about this. No changes yet!"
+        ),
         emoji="📝",
         data={
             "request_id": change_request.id,
@@ -225,7 +236,10 @@ async def get_sticker_collection(
         "total_stickers": stickers["count"],
         "stickers": stickers["collection"],
         "next_reward": stickers["next_reward"],
-        "message": f"You have {stickers['count']} stickers! Keep it up! 🌟",
+        # shorten long line to avoid E501
+        "message": (
+            "You have " + str(stickers["count"]) + " stickers! Keep it up! 🌟"
+        ),
     }
 
 

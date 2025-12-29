@@ -54,7 +54,10 @@ async def process_voice_command(
         if hint_language and hint_language not in SUPPORTED_LANGUAGES:
             raise HTTPException(
                 status_code=400,
-                detail=f"Language '{hint_language}' not supported. Use /voice/languages to see all 100+ supported languages.",
+                detail=(
+                    "Language '" + hint_language + "' not supported. "
+                    "Use /voice/languages to see all 100+ supported languages."
+                ),
             )
 
         # Read audio data
@@ -80,9 +83,15 @@ async def process_voice_command(
         if not result.success:
             raise HTTPException(status_code=400, detail=result.message)
 
+        # avoid long f-strings (E501) and use structured logging
+        lang = result.language_name
+        det = result.detected_language
+        trans = getattr(result.transcription, "text", "") if getattr(result, "transcription", None) else ""
         logger.info(
-            f"Voice command processed successfully in {result.language_name} "
-            f"({result.detected_language}): {result.transcription.text}"
+            "Voice command processed successfully in %s (%s): %s",
+            lang,
+            det,
+            trans,
         )
         return result
 

@@ -18,14 +18,47 @@ async def landing_page(request: Request):
         <title>Mew Assistant - Your Family's AI Assistant</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #333; min-height: 100vh; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .card { background: white; border-radius: 20px; padding: 40px 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); margin-top: 60px; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont,
+                    'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: #333;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .card {
+                background: white;
+                border-radius: 20px;
+                padding: 40px 30px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                margin-top: 60px;
+            }
             h1 { font-size: 2.5em; color: #667eea; text-align: center; margin-bottom: 10px; }
             .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 1.1em; }
-            .btn { display: block; width: 100%; padding: 18px; margin: 15px 0; border: none; border-radius: 12px; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.3s; text-decoration: none; text-align: center; }
+            .btn {
+                display: block;
+                width: 100%;
+                padding: 18px;
+                margin: 15px 0;
+                border: none;
+                border-radius: 12px;
+                font-size: 1.1em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-decoration: none;
+                text-align: center;
+            }
             .btn-google { background: #fff; color: #333; border: 2px solid #ddd; }
-            .btn-google:hover { background: #f8f9fa; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+            .btn-google:hover {
+                background: #f8f9fa;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
             .btn-apple { background: #000; color: #fff; }
             .btn-apple:hover { background: #333; transform: translateY(-2px); }
             .btn-microsoft { background: #00a4ef; color: #fff; }
@@ -41,7 +74,7 @@ async def landing_page(request: Request):
             <div class="card">
                 <h1>🐱 Mew Assistant</h1>
                 <p class="subtitle">Your Family's AI-Powered Scheduling Assistant</p>
-                
+
                 <div>
                     <a href="/auth/simple/google" class="btn btn-google">
                         🔐 Sign in with Google
@@ -50,7 +83,7 @@ async def landing_page(request: Request):
                         🏢 Sign in with Microsoft
                     </a>
                 </div>
-                
+
                 <div class="features">
                     <div class="feature">
                         <span class="feature-icon">📅</span>
@@ -70,7 +103,7 @@ async def landing_page(request: Request):
                     </div>
                 </div>
             </div>
-            
+
             <div class="footer">
                 <p>© 2025 Mew Assistant | For special needs families</p>
             </div>
@@ -79,9 +112,7 @@ async def landing_page(request: Request):
     </html>
     """
     # During tests or when an API client requests JSON, return a small JSON payload
-    if os.getenv("TESTING") == "true" or "application/json" in request.headers.get(
-        "accept", ""
-    ):
+    if os.getenv("TESTING") == "true" or "application/json" in request.headers.get("accept", ""):
         return JSONResponse(
             {
                 "status": "ok",

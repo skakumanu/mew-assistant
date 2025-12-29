@@ -310,7 +310,7 @@ async def verify_api_key(
     key_hash = hashlib.sha256(api_key.encode()).hexdigest()
     api_key_record = (
         db.query(APIKey)
-        .filter(APIKey.key_hash == key_hash, APIKey.is_active == True)
+        .filter(APIKey.key_hash == key_hash, APIKey.is_active.is_(True))
         .first()
     )
 

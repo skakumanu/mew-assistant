@@ -59,8 +59,12 @@ async def receive_sms(
             message_id=parsed_data["message_sid"],
         )
 
-        # Return TwiML response
-        twiml_response = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{response.get("reply", "Message received")}</Message></Response>'
+        # Return TwiML response (keep lines short for flake8)
+        reply = response.get("reply", "Message received")
+        twiml_response = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Response><Message>' + reply + '</Message></Response>'
+        )
 
         return twiml_response
 
@@ -109,8 +113,12 @@ async def receive_whatsapp(
             profile_name=parsed_data.get("profile_name"),
         )
 
-        # Return TwiML response
-        twiml_response = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{response.get("reply", "Message received")}</Message></Response>'
+        # Return TwiML response (keep lines short for flake8)
+        reply = response.get("reply", "Message received")
+        twiml_response = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Response><Message>' + reply + '</Message></Response>'
+        )
 
         return twiml_response
 

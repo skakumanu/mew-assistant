@@ -173,7 +173,7 @@ class MessageService:
 
     def get_unprocessed_messages(self, channel_filter=None, limit: int = 100):
         """Return unprocessed messages, optionally filtered by channel."""
-        query = self.db.query(Message).filter(Message.processed == False)
+        query = self.db.query(Message).filter(Message.processed.is_(False))
         if channel_filter is not None:
             # channel_filter may be an Enum or string; compare by value/name
             try:
@@ -208,7 +208,7 @@ class MessageService:
     def mark_processed(self, message_id: int):
         """Mark a message as processed and return the updated record."""
         message = self.db.query(Message).filter(Message.id == message_id).first()
-        if not message:
+        if message is None:
             raise ValueError(f"Message with id {message_id} not found")
         message.processed = True
         from datetime import datetime
