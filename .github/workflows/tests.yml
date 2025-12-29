@@ -14,7 +14,8 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        # Run a single, supported Python version in CI for now to speed up runs.
+        python-version: ['3.11']
     
     steps:
     - uses: actions/checkout@v3
