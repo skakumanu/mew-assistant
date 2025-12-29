@@ -49,7 +49,7 @@ jobs:
         fi
         echo "✅ Privacy guardrails passed"
       env:
-        DATABASE_URL: sqlite:///./test.db
+        DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
     
     - name: ⚖️ COPPA Compliance (MANDATORY)
       run: |
@@ -61,7 +61,7 @@ jobs:
         fi
         echo "✅ COPPA compliance passed"
       env:
-        DATABASE_URL: sqlite:///./test.db
+        DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
     
     - name: 🏥 HIPAA Compliance (MANDATORY)
       run: |
@@ -73,7 +73,7 @@ jobs:
         fi
         echo "✅ HIPAA compliance passed"
       env:
-        DATABASE_URL: sqlite:///./test.db
+        DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
     
     - name: 🌍 GDPR Compliance (MANDATORY)
       run: |
@@ -85,7 +85,7 @@ jobs:
         fi
         echo "✅ GDPR compliance passed"
       env:
-        DATABASE_URL: sqlite:///./test.db
+        DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
     
     - name: 🔐 Secrets Detection (MANDATORY)
       run: |
@@ -121,7 +121,7 @@ jobs:
         fi
         echo "✅ Parental approval logic verified"
       env:
-        DATABASE_URL: sqlite:///./test.db
+        DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
     
     - name: 📊 Generate Guardrail Report
       if: always()
