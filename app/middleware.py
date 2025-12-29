@@ -53,7 +53,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 },
             )
 
-        except Exception as e:
+        except Exception:
             logger.error(
                 "Unhandled exception while processing request",
                 exc_info=True,

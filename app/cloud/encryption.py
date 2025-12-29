@@ -19,7 +19,7 @@ class EncryptionService:
             from app.cloud.azure_key_vault import key_vault_client
 
             encryption_key = key_vault_client.get_secret("ENCRYPTION_KEY")
-        except:
+        except Exception:
             encryption_key = None
 
         if not encryption_key:

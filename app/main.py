@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,7 +54,7 @@ from .routers import (ai_scheduler_router, auth_router, calendar_router,
                       message_router, mobile_router, oauth_web,
                       parent_approval_router, session_router,
                       simple_calendar_router, simple_oauth_router,
-                      summary_router, voice_router)
+                      summary_router, voice_router)  # noqa: E402
 
 app.include_router(auth_router, tags=["auth"])
 app.include_router(oauth_web.router, tags=["oauth"])
@@ -74,8 +75,6 @@ app.include_router(parent_approval_router, tags=["approvals"])
 
 @app.get("/health")
 async def health():
-    from datetime import datetime
-
     return {
         "status": "healthy",
         "service": "Mew Assistant",

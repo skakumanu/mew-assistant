@@ -347,7 +347,7 @@ class VoiceIntegration:
 
                 data = json.loads(confidence)
                 return data.get("NBest", [{}])[0].get("Confidence", 0.0)
-        except:
+        except Exception:
             pass
         return 0.8  # Default confidence
 

@@ -66,5 +66,5 @@ class SiriIntegration(BaseVoicePlatform):
         return True
 
     async def register_skill(self, skill_config: Dict[str, Any]) -> bool:
-        logger.info(f"Registering Siri skill")
+        logger.info("Registering Siri skill")
         return True

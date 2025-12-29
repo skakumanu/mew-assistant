@@ -313,8 +313,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         """
         Verify CSRF token for state-changing operations
         """
-        import os
-
         # Skip CSRF for API endpoints with Bearer token
         if request.headers.get("Authorization", "").startswith("Bearer "):
             return

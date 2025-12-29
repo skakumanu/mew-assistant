@@ -146,8 +146,8 @@ class AIIntegration:
             "activity": "Summarize this activity log focusing on important events:",
         }
 
-        system_prompt = """You are Mew, a helpful assistant for special needs families. 
-Create clear, compassionate summaries."""
+        system_prompt = """You are Mew, a helpful assistant for special needs families.
+    Create clear, compassionate summaries."""
 
         prompt = f"{prompts.get(summary_type, prompts['daily'])}\n\n{content}"
 

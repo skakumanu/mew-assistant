@@ -324,7 +324,7 @@ async def logout(current_user: User = Depends(get_current_user)):
 
 
 # CAPTCHA endpoints for bot protection
-from app.middleware.bot_protection import captcha_verifier
+from app.middleware.bot_protection import captcha_verifier  # noqa: E402
 
 
 @router.get("/captcha/challenge")
