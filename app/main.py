@@ -49,12 +49,12 @@ app.add_middleware(
 app.include_router(landing.router, tags=["landing"])
 
 # Import other routers
-from .routers import (ai_scheduler_router, auth_router, calendar_router,
+from .routers import (ai_scheduler_router, auth_router, calendar_router,  # noqa: E402
                       calendar_web_router, debug_router, kid_router,
                       message_router, mobile_router, oauth_web,
                       parent_approval_router, session_router,
                       simple_calendar_router, simple_oauth_router,
-                      summary_router, voice_router)  # noqa: E402
+                      summary_router, voice_router)
 
 app.include_router(auth_router, tags=["auth"])
 app.include_router(oauth_web.router, tags=["oauth"])
