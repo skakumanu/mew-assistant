@@ -2,10 +2,6 @@
 Unit tests for utility functions.
 """
 
-from datetime import datetime, timedelta
-
-import pytest
-
 from app.utils.cooldown import CooldownManager
 from app.utils.priority import PriorityManager
 

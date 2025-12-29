@@ -2,11 +2,10 @@
 Comprehensive tests for compliance middleware
 """
 
-from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.middleware.compliance import (AccessControlValidator,

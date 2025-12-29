@@ -3,12 +3,9 @@ Tests for Kid-Friendly Features
 Ensures kid accounts, content filtering, and parent-kid communication work correctly
 """
 
-from datetime import datetime, timedelta
-
 import pytest
 from fastapi import status
 
-from app.schemas.kid_friendly import (KidActivitySuggestion,)
 from app.utils.content_filter import ContentFilter
 
 

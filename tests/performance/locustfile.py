@@ -2,7 +2,6 @@
 Load testing scenarios for Mew Assistant API
 """
 
-import json
 import random
 
 from locust import HttpUser, between, task

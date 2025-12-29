@@ -2,10 +2,6 @@
 Unit tests for service layer.
 """
 
-from unittest.mock import Mock, patch
-
-import pytest
-
 from app.services.caregiver import CaregiverService
 from app.services.scheduler import SchedulerService
 from app.services.tutor import TutorService

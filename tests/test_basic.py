@@ -3,7 +3,6 @@ Basic smoke tests for Mew Assistant.
 Tests core functionality without requiring full implementation details.
 """
 
-import pytest
 from fastapi import status
 
 

@@ -3,7 +3,7 @@ Tests for Calendar Integration
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 

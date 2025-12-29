@@ -1,7 +1,5 @@
 """Test main application"""
 
-from app.main import app
-
 
 def test_root_endpoint(client):
     """Test root endpoint returns welcome message"""

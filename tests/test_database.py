@@ -4,8 +4,6 @@ Tests for database models and operations.
 
 from datetime import datetime
 
-import pytest
-
 from app.database.models import Message, Session, User
 
 
