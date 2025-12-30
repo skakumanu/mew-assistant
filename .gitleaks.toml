@@ -1,0 +1,11 @@
+[allowlist]
+description = "Documentation examples with placeholder tokens"
+paths = [
+  '''docs/GETTING_STARTED\.md''',
+  '''docs/FEDERATED_AUTH_GUIDE\.md''',
+  '''DEPLOYMENT_SUMMARY\.md'''
+]
+regexes = [
+  '''YOUR_ACCESS_TOKEN''',
+  '''Authorization: Bearer [A-Z_]+'''
+]
