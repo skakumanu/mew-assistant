@@ -111,6 +111,7 @@ jobs:
         SECRET_KEY: ${{ env.SECRET_KEY }}
     
     - name: Store benchmark result
+      if: false  # Disabled: requires gh-pages branch setup
       uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'pytest'
