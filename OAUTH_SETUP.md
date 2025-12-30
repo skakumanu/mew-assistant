@@ -166,9 +166,9 @@ Prepare your credentials:
 export APPLE_CLIENT_ID='com.mewassistant.web'  # Your Services ID
 export APPLE_TEAM_ID='YOUR_TEAM_ID'  # Found in top-right of Apple Developer Portal
 export APPLE_KEY_ID='YOUR_KEY_ID'  # From Step 3
-export APPLE_PRIVATE_KEY='-----BEGIN PRIVATE KEY-----
-YOUR_P8_KEY_CONTENT_HERE
------END PRIVATE KEY-----'
+# Do NOT paste your private key directly into the repository or docs.
+# Store the .p8 file securely and set the environment variable from the file:
+# export APPLE_PRIVATE_KEY="$(cat /path/to/AuthKey_YOUR_KEY_ID.p8)"
 ```
 
 Store in Key Vault:

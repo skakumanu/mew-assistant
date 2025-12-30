@@ -24,7 +24,7 @@ async def test_connect_google_calendar(calendar_integration):
         "token": "test_oauth_token",
         "refresh_token": "test_refresh_token",
         "client_id": "test_client_id",
-        "client_secret": "test_client_secret",
+        "client_secret": "client_secret_placeholder",
     }
 
     with patch(
@@ -131,7 +131,7 @@ async def test_connect_outlook_calendar(calendar_integration):
     credentials = {
         "client_id": "test_client_id",
         "tenant_id": "test_tenant_id",
-        "client_secret": "test_client_secret",
+        "client_secret": "client_secret_placeholder",
     }
 
     with patch("app.integrations.calendar_integration.msal") as mock_msal:

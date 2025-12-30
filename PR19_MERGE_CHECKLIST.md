@@ -56,7 +56,7 @@ Notes & reproduction commands
 # use venv python from repo
 C:/Users/skaku/Projects/mew-assistant/.venv/Scripts/python.exe -m pip install -r requirements.txt
 $env:DATABASE_URL = "sqlite:///./test.db"
-$env:SECRET_KEY = "test-secret"
+$env:SECRET_KEY = "<SET_YOUR_SECRET_KEY_HERE>"
 C:/Users/skaku/Projects/mew-assistant/.venv/Scripts/python.exe -m pytest -q
 ```
 
