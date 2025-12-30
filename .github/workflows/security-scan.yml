@@ -84,8 +84,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Check SNYK token
+      id: check_snyk
+      run: |
+        if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
+          echo "run=true" >> $GITHUB_OUTPUT
+        else
+          echo "run=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Run Snyk to check for vulnerabilities
-      if: ${{ secrets.SNYK_TOKEN != '' }}
+      if: ${{ steps.check_snyk.outputs.run == 'true' }}
       uses: snyk/actions/python-3.10@master
       continue-on-error: true
       env:
