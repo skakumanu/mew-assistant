@@ -35,13 +35,13 @@ jobs:
     - name: Ensure SECRET_KEY
       run: |
         if [ -z "${{ secrets.SECRET_KEY }}" ]; then
-          python - <<'PY'
+          python - <<'PY' >> $GITHUB_ENV
 import secrets
 print("SECRET_KEY=" + secrets.token_urlsafe(32))
 PY
         else
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}"
-        fi >> $GITHUB_ENV
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
+        fi
 
     - name: Run tests with pytest
       run: |
