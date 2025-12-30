@@ -43,9 +43,7 @@ class MewAssistantUser(HttpUser):
     @task(2)
     def create_session(self):
         """Test session creation"""
-        self.client.post(
-            "/api/v1/sessions/", json={"channel": "web"}, headers=self.headers
-        )
+        self.client.post("/api/v1/sessions/", json={"channel": "web"}, headers=self.headers)
 
     @task(5)
     def send_message(self):
@@ -70,9 +68,7 @@ class MewAssistantUser(HttpUser):
     @task(2)
     def get_summary(self):
         """Test summary generation"""
-        self.client.get(
-            "/api/v1/summary", params={"period": "week"}, headers=self.headers
-        )
+        self.client.get("/api/v1/summary", params={"period": "week"}, headers=self.headers)
 
     @task(1)
     def voice_command(self):

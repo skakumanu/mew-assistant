@@ -17,9 +17,7 @@ from app.database.models import FederatedIdentity, User
 def link_accounts():
     with Session(engine) as session:
         # Get superuser
-        superuser = session.execute(
-            select(User).where(User.email == "skakumanu@gmail.com")
-        ).scalar_one_or_none()
+        superuser = session.execute(select(User).where(User.email == "skakumanu@gmail.com")).scalar_one_or_none()
 
         if superuser:
             # Check if already linked
@@ -46,9 +44,7 @@ def link_accounts():
             print("⚠ Superuser skakumanu@gmail.com not found")
 
         # Get admin user
-        admin = session.execute(
-            select(User).where(User.email == "skakumanu@hotmail.com")
-        ).scalar_one_or_none()
+        admin = session.execute(select(User).where(User.email == "skakumanu@hotmail.com")).scalar_one_or_none()
 
         if admin:
             # Check if already linked

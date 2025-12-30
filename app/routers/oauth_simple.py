@@ -160,9 +160,7 @@ async def google_login():
 
 
 @router.get("/simple/google/callback")
-async def google_callback(
-    request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)
-):
+async def google_callback(request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)):
     """Handle Google OAuth callback"""
     logger.info("=== GOOGLE CALLBACK STARTED ===")
     logger.info(f"Code present: {code is not None}, Error: {error}")
@@ -174,9 +172,7 @@ async def google_callback(
 
         if not code:
             logger.error("No authorization code received")
-            raise HTTPException(
-                status_code=400, detail="No authorization code received"
-            )
+            raise HTTPException(status_code=400, detail="No authorization code received")
 
         logger.info(f"Received authorization code: {code[:10]}...")
 
@@ -215,9 +211,7 @@ async def google_callback(
             access_token = token_json.get("access_token")
 
             if not access_token:
-                raise HTTPException(
-                    status_code=400, detail=f"No access token in response: {token_json}"
-                )
+                raise HTTPException(status_code=400, detail=f"No access token in response: {token_json}")
 
             logger.info("Successfully obtained access token")
 
@@ -234,9 +228,7 @@ async def google_callback(
                 )
 
             user_info = userinfo_response.json()
-            logger.info(
-                f"User info retrieved: {sanitize_email(user_info.get('email'))}"
-            )
+            logger.info(f"User info retrieved: {sanitize_email(user_info.get('email'))}")
 
         # Find or create user
         email = user_info.get("email")
@@ -307,9 +299,7 @@ async def google_callback(
         token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
         jwt_token = create_access_token(token_data)
 
-        logger.info(
-            f"Created JWT token for user {sanitize_user_id(user.id)}, redirecting to /calendar with token"
-        )
+        logger.info(f"Created JWT token for user {sanitize_user_id(user.id)}, redirecting to /calendar with token")
         logger.info(f"Token length: {len(jwt_token)}, starts with: {jwt_token[:20]}")
 
         # Redirect to calendar page with token in URL
@@ -321,9 +311,7 @@ async def google_callback(
         raise
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
 @router.get("/simple/microsoft")
@@ -346,18 +334,14 @@ async def microsoft_login():
 
 
 @router.get("/simple/microsoft/callback")
-async def microsoft_callback(
-    request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)
-):
+async def microsoft_callback(request: Request, code: str = None, error: str = None, db: Session = Depends(get_db)):
     """Handle Microsoft OAuth callback"""
     try:
         if error:
             raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
 
         if not code:
-            raise HTTPException(
-                status_code=400, detail="No authorization code received"
-            )
+            raise HTTPException(status_code=400, detail="No authorization code received")
 
         logger.info(f"Received authorization code: {code[:10]}...")
 
@@ -396,9 +380,7 @@ async def microsoft_callback(
             access_token = token_json.get("access_token")
 
             if not access_token:
-                raise HTTPException(
-                    status_code=400, detail=f"No access token in response: {token_json}"
-                )
+                raise HTTPException(status_code=400, detail=f"No access token in response: {token_json}")
 
             logger.info("Successfully obtained access token")
 
@@ -415,9 +397,7 @@ async def microsoft_callback(
                 )
 
             user_info = userinfo_response.json()
-            logger.info(
-                f"User info retrieved: {user_info.get('mail') or user_info.get('userPrincipalName')}"
-            )
+            logger.info(f"User info retrieved: {user_info.get('mail') or user_info.get('userPrincipalName')}")
 
         # Find or create user
         email = user_info.get("mail") or user_info.get("userPrincipalName")
@@ -481,6 +461,4 @@ async def microsoft_callback(
         raise
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")

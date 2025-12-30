@@ -42,9 +42,7 @@ class OnboardingStatus(BaseModel):
 
 
 @router.post("/quick", response_model=OnboardingStatus)
-async def quick_onboard(
-    data: QuickOnboard, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
-):
+async def quick_onboard(data: QuickOnboard, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     One-click onboarding - user just provides name and email/phone
     System handles everything else automatically
@@ -68,9 +66,7 @@ async def quick_onboard(
     user = await auth_service.register_user(user_data)
 
     # Create magic link for passwordless login
-    magic_link = (
-        f"https://mew-app-eastus2.azurewebsites.net/onboard/magic/{magic_token}"
-    )
+    magic_link = f"https://mew-app-eastus2.azurewebsites.net/onboard/magic/{magic_token}"
 
     # Generate QR code for mobile setup
     qr = qrcode.QRCode(version=1, box_size=10, border=5)

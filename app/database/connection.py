@@ -14,9 +14,7 @@ load_dotenv()
 
 # Database URL from environment variable
 # Format: postgresql://user:password@host:port/database
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://mew_user:mew_password@localhost:5432/mew_assistant"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mew_user:mew_password@localhost:5432/mew_assistant")
 
 # Create engine with connection pooling
 # For SQLite, use different settings
@@ -83,31 +81,23 @@ async def init_db():
                     import time
 
                     for _ in range(5):
-                        res = conn.execute(
-                            "SELECT pg_try_advisory_lock(436901387)"
-                        ).scalar()
+                        res = conn.execute("SELECT pg_try_advisory_lock(436901387)").scalar()
                         if res:
                             acquired = True
                             break
                         time.sleep(1)
 
                     if not acquired:
-                        logger.warning(
-                            "Could not acquire advisory lock; proceeding without lock"
-                        )
+                        logger.warning("Could not acquire advisory lock; proceeding without lock")
                     else:
                         try:
                             ModelsBase.metadata.create_all(bind=engine)
                         finally:
                             conn.execute("SELECT pg_advisory_unlock(436901387)")
-                        logger.info(
-                            "Database tables created successfully (with advisory lock)"
-                        )
+                        logger.info("Database tables created successfully (with advisory lock)")
             except Exception as ex:
                 logger.warning(f"Schema initialization attempt failed: {ex}")
-                logger.info(
-                    "Database tables will be created when connection is available."
-                )
+                logger.info("Database tables will be created when connection is available.")
         else:
             # SQLite or other file-based DBs: run create_all directly
             ModelsBase.metadata.create_all(bind=engine)

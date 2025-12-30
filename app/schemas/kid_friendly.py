@@ -49,9 +49,7 @@ class ChangeReason(str, Enum):
 class KidActivitySuggestion(BaseModel):
     """Request to suggest a new activity"""
 
-    activity_name: str = Field(
-        ..., max_length=100, description="What do you want to do?"
-    )
+    activity_name: str = Field(..., max_length=100, description="What do you want to do?")
     activity_description: str = Field(..., max_length=500, description="Tell us more!")
     when: TimeOfDay = Field(..., description="When would you like to do this?")
     emoji: str = Field(default="😊", description="Pick an emoji!")
@@ -69,9 +67,7 @@ class KidScheduleRequest(BaseModel):
 
     activity_id: int = Field(..., description="Which activity?")
     reason: ChangeReason = Field(..., description="Why do you want to change it?")
-    alternative: Optional[str] = Field(
-        None, max_length=200, description="What would you rather do?"
-    )
+    alternative: Optional[str] = Field(None, max_length=200, description="What would you rather do?")
 
 
 class ActivityItem(BaseModel):
@@ -101,9 +97,7 @@ class EmojiReaction(BaseModel):
 
     activity_id: int
     emoji: str = Field(..., description="How do you feel about this?")
-    feeling: Optional[str] = Field(
-        None, max_length=100, description="Want to tell us more?"
-    )
+    feeling: Optional[str] = Field(None, max_length=100, description="Want to tell us more?")
 
     @validator("emoji")
     def validate_emoji(cls, v):

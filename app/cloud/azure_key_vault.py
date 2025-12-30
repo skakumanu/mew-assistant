@@ -49,9 +49,7 @@ class AzureKeyVaultClient:
                 secret = self.client.get_secret(secret_name)
                 return secret.value
             except Exception as e:
-                logger.warning(
-                    f"Failed to get secret {secret_name} from Key Vault: {e}"
-                )
+                logger.warning(f"Failed to get secret {secret_name} from Key Vault: {e}")
         return os.getenv(secret_name)
 
     def set_secret(self, secret_name: str, secret_value: str) -> bool:

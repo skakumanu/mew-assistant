@@ -9,9 +9,7 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     """Service for sending notifications via multiple channels"""
 
-    async def send_email(
-        self, to: str, subject: str, body: str, html: Optional[str] = None
-    ) -> bool:
+    async def send_email(self, to: str, subject: str, body: str, html: Optional[str] = None) -> bool:
         """Send email notification"""
         try:
             logger.info(f"Sending email to {to}: {subject}")
@@ -31,9 +29,7 @@ class NotificationService:
             logger.error(f"Failed to send SMS: {e}")
             return False
 
-    async def send_push(
-        self, user_id: int, title: str, body: str, data: Optional[Dict[str, Any]] = None
-    ) -> bool:
+    async def send_push(self, user_id: int, title: str, body: str, data: Optional[Dict[str, Any]] = None) -> bool:
         """Send push notification"""
         try:
             logger.info(f"Sending push to user {user_id}: {title}")
@@ -62,9 +58,7 @@ class NotificationService:
                     body=message,
                 )
             elif channel == "sms":
-                results["sms"] = await self.send_sms(
-                    to="+1234567890", message=message  # TODO: Get actual phone
-                )
+                results["sms"] = await self.send_sms(to="+1234567890", message=message)  # TODO: Get actual phone
             elif channel == "push":
                 results["push"] = await self.send_push(
                     user_id=user_id,

@@ -35,9 +35,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema for user registration."""
 
-    password: str = Field(
-        ..., min_length=8, max_length=100, description="Password (min 8 characters)"
-    )
+    password: str = Field(..., min_length=8, max_length=100, description="Password (min 8 characters)")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -137,9 +135,7 @@ class LoginRequest(BaseModel):
     password: str
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"email": "parent@example.com", "password": "SecureP@ssw0rd"}
-        }
+        json_schema_extra={"example": {"email": "parent@example.com", "password": "SecureP@ssw0rd"}}
     )
 
 
@@ -179,9 +175,7 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
-        }
+        json_schema_extra={"example": {"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}}
     )
 
 

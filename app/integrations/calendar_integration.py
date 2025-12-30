@@ -77,11 +77,7 @@ class CalendarIntegration:
     ) -> Dict[str, Any]:
         """Create a calendar event."""
         # Provider-agnostic wrapper used by tests; accept provider via kwargs
-        provider = (
-            kwargs.get("provider")
-            if "provider" in kwargs
-            else kwargs.get("provider", None)
-        )
+        provider = kwargs.get("provider") if "provider" in kwargs else kwargs.get("provider", None)
         if provider is None:
             # backward compatible behavior: use google by default
             provider = CalendarProvider.GOOGLE
@@ -92,9 +88,7 @@ class CalendarIntegration:
         else:
             prov_str = str(provider).lower()
 
-        if prov_str not in [
-            p.value for p in CalendarProvider
-        ] and not prov_str.endswith("google"):
+        if prov_str not in [p.value for p in CalendarProvider] and not prov_str.endswith("google"):
             # Explicitly raise for invalid provider inputs (tests expect an exception)
             raise Exception(f"Invalid provider: {provider}")
 
@@ -114,11 +108,7 @@ class CalendarIntegration:
             if location:
                 event["location"] = location
 
-            created_event = (
-                self.google_client.events()
-                .insert(calendarId=self.calendar_id, body=event)
-                .execute()
-            )
+            created_event = self.google_client.events().insert(calendarId=self.calendar_id, body=event).execute()
 
             logger.info(f"Calendar event created: {created_event.get('id')}")
             return created_event.get("id")
@@ -127,9 +117,7 @@ class CalendarIntegration:
             logger.error(f"Failed to create event: {str(e)}")
             return {"success": False, "message": f"Failed to create event: {str(e)}"}
 
-    async def list_upcoming_events(
-        self, days: int = 7, max_results: int = 10
-    ) -> Dict[str, Any]:
+    async def list_upcoming_events(self, days: int = 7, max_results: int = 10) -> Dict[str, Any]:
         """List upcoming calendar events."""
         if not self.service:
             return {"success": False, "message": "Calendar not configured"}
@@ -186,9 +174,7 @@ class CalendarIntegration:
         max_results: int = 10,
         **kwargs,
     ):
-        if provider == CalendarProvider.GOOGLE or str(provider).lower().endswith(
-            "google"
-        ):
+        if provider == CalendarProvider.GOOGLE or str(provider).lower().endswith("google"):
             if not getattr(self, "google_client", None):
                 return []
 
@@ -217,9 +203,7 @@ class CalendarIntegration:
                             "id": event.get("id"),
                             "title": event.get("summary"),
                             "start": start,
-                            "end": event["end"].get(
-                                "dateTime", event["end"].get("date")
-                            ),
+                            "end": event["end"].get("dateTime", event["end"].get("date")),
                             "description": event.get("description", ""),
                             "location": event.get("location", ""),
                         }
@@ -242,9 +226,7 @@ class CalendarIntegration:
                 from googleapiclient.discovery import build as build_fn
 
             creds_obj = (
-                Creds.from_authorized_user_info(credentials)
-                if hasattr(Creds, "from_authorized_user_info")
-                else Creds
+                Creds.from_authorized_user_info(credentials) if hasattr(Creds, "from_authorized_user_info") else Creds
             )
             self.google_client = build_fn("calendar", "v3", credentials=creds_obj)
             return True
@@ -284,9 +266,7 @@ class CalendarIntegration:
                 client_credential=credentials.get("client_secret"),
                 authority=f"https://login.microsoftonline.com/{credentials.get('tenant_id')}",
             )
-            token = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
+            token = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
             if "access_token" in token:
                 self.outlook_client = token
                 return True

@@ -3,8 +3,7 @@
 from sqlalchemy.orm import Session
 
 from app.database.models import User
-from app.utils.auth import (create_access_token, get_password_hash,
-                            verify_password)
+from app.utils.auth import create_access_token, get_password_hash, verify_password
 
 
 class AuthService:
@@ -17,14 +16,10 @@ class AuthService:
         return create_access_token(data={"sub": user.email, "user_id": user.id})
 
     @staticmethod
-    def create_user(
-        db: Session, email: str, password: str, full_name: str, role: str = "PARENT"
-    ):
+    def create_user(db: Session, email: str, password: str, full_name: str, role: str = "PARENT"):
         """Create a new user"""
         hashed_password = get_password_hash(password)
-        user = User(
-            email=email, hashed_password=hashed_password, full_name=full_name, role=role
-        )
+        user = User(email=email, hashed_password=hashed_password, full_name=full_name, role=role)
         db.add(user)
         db.commit()
         db.refresh(user)

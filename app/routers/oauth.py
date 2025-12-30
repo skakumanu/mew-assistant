@@ -151,9 +151,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             user = await google_sso.verify_and_process(request)
 
         if not user:
-            raise HTTPException(
-                status_code=400, detail="Failed to authenticate with Google"
-            )
+            raise HTTPException(status_code=400, detail="Failed to authenticate with Google")
 
         logger.info(f"Google user authenticated: {user.email}")
 
@@ -197,9 +195,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
 @router.get("/microsoft/authorize")
@@ -221,9 +217,7 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
             user = await microsoft_sso.verify_and_process(request)
 
         if not user:
-            raise HTTPException(
-                status_code=400, detail="Failed to authenticate with Microsoft"
-            )
+            raise HTTPException(status_code=400, detail="Failed to authenticate with Microsoft")
 
         logger.info(f"Microsoft user authenticated: {user.email}")
 
@@ -267,9 +261,7 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
 
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
 async def process_federated_identity(
@@ -306,9 +298,7 @@ async def process_federated_identity(
         db.flush()
 
     # Create federated identity link
-    fed_identity = FederatedIdentity(
-        user_id=user.id, provider=provider, provider_user_id=provider_user_id
-    )
+    fed_identity = FederatedIdentity(user_id=user.id, provider=provider, provider_user_id=provider_user_id)
     db.add(fed_identity)
     db.commit()
     db.refresh(user)

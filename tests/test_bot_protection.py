@@ -144,9 +144,7 @@ class TestCaptcha:
             answer = str(int(match.group(1)) + int(match.group(2)))
 
             # Verify
-            verify_response = client.post(
-                f"/auth/captcha/verify?challenge_id={challenge_id}&response={answer}"
-            )
+            verify_response = client.post(f"/auth/captcha/verify?challenge_id={challenge_id}&response={answer}")
             assert verify_response.status_code == 200
             assert verify_response.json()["verified"]
 
@@ -158,9 +156,7 @@ class TestCaptcha:
         challenge_id = challenge_data["challenge_id"]
 
         # Try wrong answer
-        verify_response = client.post(
-            f"/auth/captcha/verify?challenge_id={challenge_id}&response=999"
-        )
+        verify_response = client.post(f"/auth/captcha/verify?challenge_id={challenge_id}&response=999")
         assert verify_response.status_code == 400
 
     def test_verify_expired_challenge(self):
@@ -178,9 +174,7 @@ class TestCaptcha:
             )
 
         # Try to verify
-        verify_response = client.post(
-            f"/auth/captcha/verify?challenge_id={challenge_id}&response=1"
-        )
+        verify_response = client.post(f"/auth/captcha/verify?challenge_id={challenge_id}&response=1")
         assert verify_response.status_code == 400
 
     def test_cleanup_expired_challenges(self):

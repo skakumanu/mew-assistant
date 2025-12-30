@@ -53,9 +53,7 @@ class CaregiverService:
         }
         return summary
 
-    def create_medication_reminder(
-        self, user_id: str, medication_name: str, time: str, frequency: str
-    ) -> Dict:
+    def create_medication_reminder(self, user_id: str, medication_name: str, time: str, frequency: str) -> Dict:
         """Create a simple medication reminder stub."""
         reminder_id = f"reminder_{user_id}_{medication_name}_{time}"
         reminder = {

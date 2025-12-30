@@ -88,9 +88,7 @@ class EmailIntegration:
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
-    async def send_notification(
-        self, to_email: str, notification_type: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def send_notification(self, to_email: str, notification_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Send a notification email with templated content."""
         templates = {
             "reminder": {

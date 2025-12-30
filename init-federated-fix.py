@@ -4,9 +4,7 @@ from azure.keyvault.secrets import SecretClient
 
 # Get password from Key Vault
 credential = DefaultAzureCredential()
-client = SecretClient(
-    vault_url="https://mew-assistant-kv-dev.vault.azure.net/", credential=credential
-)
+client = SecretClient(vault_url="https://mew-assistant-kv-dev.vault.azure.net/", credential=credential)
 db_password = client.get_secret("DB-PASSWORD").value
 
 # Connect to database

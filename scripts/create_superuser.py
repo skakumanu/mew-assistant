@@ -52,9 +52,7 @@ def create_admin_users():
             )
             db.add(superuser)
             print("✓ Created superuser: skakumanu@gmail.com")
-            passwords_to_show.append(
-                ("skakumanu@gmail.com (SUPERUSER)", superuser_password)
-            )
+            passwords_to_show.append(("skakumanu@gmail.com (SUPERUSER)", superuser_password))
         else:
             superuser.role = "SUPERUSER"
             print("✓ Updated to superuser: skakumanu@gmail.com")

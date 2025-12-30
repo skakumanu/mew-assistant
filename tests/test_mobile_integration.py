@@ -6,8 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from app.integrations.mobile_integration import (MobileIntegration,
-                                                 MobilePlatform)
+from app.integrations.mobile_integration import MobileIntegration, MobilePlatform
 
 
 @pytest.fixture
@@ -40,9 +39,7 @@ async def test_initialize_fcm(mobile_integration):
     """Test Firebase Cloud Messaging initialization"""
     credentials = {"service_account_path": "/path/to/service-account.json"}
 
-    with patch(
-        "app.integrations.mobile_integration.firebase_admin"
-    ) as mock_firebase, patch(
+    with patch("app.integrations.mobile_integration.firebase_admin") as mock_firebase, patch(
         "app.integrations.mobile_integration.fb_creds"
     ) as mock_creds:
 
@@ -61,9 +58,7 @@ async def test_send_apns_notification(mobile_integration):
     mobile_integration.apns_client = Mock()
     mobile_integration.apns_client.send_notification = AsyncMock()
 
-    with patch(
-        "app.integrations.mobile_integration.NotificationRequest"
-    ) as mock_request:
+    with patch("app.integrations.mobile_integration.NotificationRequest") as mock_request:
         mock_request.return_value = Mock(message={})
 
         result = await mobile_integration.send_push_notification(
@@ -159,9 +154,7 @@ async def test_register_device(mobile_integration):
 @pytest.mark.asyncio
 async def test_unregister_device(mobile_integration):
     """Test device unregistration"""
-    result = await mobile_integration.unregister_device(
-        user_id="user_123", device_token="test_token"
-    )
+    result = await mobile_integration.unregister_device(user_id="user_123", device_token="test_token")
 
     assert result is True
 

@@ -58,9 +58,7 @@ class StructuredFormatter(logging.Formatter):
 
             if include_tb:
                 # Keep traceback content but keep it intentionally optional
-                exception_info["traceback"] = traceback.format_exception(
-                    *record.exc_info
-                )
+                exception_info["traceback"] = traceback.format_exception(*record.exc_info)
 
             log_data["exception"] = exception_info
 

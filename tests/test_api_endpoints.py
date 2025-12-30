@@ -114,6 +114,4 @@ def test_rate_limiting_simulation(client, sample_ingest_data):
         responses.append(response.status_code)
 
     # All should succeed in test environment (no actual rate limiting)
-    assert all(
-        code in (status.HTTP_200_OK, status.HTTP_201_CREATED) for code in responses
-    )
+    assert all(code in (status.HTTP_200_OK, status.HTTP_201_CREATED) for code in responses)

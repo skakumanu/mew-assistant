@@ -249,9 +249,7 @@ class TestPatternLearning:
             {"activity": "tutoring", "date": datetime(2025, 1, 15)},
         ]
 
-        prediction = ai_service.predict_next_occurrence(
-            "tutoring", historical_schedules
-        )
+        prediction = ai_service.predict_next_occurrence("tutoring", historical_schedules)
 
         assert prediction is not None
         assert prediction.date() == datetime(2025, 1, 22).date()
@@ -304,9 +302,7 @@ class TestAIServiceIntegration:
 
         patterns = ai_service.learn_patterns(historical)
 
-        suggestions = ai_service.suggest_time_slots(
-            duration_minutes=60, activity_type="tutoring", patterns=patterns
-        )
+        suggestions = ai_service.suggest_time_slots(duration_minutes=60, activity_type="tutoring", patterns=patterns)
 
         # Should prefer morning time based on patterns
         assert any(s.start_time.hour == 10 for s in suggestions)

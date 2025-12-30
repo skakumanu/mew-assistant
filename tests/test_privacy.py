@@ -5,8 +5,13 @@ Tests for PII detection, data anonymization, and privacy compliance.
 
 import pytest
 
-from app.utils.privacy import (DataAnonymizer, PIIDetector, PrivacyGuardrails,
-                               anonymize_data, check_privacy_compliance)
+from app.utils.privacy import (
+    DataAnonymizer,
+    PIIDetector,
+    PrivacyGuardrails,
+    anonymize_data,
+    check_privacy_compliance,
+)
 
 
 class TestPIIDetector:

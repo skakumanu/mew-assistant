@@ -11,9 +11,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.database.models import User
 from app.middleware.auth import get_current_user
-from app.schemas.mobile import (AppConfigResponse, MobileDeviceRegister,
-                                MobileDeviceResponse, OfflineSyncRequest,
-                                OfflineSyncResponse, PushNotificationRequest)
+from app.schemas.mobile import (
+    AppConfigResponse,
+    MobileDeviceRegister,
+    MobileDeviceResponse,
+    OfflineSyncRequest,
+    OfflineSyncResponse,
+    PushNotificationRequest,
+)
 from app.services.mobile_service import MobileService
 
 router = APIRouter(prefix="/mobile", tags=["mobile"])
@@ -76,9 +81,7 @@ async def sync_offline_data(
     - Conflict resolution
     """
     service = MobileService(db)
-    return await service.sync_offline_data(
-        current_user.id, sync_request, background_tasks
-    )
+    return await service.sync_offline_data(current_user.id, sync_request, background_tasks)
 
 
 @router.post("/push/send", response_model=dict)
@@ -165,9 +168,7 @@ async def get_ios_shortcuts(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/widgets/config", response_model=dict)
-async def get_widget_config(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+async def get_widget_config(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Get configuration for home screen widgets
 

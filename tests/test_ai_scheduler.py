@@ -6,8 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from app.database.models import (ActivityType, PriorityLevel, ScheduleEntry,
-                                 SessionStatus)
+from app.database.models import ActivityType, PriorityLevel, ScheduleEntry, SessionStatus
 from app.services.ai_scheduler_service import AISchedulerService
 
 

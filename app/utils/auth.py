@@ -32,9 +32,7 @@ ALGORITHM = "HS256"
 # where users sign in via Google/Microsoft. These are federated identities with
 # their own security controls. For password-based auth, consider shorter durations.
 # Override with ACCESS_TOKEN_EXPIRE_MINUTES environment variable if needed.
-ACCESS_TOKEN_EXPIRE_MINUTES = int(
-    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200")
-)  # 30 days default
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))  # 30 days default
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 # Password hashing using Argon2 (more modern and secure than bcrypt)
@@ -227,15 +225,11 @@ async def get_current_user(
         user = db.query(User).filter(User.email == sub).first()
 
     if user is None:
-        logger.error(
-            f"User not found in database for token identifiers user_id={token_user_id} sub={sub}"
-        )
+        logger.error(f"User not found in database for token identifiers user_id={token_user_id} sub={sub}")
         raise credentials_exception
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
 
     # Update last login
     user.last_login = datetime.utcnow()
@@ -254,9 +248,7 @@ async def get_current_active_user(
 async def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:
     """Dependency to require superuser/admin privileges."""
     if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return current_user
 
 
@@ -303,26 +295,16 @@ async def verify_api_key(
     api_key = credentials.credentials
 
     if not api_key.startswith("mew_"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key format"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key format")
 
     key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-    api_key_record = (
-        db.query(APIKey)
-        .filter(APIKey.key_hash == key_hash, APIKey.is_active.is_(True))
-        .first()
-    )
+    api_key_record = db.query(APIKey).filter(APIKey.key_hash == key_hash, APIKey.is_active.is_(True)).first()
 
     if not api_key_record:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
     if api_key_record.expires_at and api_key_record.expires_at < datetime.utcnow():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="API key has expired"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key has expired")
 
     api_key_record.last_used = datetime.utcnow()
     db.commit()

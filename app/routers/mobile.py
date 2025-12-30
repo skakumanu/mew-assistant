@@ -9,14 +9,18 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.integrations.mobile_integration import MobileIntegration
 from app.schemas.auth import UserResponse
-from app.schemas.mobile import (BatchNotificationRequest,
-                                BatchNotificationResponse, DeepLinkRequest,
-                                DeepLinkResponse, DeviceRegistrationRequest,
-                                DeviceRegistrationResponse,
-                                PushNotificationRequest,
-                                PushNotificationResponse,
-                                ScheduledReminderRequest,
-                                ScheduledReminderResponse)
+from app.schemas.mobile import (
+    BatchNotificationRequest,
+    BatchNotificationResponse,
+    DeepLinkRequest,
+    DeepLinkResponse,
+    DeviceRegistrationRequest,
+    DeviceRegistrationResponse,
+    PushNotificationRequest,
+    PushNotificationResponse,
+    ScheduledReminderRequest,
+    ScheduledReminderResponse,
+)
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/mobile", tags=["Mobile"])
@@ -71,9 +75,7 @@ async def unregister_device(
     Unregister a mobile device
     """
     try:
-        success = await mobile_integration.unregister_device(
-            user_id=current_user.id, device_token=device_token
-        )
+        success = await mobile_integration.unregister_device(user_id=current_user.id, device_token=device_token)
 
         if not success:
             raise HTTPException(
@@ -118,9 +120,7 @@ async def send_push_notification(
                 detail="Failed to send push notification",
             )
 
-        return PushNotificationResponse(
-            success=True, message="Push notification sent successfully"
-        )
+        return PushNotificationResponse(success=True, message="Push notification sent successfully")
 
     except Exception as e:
         raise HTTPException(
@@ -172,9 +172,7 @@ async def generate_deep_link(
     Creates platform-specific deep links for iOS and Android
     """
     try:
-        links = mobile_integration.generate_deep_link(
-            screen=deeplink_data.screen, params=deeplink_data.params
-        )
+        links = mobile_integration.generate_deep_link(screen=deeplink_data.screen, params=deeplink_data.params)
 
         return DeepLinkResponse(
             ios_link=links["ios"],

@@ -127,9 +127,7 @@ class OnboardingService:
         return {
             "status": "pending_confirmation",
             "voice_code": voice_code,
-            "voice_response": self._get_registration_prompt(
-                voice_code, detected_language
-            ),
+            "voice_response": self._get_registration_prompt(voice_code, detected_language),
             "platform": platform,
             "device_id": device_id,
         }
@@ -151,9 +149,7 @@ class OnboardingService:
         existing_user = await self._find_existing_user(email)
         if existing_user:
             # Link social account
-            await self._link_social_account(
-                existing_user.id, provider, provider_user_id
-            )
+            await self._link_social_account(existing_user.id, provider, provider_user_id)
             return {
                 "status": "linked",
                 "user_id": existing_user.id,
@@ -186,9 +182,7 @@ class OnboardingService:
             "access_token": await self._generate_access_token(user),
         }
 
-    async def complete_family_setup(
-        self, user_id: int, family_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def complete_family_setup(self, user_id: int, family_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Quick family setup wizard
         """
@@ -272,9 +266,7 @@ class OnboardingService:
             to=phone, message=f"Your Mew Assistant code: {code}\nExpires in 15 min."
         )
 
-    async def _send_voice_confirmation(
-        self, identifier: str, token: str, metadata: Dict[str, Any]
-    ):
+    async def _send_voice_confirmation(self, identifier: str, token: str, metadata: Dict[str, Any]):
         """Handle voice platform confirmation"""
         # Platform-specific handling
 
@@ -304,9 +296,7 @@ class OnboardingService:
         }
         return prompts.get(language, prompts["en"])
 
-    async def _create_quick_user(
-        self, magic_token: str, additional_info: Optional[Dict[str, Any]]
-    ) -> User:
+    async def _create_quick_user(self, magic_token: str, additional_info: Optional[Dict[str, Any]]) -> User:
         """Create user from magic link"""
         # Implementation
 
@@ -316,9 +306,7 @@ class OnboardingService:
 
         return create_access_token({"sub": str(user.id)})
 
-    async def _link_social_account(
-        self, user_id: int, provider: str, provider_user_id: str
-    ):
+    async def _link_social_account(self, user_id: int, provider: str, provider_user_id: str):
         """Link social account to existing user"""
         user = await self.db.get(User, user_id)
         if user:

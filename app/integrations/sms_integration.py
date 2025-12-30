@@ -77,13 +77,9 @@ class SMSIntegration:
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
-    async def send_reminder(
-        self, to_number: str, reminder_title: str, reminder_time: str
-    ) -> Dict[str, Any]:
+    async def send_reminder(self, to_number: str, reminder_title: str, reminder_time: str) -> Dict[str, Any]:
         """Send a reminder SMS."""
-        message = (
-            f"📅 Reminder: {reminder_title}\nTime: {reminder_time}\n\n- Mew Assistant"
-        )
+        message = f"📅 Reminder: {reminder_title}\nTime: {reminder_time}\n\n- Mew Assistant"
         return await self.send_sms(to_number, message)
 
     async def send_summary(self, to_number: str, summary_text: str) -> Dict[str, Any]:

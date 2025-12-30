@@ -28,9 +28,7 @@ class AzureStorageClient:
         self.container_name = os.getenv("AZURE_STORAGE_CONTAINER", "mew-backups")
 
         if not connection_string:
-            logger.warning(
-                "AZURE_STORAGE_CONNECTION_STRING not set, cloud backups disabled"
-            )
+            logger.warning("AZURE_STORAGE_CONNECTION_STRING not set, cloud backups disabled")
             self.client = None
             return
 
@@ -41,9 +39,7 @@ class AzureStorageClient:
             self.client = BlobServiceClient.from_connection_string(connection_string)
             self.ResourceNotFoundError = ResourceNotFoundError
             self._ensure_container_exists()
-            logger.info(
-                f"Connected to Azure Blob Storage, container: {self.container_name}"
-            )
+            logger.info(f"Connected to Azure Blob Storage, container: {self.container_name}")
         except ImportError:
             logger.warning("Azure SDK not installed, cloud backups disabled")
             self.client = None
@@ -75,9 +71,7 @@ class AzureStorageClient:
                 timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
                 backup_name = f"backup_{timestamp}.db.enc"
 
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=backup_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=backup_name)
             blob_client.upload_blob(encrypted_data, overwrite=True)
 
             metadata = {
@@ -98,9 +92,7 @@ class AzureStorageClient:
             return False
 
         try:
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=backup_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=backup_name)
             encrypted_data = blob_client.download_blob().readall()
             decrypted_data = self.encryption.decrypt_bytes(encrypted_data)
 
@@ -146,9 +138,7 @@ class AzureStorageClient:
 
             for blob in container_client.list_blobs():
                 if blob.last_modified < cutoff_date:
-                    blob_client = self.client.get_blob_client(
-                        container=self.container_name, blob=blob.name
-                    )
+                    blob_client = self.client.get_blob_client(container=self.container_name, blob=blob.name)
                     blob_client.delete_blob()
                     deleted_count += 1
 
@@ -166,9 +156,7 @@ class AzureStorageClient:
             encrypted_data = self.encryption.encrypt_bytes(json_data)
 
             blob_name = f"user_data/{user_id}/export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json.enc"
-            blob_client = self.client.get_blob_client(
-                container=self.container_name, blob=blob_name
-            )
+            blob_client = self.client.get_blob_client(container=self.container_name, blob=blob_name)
             blob_client.upload_blob(encrypted_data, overwrite=True)
 
             logger.info(f"User data backed up: {blob_name}")

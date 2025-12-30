@@ -31,9 +31,7 @@ class AuthenticationError(MewException):
         message: str = "Authentication failed",
         details: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(
-            message, status_code=401, error_code="AUTH_ERROR", details=details
-        )
+        super().__init__(message, status_code=401, error_code="AUTH_ERROR", details=details)
 
 
 class AuthorizationError(MewException):
@@ -44,9 +42,7 @@ class AuthorizationError(MewException):
         message: str = "Insufficient permissions",
         details: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(
-            message, status_code=403, error_code="AUTHORIZATION_ERROR", details=details
-        )
+        super().__init__(message, status_code=403, error_code="AUTHORIZATION_ERROR", details=details)
 
 
 class NotFoundError(MewException):
@@ -67,9 +63,7 @@ class ValidationError(MewException):
 
     def __init__(self, message: str, field: Optional[str] = None):
         details = {"field": field} if field else {}
-        super().__init__(
-            message, status_code=422, error_code="VALIDATION_ERROR", details=details
-        )
+        super().__init__(message, status_code=422, error_code="VALIDATION_ERROR", details=details)
 
 
 class RateLimitError(MewException):
@@ -128,33 +122,25 @@ class SessionError(MewException):
     """Raised when session operation fails"""
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(
-            message, status_code=400, error_code="SESSION_ERROR", details=details
-        )
+        super().__init__(message, status_code=400, error_code="SESSION_ERROR", details=details)
 
 
 class ComplianceViolationError(MewException):
     """Raised when a compliance rule is violated (HIPAA, COPPA, FERPA)"""
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(
-            message, status_code=403, error_code="COMPLIANCE_VIOLATION", details=details
-        )
+        super().__init__(message, status_code=403, error_code="COMPLIANCE_VIOLATION", details=details)
 
 
 class SecurityViolationError(MewException):
     """Raised when a security threat is detected"""
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(
-            message, status_code=403, error_code="SECURITY_VIOLATION", details=details
-        )
+        super().__init__(message, status_code=403, error_code="SECURITY_VIOLATION", details=details)
 
 
 class RateLimitExceeded(MewException):
     """Raised when rate limit is exceeded"""
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        super().__init__(
-            message, status_code=429, error_code="RATE_LIMIT_EXCEEDED", details=details
-        )
+        super().__init__(message, status_code=429, error_code="RATE_LIMIT_EXCEEDED", details=details)

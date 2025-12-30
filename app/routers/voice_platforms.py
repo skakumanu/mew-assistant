@@ -8,14 +8,20 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 
-from app.integrations.voice_platforms import (AlexaIntegration,
-                                              GoogleAssistantIntegration,
-                                              SiriIntegration,
-                                              TeslaIntegration)
+from app.integrations.voice_platforms import (
+    AlexaIntegration,
+    GoogleAssistantIntegration,
+    SiriIntegration,
+    TeslaIntegration,
+)
 from app.middleware.auth import verify_api_key
-from app.schemas.voice_platform import (AlexaRequest, GoogleAssistantRequest,
-                                        SiriRequest, TeslaRequest,
-                                        VoicePlatformResponse)
+from app.schemas.voice_platform import (
+    AlexaRequest,
+    GoogleAssistantRequest,
+    SiriRequest,
+    TeslaRequest,
+    VoicePlatformResponse,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/voice", tags=["Voice Platforms"])
@@ -29,26 +35,20 @@ tesla = TeslaIntegration(config={})
 
 
 @router.post("/siri/webhook", response_model=VoicePlatformResponse)
-async def siri_webhook(
-    request: SiriRequest, authorization: Optional[str] = Header(None)
-):
+async def siri_webhook(request: SiriRequest, authorization: Optional[str] = Header(None)):
     """
     Apple Siri webhook endpoint
     Receives SiriKit intents and iOS Shortcuts
     """
     try:
         # Authenticate request
-        auth_valid = await siri.authenticate(
-            {"signature": authorization, "body": request.json()}
-        )
+        auth_valid = await siri.authenticate({"signature": authorization, "body": request.json()})
 
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Siri signature")
 
         # Process intent
-        result = await siri.handle_intent(
-            intent=request.intent, slots=request.slots, user_id=request.user_id
-        )
+        result = await siri.handle_intent(intent=request.intent, slots=request.slots, user_id=request.user_id)
 
         # Send response
         await siri.send_response(result)
@@ -73,9 +73,7 @@ async def alexa_webhook(request: AlexaRequest):
     """
     try:
         # Authenticate request
-        auth_valid = await alexa.authenticate(
-            {"session": request.session, "request": request.request}
-        )
+        auth_valid = await alexa.authenticate({"session": request.session, "request": request.request})
 
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Alexa request")
@@ -86,9 +84,7 @@ async def alexa_webhook(request: AlexaRequest):
         user_id = request.session.get("user", {}).get("userId", "")
 
         # Process intent
-        result = await alexa.handle_intent(
-            intent=intent_name, slots=slots, user_id=user_id
-        )
+        result = await alexa.handle_intent(intent=intent_name, slots=slots, user_id=user_id)
 
         # Send response
         await alexa.send_response(result)
@@ -113,9 +109,7 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
     """
     try:
         # Authenticate request
-        auth_valid = await google.authenticate(
-            {"token": request.user.get("accessToken")}
-        )
+        auth_valid = await google.authenticate({"token": request.user.get("accessToken")})
 
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Google request")
@@ -129,9 +123,7 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
         slots = {p.get("name"): p.get("value") for p in parameters}
 
         # Process intent
-        result = await google.handle_intent(
-            intent=intent_name, slots=slots, user_id=user_id
-        )
+        result = await google.handle_intent(intent=intent_name, slots=slots, user_id=user_id)
 
         # Send response
         await google.send_response(result)
@@ -149,26 +141,20 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
 
 
 @router.post("/tesla/webhook", response_model=VoicePlatformResponse)
-async def tesla_webhook(
-    request: TeslaRequest, x_tesla_signature: Optional[str] = Header(None)
-):
+async def tesla_webhook(request: TeslaRequest, x_tesla_signature: Optional[str] = Header(None)):
     """
     Tesla voice command endpoint
     Receives voice commands from Tesla vehicles
     """
     try:
         # Authenticate request
-        auth_valid = await tesla.authenticate(
-            {"vehicle_id": request.vehicle_id, "token": x_tesla_signature}
-        )
+        auth_valid = await tesla.authenticate({"vehicle_id": request.vehicle_id, "token": x_tesla_signature})
 
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Tesla request")
 
         # Process command
-        result = await tesla.handle_intent(
-            intent=request.command, slots=request.parameters, user_id=request.user_id
-        )
+        result = await tesla.handle_intent(intent=request.command, slots=request.parameters, user_id=request.user_id)
 
         # Send response
         await tesla.send_response(result)
@@ -225,9 +211,7 @@ async def list_platforms():
 
 
 @router.post("/register/{platform}")
-async def register_platform(
-    platform: str, config: Dict[str, Any], api_key: str = Depends(verify_api_key)
-):
+async def register_platform(platform: str, config: Dict[str, Any], api_key: str = Depends(verify_api_key)):
     """
     Register or update voice platform integration
     """

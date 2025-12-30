@@ -62,13 +62,9 @@ class AIIntegration:
 
         try:
             if model.startswith("gpt") or model.startswith("o1"):
-                return await self._generate_openai(
-                    prompt, model, max_tokens, temperature, system_prompt
-                )
+                return await self._generate_openai(prompt, model, max_tokens, temperature, system_prompt)
             elif model.startswith("claude"):
-                return await self._generate_anthropic(
-                    prompt, model, max_tokens, temperature, system_prompt
-                )
+                return await self._generate_anthropic(prompt, model, max_tokens, temperature, system_prompt)
             else:
                 return {"success": False, "message": f"Unsupported model: {model}"}
 
@@ -136,9 +132,7 @@ class AIIntegration:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    async def generate_summary(
-        self, content: str, summary_type: str = "daily"
-    ) -> Dict[str, Any]:
+    async def generate_summary(self, content: str, summary_type: str = "daily") -> Dict[str, Any]:
         """Generate a summary of content."""
         prompts = {
             "daily": "Summarize the following daily activities clearly and concisely:",
@@ -163,9 +157,7 @@ class AIIntegration:
 
         return result
 
-    async def analyze_message(
-        self, message: str, context: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def analyze_message(self, message: str, context: Optional[str] = None) -> Dict[str, Any]:
         """Analyze a message to determine intent."""
         system_prompt = """Extract intent and key information. Return JSON:
 {

@@ -83,9 +83,7 @@ class CORSSecurityMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # Guarantee permissive CORS headers for OPTIONS preflight (test environment)
         if request.method == "OPTIONS" and response.status_code in (404, 405):
@@ -103,21 +101,13 @@ class CORSSecurityMiddleware(BaseHTTPMiddleware):
             cors_resp.headers["X-Content-Type-Options"] = "nosniff"
             cors_resp.headers["X-Frame-Options"] = "DENY"
             cors_resp.headers["X-XSS-Protection"] = "1; mode=block"
-            cors_resp.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            cors_resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
             return cors_resp
 
         # If CORS headers are missing, add defaults
-        if "access-control-allow-origin" not in {
-            k.lower() for k in response.headers.keys()
-        }:
+        if "access-control-allow-origin" not in {k.lower() for k in response.headers.keys()}:
             response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = (
-                "GET,POST,OPTIONS,PUT,DELETE"
-            )
-            response.headers["Access-Control-Allow-Headers"] = (
-                "Authorization,Content-Type"
-            )
+            response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS,PUT,DELETE"
+            response.headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type"
 
         return response

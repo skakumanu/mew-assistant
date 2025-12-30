@@ -28,9 +28,7 @@ class SmartApprovalEngine:
         self.batch_window_hours = 4
         self.pending_approvals = {}
 
-    def evaluate_request(
-        self, child_id: str, parent_id: str, request_type: str, request_data: Dict
-    ) -> Dict:
+    def evaluate_request(self, child_id: str, parent_id: str, request_type: str, request_data: Dict) -> Dict:
         """
         Evaluate a child's request and determine approval status.
 
@@ -67,9 +65,7 @@ class SmartApprovalEngine:
             "requested_at": datetime.utcnow().isoformat(),
         }
 
-    def _can_auto_approve(
-        self, child_id: str, request_type: str, request_data: Dict
-    ) -> bool:
+    def _can_auto_approve(self, child_id: str, request_type: str, request_data: Dict) -> bool:
         """Check if request can be auto-approved."""
         rules_key = f"{child_id}_{request_type}"
 
@@ -139,9 +135,7 @@ class SmartApprovalEngine:
             req_type = request.get("type") or request.get("request_type")
             child_id = request.get("child_id") or request.get("child")
             # minimal shape
-            decision = self.evaluate_request(
-                child_id or "", request.get("parent_id", ""), req_type or "", request
-            )
+            decision = self.evaluate_request(child_id or "", request.get("parent_id", ""), req_type or "", request)
             return decision.get("decision") == ApprovalDecision.AUTO_APPROVED
         except Exception:
             return False

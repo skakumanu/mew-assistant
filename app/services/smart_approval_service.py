@@ -61,9 +61,7 @@ class SmartApprovalService:
             "confidence": 0.0,
         }
 
-    def _check_auto_approval_rules(
-        self, request: ApprovalRequest, parent: User
-    ) -> Optional[ApprovalRule]:
+    def _check_auto_approval_rules(self, request: ApprovalRequest, parent: User) -> Optional[ApprovalRule]:
         """Check if request matches any auto-approval rules."""
         rules = (
             self.db.query(ApprovalRule)
@@ -92,9 +90,7 @@ class SmartApprovalService:
 
         # Duration-based rules
         elif rule.rule_type == "duration":
-            duration = (
-                request.proposed_end_time - request.proposed_start_time
-            ).total_seconds() / 60
+            duration = (request.proposed_end_time - request.proposed_start_time).total_seconds() / 60
             if duration <= rule.max_duration_minutes:
                 return True
 
@@ -105,9 +101,7 @@ class SmartApprovalService:
 
         return False
 
-    async def _check_learned_patterns(
-        self, request: ApprovalRequest, parent: User
-    ) -> Optional[Dict]:
+    async def _check_learned_patterns(self, request: ApprovalRequest, parent: User) -> Optional[Dict]:
         """
         Analyze historical approvals to find patterns.
         Uses ML-like approach to calculate confidence.
@@ -118,9 +112,7 @@ class SmartApprovalService:
             .filter(
                 ApprovalRequest.parent_id == parent.id,
                 ApprovalRequest.activity_type == request.activity_type,
-                ApprovalRequest.status.in_(
-                    [ApprovalStatus.APPROVED, ApprovalStatus.DENIED]
-                ),
+                ApprovalRequest.status.in_([ApprovalStatus.APPROVED, ApprovalStatus.DENIED]),
             )
             .order_by(ApprovalRequest.created_at.desc())
             .limit(20)
@@ -131,9 +123,7 @@ class SmartApprovalService:
             return None
 
         # Calculate approval rate
-        approved_count = sum(
-            1 for r in similar_requests if r.status == ApprovalStatus.APPROVED
-        )
+        approved_count = sum(1 for r in similar_requests if r.status == ApprovalStatus.APPROVED)
         approval_rate = approved_count / len(similar_requests)
 
         # Additional similarity scoring
@@ -144,8 +134,7 @@ class SmartApprovalService:
 
         # Weight recent approvals more heavily
         weighted_score = sum(
-            score * (1.0 if status == ApprovalStatus.APPROVED else 0.0)
-            for score, status in similarity_scores
+            score * (1.0 if status == ApprovalStatus.APPROVED else 0.0) for score, status in similarity_scores
         ) / len(similarity_scores)
 
         confidence = (approval_rate * 0.6) + (weighted_score * 0.4)
@@ -156,9 +145,7 @@ class SmartApprovalService:
             "approval_rate": approval_rate,
         }
 
-    def _calculate_similarity(
-        self, req1: ApprovalRequest, req2: ApprovalRequest
-    ) -> float:
+    def _calculate_similarity(self, req1: ApprovalRequest, req2: ApprovalRequest) -> float:
         """Calculate similarity score between two requests (0-1)."""
         score = 0.0
         weight_sum = 0.0
@@ -211,9 +198,7 @@ class SmartApprovalService:
             return False
 
         # Check duration (max 60 minutes for auto-approval)
-        duration = (
-            request.proposed_end_time - request.proposed_start_time
-        ).total_seconds() / 60
+        duration = (request.proposed_end_time - request.proposed_start_time).total_seconds() / 60
         if duration > 60:
             return False
 
@@ -224,9 +209,7 @@ class SmartApprovalService:
 
         return True
 
-    async def batch_pending_requests(
-        self, parent: User, min_batch_size: int = 3
-    ) -> List[Dict]:
+    async def batch_pending_requests(self, parent: User, min_batch_size: int = 3) -> List[Dict]:
         """
         Group pending requests into smart batches for efficient review.
 
@@ -256,11 +239,7 @@ class SmartApprovalService:
         batches = []
 
         # Batch 1: Urgent/Time-sensitive
-        urgent = [
-            r
-            for r in pending
-            if r.priority == RequestPriority.URGENT or self._is_time_sensitive(r)
-        ]
+        urgent = [r for r in pending if r.priority == RequestPriority.URGENT or self._is_time_sensitive(r)]
         if urgent:
             batches.append(
                 {
@@ -316,9 +295,7 @@ class SmartApprovalService:
         # Urgent if starts within 2 hours
         return time_until.total_seconds() < 7200
 
-    async def create_auto_approval_rule(
-        self, parent: User, rule_data: Dict
-    ) -> ApprovalRule:
+    async def create_auto_approval_rule(self, parent: User, rule_data: Dict) -> ApprovalRule:
         """Allow parents to create custom auto-approval rules."""
         rule = ApprovalRule(
             user_id=parent.id,
@@ -359,9 +336,7 @@ class SmartApprovalService:
         # 1. Activities always approved
         activity_counts = {}
         for req in approved:
-            activity_counts[req.activity_type] = (
-                activity_counts.get(req.activity_type, 0) + 1
-            )
+            activity_counts[req.activity_type] = activity_counts.get(req.activity_type, 0) + 1
 
         for activity, count in activity_counts.items():
             if count >= 5:
@@ -390,9 +365,7 @@ class SmartApprovalService:
 
         # 3. Short duration activities
         short_activities = [
-            r
-            for r in approved
-            if (r.proposed_end_time - r.proposed_start_time).total_seconds() <= 1800
+            r for r in approved if (r.proposed_end_time - r.proposed_start_time).total_seconds() <= 1800
         ]
         if len(short_activities) >= 10:
             suggestions.append(

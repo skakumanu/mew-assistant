@@ -61,9 +61,7 @@ class LanguageDetector:
         except ImportError:
             self.lingua_available = False
 
-    async def detect(
-        self, text: str, return_confidence: bool = False
-    ) -> str | Tuple[str, float]:
+    async def detect(self, text: str, return_confidence: bool = False) -> str | Tuple[str, float]:
         """
         Automatically detect language from text
 
@@ -134,9 +132,7 @@ class LanguageDetector:
             logger.error(f"Lingua detection error: {e}")
             return None
 
-    async def detect_multiple(
-        self, text: str, top_n: int = 3
-    ) -> List[Tuple[str, float]]:
+    async def detect_multiple(self, text: str, top_n: int = 3) -> List[Tuple[str, float]]:
         """
         Detect multiple possible languages with confidence scores
         Useful for multilingual content or ambiguous text

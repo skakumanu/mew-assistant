@@ -11,11 +11,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.database.models import User
 from app.middleware.auth import get_current_user
-from app.schemas.schedule import (ConflictDetectionRequest, OptimizationResult,
-                                  ScheduleConflict,
-                                  ScheduleOptimizationRequest,
-                                  ScheduleSuggestion,
-                                  ScheduleSuggestionRequest)
+from app.schemas.schedule import (
+    ConflictDetectionRequest,
+    OptimizationResult,
+    ScheduleConflict,
+    ScheduleOptimizationRequest,
+    ScheduleSuggestion,
+    ScheduleSuggestionRequest,
+)
 from app.services.ai_scheduler_service import AISchedulerService
 
 router = APIRouter(prefix="/ai-scheduler", tags=["AI Scheduler"])
@@ -97,9 +100,7 @@ async def optimize_schedule(
 
 
 @router.get("/learning-status")
-async def get_learning_status(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+async def get_learning_status(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Get status of AI learning from user patterns
 
@@ -115,9 +116,7 @@ async def get_learning_status(
         patterns = await service._learn_user_patterns(current_user.id, activity)
         status[activity] = {
             "has_patterns": patterns.get("has_patterns", False),
-            "data_points": (
-                patterns.get("data_points", 0) if patterns.get("has_patterns") else 0
-            ),
+            "data_points": (patterns.get("data_points", 0) if patterns.get("has_patterns") else 0),
         }
 
     return {

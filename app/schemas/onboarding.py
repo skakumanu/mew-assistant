@@ -59,9 +59,7 @@ class MagicLinkRequest(BaseModel):
 class VoiceRegistrationRequest(BaseModel):
     """Voice-initiated registration"""
 
-    platform: str = Field(
-        ..., description="Voice platform: siri, alexa, grok, google_assistant, etc."
-    )
+    platform: str = Field(..., description="Voice platform: siri, alexa, grok, google_assistant, etc.")
     device_id: str = Field(..., description="Unique device identifier")
     voice_print: Optional[str] = Field(None, description="Voice biometric (optional)")
     language: str = Field(default="en", description="Detected language code")
@@ -79,9 +77,7 @@ class VoiceRegistrationRequest(BaseModel):
 class SocialLoginRequest(BaseModel):
     """Social login (Google, Apple, Microsoft)"""
 
-    provider: str = Field(
-        ..., description="OAuth provider: google, apple, microsoft, facebook"
-    )
+    provider: str = Field(..., description="OAuth provider: google, apple, microsoft, facebook")
     provider_user_id: str = Field(..., description="User ID from provider")
     email: EmailStr = Field(..., description="Email from social provider")
     name: str = Field(..., description="Full name from social provider")
@@ -125,26 +121,18 @@ class FamilySetupRequest(BaseModel):
 class OnboardingResponse(BaseModel):
     """Unified onboarding response"""
 
-    status: str = Field(
-        ..., description="Status: pending, success, existing_user, recognized, etc."
-    )
+    status: str = Field(..., description="Status: pending, success, existing_user, recognized, etc.")
     message: str = Field(..., description="Human-readable message")
     user_id: Optional[int] = None
     family_id: Optional[int] = None
-    next_step: Optional[str] = Field(
-        None, description="Next onboarding step: family_setup, verify_email, etc."
-    )
+    next_step: Optional[str] = Field(None, description="Next onboarding step: family_setup, verify_email, etc.")
     access_token: Optional[str] = None
     magic_token: Optional[str] = None
     voice_code: Optional[str] = None
-    voice_response: Optional[str] = Field(
-        None, description="Text for voice assistants to speak"
-    )
+    voice_response: Optional[str] = Field(None, description="Text for voice assistants to speak")
     expires_in: Optional[int] = Field(None, description="Token expiration in seconds")
     requires_setup: Optional[bool] = None
-    quick_actions: Optional[List[str]] = Field(
-        None, description="Suggested next actions"
-    )
+    quick_actions: Optional[List[str]] = Field(None, description="Suggested next actions")
 
     class Config:
         json_schema_extra = {
@@ -168,12 +156,8 @@ class OnboardingStatusResponse(BaseModel):
 
     user_id: int
     onboarding_completed: bool
-    steps_remaining: List[str] = Field(
-        default_factory=list, description="List of incomplete steps"
-    )
-    estimated_time: str = Field(
-        default="2 minutes", description="Estimated time to complete"
-    )
+    steps_remaining: List[str] = Field(default_factory=list, description="List of incomplete steps")
+    estimated_time: str = Field(default="2 minutes", description="Estimated time to complete")
 
     class Config:
         json_schema_extra = {

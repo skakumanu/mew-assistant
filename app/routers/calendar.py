@@ -9,11 +9,15 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.integrations.calendar_integration import CalendarIntegration
 from app.schemas.auth import UserResponse
-from app.schemas.calendar import (CalendarConnectionRequest,
-                                  CalendarConnectionResponse,
-                                  CalendarEventCreate, CalendarEventResponse,
-                                  CalendarProvider, UpcomingEventsRequest,
-                                  UpcomingEventsResponse)
+from app.schemas.calendar import (
+    CalendarConnectionRequest,
+    CalendarConnectionResponse,
+    CalendarEventCreate,
+    CalendarEventResponse,
+    CalendarProvider,
+    UpcomingEventsRequest,
+    UpcomingEventsResponse,
+)
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/calendar", tags=["Calendar"])
@@ -39,17 +43,11 @@ async def connect_calendar(
         success = False
 
         if provider == CalendarProvider.GOOGLE:
-            success = await calendar_integration.connect_google_calendar(
-                connection_data.credentials
-            )
+            success = await calendar_integration.connect_google_calendar(connection_data.credentials)
         elif provider == CalendarProvider.APPLE:
-            success = await calendar_integration.connect_apple_calendar(
-                connection_data.credentials
-            )
+            success = await calendar_integration.connect_apple_calendar(connection_data.credentials)
         elif provider == CalendarProvider.OUTLOOK:
-            success = await calendar_integration.connect_outlook_calendar(
-                connection_data.credentials
-            )
+            success = await calendar_integration.connect_outlook_calendar(connection_data.credentials)
 
         if not success:
             raise HTTPException(

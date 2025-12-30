@@ -48,9 +48,7 @@ class MessageService:
         self.db.commit()
         self.db.refresh(message)
 
-        logger.info(
-            f"Ingested message {message.id} from {message_data.sender} via {message_data.channel}"
-        )
+        logger.info(f"Ingested message {message.id} from {message_data.sender} via {message_data.channel}")
         return message
 
     def ingest_batch(self, batch_data: MessageBatchIngest) -> List[Message]:
@@ -158,15 +156,11 @@ class MessageService:
 
     async def _handle_report_request(self, message: str) -> str:
         """Handle report/summary requests."""
-        return (
-            "I'll generate a report for you. What time period would you like covered?"
-        )
+        return "I'll generate a report for you. What time period would you like covered?"
 
     async def _handle_general_message(self, message: str) -> str:
         """Handle general messages."""
-        response = await self.ai_integration.generate_response(
-            message=message, conversation_history=[]
-        )
+        response = await self.ai_integration.generate_response(message=message, conversation_history=[])
         if response.get("success"):
             return response.get("text", "Thanks for your message!")
         return "Thanks for your message! How can I assist you today?"
@@ -187,11 +181,7 @@ class MessageService:
         """Return messages for a given session id."""
         sid = str(session_id)
         messages = (
-            self.db.query(Message)
-            .filter(Message.session_id == sid)
-            .order_by(Message.received_at)
-            .limit(limit)
-            .all()
+            self.db.query(Message).filter(Message.session_id == sid).order_by(Message.received_at).limit(limit).all()
         )
         return messages
 
