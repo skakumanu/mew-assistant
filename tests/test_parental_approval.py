@@ -6,45 +6,13 @@ CRITICAL: Ensures no schedule changes from kids happen without parent approval
 from datetime import datetime, timedelta
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from app.database.connection import Base, get_db
 from app.database.models import ApprovalStatus, RequestType, User, UserRole
-from app.main import app
 from app.services.approval_service import ApprovalService
-
-# Test database setup
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test_approval.db"
-engine = create_engine(SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-@pytest.fixture(scope="function")
-def test_db():
-    """Create fresh database for each test"""
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    yield db
-    db.close()
-    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
-def parent_user(test_db):
+def parent_user(db_session):
     """Create a parent user"""
     parent = User(
         email="parent@test.com",
@@ -55,14 +23,14 @@ def parent_user(test_db):
         role=UserRole.PARENT,
         is_kid_account=False,
     )
-    test_db.add(parent)
-    test_db.commit()
-    test_db.refresh(parent)
+    db_session.add(parent)
+    db_session.commit()
+    db_session.refresh(parent)
     return parent
 
 
 @pytest.fixture
-def kid_user(test_db, parent_user):
+def kid_user(db_session, parent_user):
     """Create a kid user linked to parent"""
     kid = User(
         email="kid@test.com",
@@ -77,18 +45,18 @@ def kid_user(test_db, parent_user):
         age=10,
         avatar_emoji="😊",
     )
-    test_db.add(kid)
-    test_db.commit()
-    test_db.refresh(kid)
+    db_session.add(kid)
+    db_session.commit()
+    db_session.refresh(kid)
     return kid
 
 
 class TestApprovalRequestCreation:
     """Test creation of approval requests from kids"""
 
-    def test_create_new_activity_request(self, test_db, kid_user, parent_user):
+    def test_create_new_activity_request(self, db_session, kid_user, parent_user):
         """Kid can request new activity"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -108,9 +76,9 @@ class TestApprovalRequestCreation:
         assert request.applied_to_calendar is False
         assert request.parent_approved is None
 
-    def test_create_schedule_change_request(self, test_db, kid_user, parent_user):
+    def test_create_schedule_change_request(self, db_session, kid_user, parent_user):
         """Kid can request to change existing activity"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -126,9 +94,9 @@ class TestApprovalRequestCreation:
         assert request.original_activity_id == 123
         assert request.applied_to_calendar is False
 
-    def test_cannot_create_request_for_non_kid(self, test_db, parent_user):
+    def test_cannot_create_request_for_non_kid(self, db_session, parent_user):
         """Non-kid accounts cannot create approval requests"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         with pytest.raises(Exception) as exc:
             approval_service.create_approval_request(
@@ -140,9 +108,9 @@ class TestApprovalRequestCreation:
 
         assert "Invalid kid account" in str(exc.value)
 
-    def test_request_auto_expires_after_24h(self, test_db, kid_user, parent_user):
+    def test_request_auto_expires_after_24h(self, db_session, kid_user, parent_user):
         """Approval requests expire after 24 hours"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -160,9 +128,9 @@ class TestApprovalRequestCreation:
 class TestParentApproval:
     """Test parent approval workflow"""
 
-    def test_parent_can_approve_request(self, test_db, kid_user, parent_user):
+    def test_parent_can_approve_request(self, db_session, kid_user, parent_user):
         """Parent successfully approves kid request"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         # Kid creates request
         request = approval_service.create_approval_request(
@@ -189,9 +157,9 @@ class TestParentApproval:
         assert approved.approved_at is not None
         assert approved.processed_at is not None
 
-    def test_approval_creates_audit_log(self, test_db, kid_user, parent_user):
+    def test_approval_creates_audit_log(self, db_session, kid_user, parent_user):
         """Approval action is logged for compliance"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -210,7 +178,7 @@ class TestParentApproval:
         )
 
         # Check audit logs exist
-        test_db.refresh(request)
+        db_session.refresh(request)
         audit_logs = request.audit_logs
 
         assert len(audit_logs) >= 2  # Created + Approved
@@ -219,9 +187,9 @@ class TestParentApproval:
         assert approval_log.ip_address == "192.168.1.1"
         assert approval_log.new_status == ApprovalStatus.APPROVED.value
 
-    def test_cannot_approve_expired_request(self, test_db, kid_user, parent_user):
+    def test_cannot_approve_expired_request(self, db_session, kid_user, parent_user):
         """Cannot approve a request that has expired"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -232,7 +200,7 @@ class TestParentApproval:
 
         # Manually expire the request
         request.expires_at = datetime.utcnow() - timedelta(hours=1)
-        test_db.commit()
+        db_session.commit()
 
         # Try to approve
         with pytest.raises(Exception) as exc:
@@ -240,9 +208,9 @@ class TestParentApproval:
 
         assert "cannot be approved" in str(exc.value).lower()
 
-    def test_wrong_parent_cannot_approve(self, test_db, kid_user, parent_user):
+    def test_wrong_parent_cannot_approve(self, db_session, kid_user, parent_user):
         """Only the linked parent can approve requests"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         # Create another parent
         other_parent = User(
@@ -252,8 +220,8 @@ class TestParentApproval:
             is_kid_account=False,
             role=UserRole.PARENT,
         )
-        test_db.add(other_parent)
-        test_db.commit()
+        db_session.add(other_parent)
+        db_session.commit()
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -274,9 +242,9 @@ class TestParentApproval:
 class TestParentDenial:
     """Test parent denial workflow"""
 
-    def test_parent_can_deny_request(self, test_db, kid_user, parent_user):
+    def test_parent_can_deny_request(self, db_session, kid_user, parent_user):
         """Parent can deny kid request with explanation"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -301,9 +269,9 @@ class TestParentDenial:
         assert denied.applied_to_calendar is False  # Nothing changed
         assert denied.processed_at is not None
 
-    def test_denial_does_not_change_calendar(self, test_db, kid_user, parent_user):
+    def test_denial_does_not_change_calendar(self, db_session, kid_user, parent_user):
         """Denied requests do not affect calendar"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -323,9 +291,9 @@ class TestParentDenial:
 class TestCalendarIntegration:
     """Test that calendar changes only happen after approval"""
 
-    def test_pending_request_does_not_change_calendar(self, test_db, kid_user, parent_user):
+    def test_pending_request_does_not_change_calendar(self, db_session, kid_user, parent_user):
         """Pending requests do not affect calendar"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -339,9 +307,9 @@ class TestCalendarIntegration:
         assert request.applied_to_calendar is False
         assert request.calendar_event_id is None
 
-    def test_only_approved_requests_affect_calendar(self, test_db, kid_user, parent_user):
+    def test_only_approved_requests_affect_calendar(self, db_session, kid_user, parent_user):
         """Calendar changes happen only after parent approval"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         request = approval_service.create_approval_request(
             kid_id=kid_user.id,
@@ -357,7 +325,7 @@ class TestCalendarIntegration:
         # Note: In real implementation, this would call CalendarService
         approval_service.approve_request(request_id=request.id, parent_id=parent_user.id)
 
-        test_db.refresh(request)
+        db_session.refresh(request)
         # applied_to_calendar flag should be set
         # In full implementation with real CalendarService
 
@@ -365,9 +333,9 @@ class TestCalendarIntegration:
 class TestApprovalQueries:
     """Test querying approval requests"""
 
-    def test_get_pending_requests_for_parent(self, test_db, kid_user, parent_user):
+    def test_get_pending_requests_for_parent(self, db_session, kid_user, parent_user):
         """Parent can see all pending requests"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         # Create multiple requests
         for i in range(3):
@@ -382,9 +350,9 @@ class TestApprovalQueries:
         assert len(pending) == 3
         assert all(r.status == ApprovalStatus.PENDING for r in pending)
 
-    def test_get_kid_request_history(self, test_db, kid_user, parent_user):
+    def test_get_kid_request_history(self, db_session, kid_user, parent_user):
         """Get history of kid's requests"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         # Create and approve one request
         req1 = approval_service.create_approval_request(
@@ -414,9 +382,9 @@ class TestApprovalQueries:
 class TestAutoExpiration:
     """Test automatic expiration of old requests"""
 
-    def test_expire_old_pending_requests(self, test_db, kid_user, parent_user):
+    def test_expire_old_pending_requests(self, db_session, kid_user, parent_user):
         """Old pending requests are automatically expired"""
-        approval_service = ApprovalService(test_db)
+        approval_service = ApprovalService(db_session)
 
         # Create request and manually set old expiry
         request = approval_service.create_approval_request(
@@ -426,22 +394,22 @@ class TestAutoExpiration:
             requested_activity="Old request",
         )
         request.expires_at = datetime.utcnow() - timedelta(hours=1)
-        test_db.commit()
+        db_session.commit()
 
         # Run expiration job
         expired_count = approval_service.expire_old_requests()
 
         assert expired_count == 1
-        test_db.refresh(request)
+        db_session.refresh(request)
         assert request.status == ApprovalStatus.EXPIRED
         assert request.processed_at is not None
 
 
-def test_full_workflow_integration(test_db, kid_user, parent_user):
+def test_full_workflow_integration(db_session, kid_user, parent_user):
     """
     Full integration test: Kid requests, parent approves, calendar updated
     """
-    approval_service = ApprovalService(test_db)
+    approval_service = ApprovalService(db_session)
 
     # 1. Kid creates request
     request = approval_service.create_approval_request(
@@ -468,7 +436,7 @@ def test_full_workflow_integration(test_db, kid_user, parent_user):
     assert approved.parent_approved is True
 
     # 3. Verify audit trail
-    test_db.refresh(approved)
+    db_session.refresh(approved)
     assert len(approved.audit_logs) >= 2  # Created + Approved
 
     # 4. Verify calendar would be updated (in full implementation)
