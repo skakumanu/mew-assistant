@@ -77,7 +77,9 @@ class TestSecurityMiddleware:
         assert response.headers.get("X-XSS-Protection") == "1; mode=block"
         assert "Strict-Transport-Security" in response.headers
         assert "Content-Security-Policy" in response.headers
-        assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+        assert (
+            response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+        )
         assert "Permissions-Policy" in response.headers
 
     def test_rate_limiting(self, client):
@@ -142,7 +144,10 @@ class TestSecurityMiddleware:
         """Test API requests with Bearer token exempt from CSRF"""
         response = client.post("/test", headers={"Authorization": "Bearer test-token"})
         # Should not fail due to CSRF (may fail for other reasons)
-        assert response.status_code != 403 or "csrf" not in response.json().get("detail", "").lower()
+        assert (
+            response.status_code != 403
+            or "csrf" not in response.json().get("detail", "").lower()
+        )
 
     def test_large_payload_rejected(self, client):
         """Test large payloads are rejected"""
@@ -385,6 +390,8 @@ class TestPenetrationTestScenarios:
     def test_xml_injection_prevention(self, client):
         """Test XML injection is prevented"""
         xml_bomb = "<?xml version='1.0'?><!DOCTYPE lolz [<!ENTITY lol 'lol'>]><lolz>&lol;</lolz>"
-        response = client.post("/test", content=xml_bomb, headers={"X-CSRF-Token": "test"})
+        response = client.post(
+            "/test", content=xml_bomb, headers={"X-CSRF-Token": "test"}
+        )
         # Should handle safely
         assert response.status_code in [200, 400, 403]

@@ -107,10 +107,14 @@ class DataAnonymizer:
         text = re.sub(r"\b\d{3}-\d{2}-\d{4}\b", "***-**-****", text)
 
         # Anonymize credit cards
-        text = re.sub(r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b", "**** **** **** ****", text)
+        text = re.sub(
+            r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b", "**** **** **** ****", text
+        )
 
         # Anonymize medical record numbers
-        text = re.sub(r"\b(MR|MRN)[:\s]?\d{6,}\b", "MR******", text, flags=re.IGNORECASE)
+        text = re.sub(
+            r"\b(MR|MRN)[:\s]?\d{6,}\b", "MR******", text, flags=re.IGNORECASE
+        )
 
         # Anonymize student IDs
         text = re.sub(
@@ -131,7 +135,9 @@ class PrivacyGuardrails:
         self.anonymizer = DataAnonymizer()
         self.audit_log: List[Dict] = []
 
-    def validate_coppa_compliance(self, user_age: Optional[int] = None) -> Dict[str, Any]:
+    def validate_coppa_compliance(
+        self, user_age: Optional[int] = None
+    ) -> Dict[str, Any]:
         """
         Validate COPPA compliance (Children's Online Privacy Protection Act).
 
@@ -160,7 +166,9 @@ class PrivacyGuardrails:
 
         return result
 
-    def validate_ferpa_compliance(self, is_educational_record: bool = False) -> Dict[str, Any]:
+    def validate_ferpa_compliance(
+        self, is_educational_record: bool = False
+    ) -> Dict[str, Any]:
         """
         Validate FERPA compliance (Family Educational Rights and Privacy Act).
 
@@ -189,7 +197,9 @@ class PrivacyGuardrails:
 
         return result
 
-    def scan_and_protect(self, data: Dict[str, Any], anonymize: bool = True) -> Dict[str, Any]:
+    def scan_and_protect(
+        self, data: Dict[str, Any], anonymize: bool = True
+    ) -> Dict[str, Any]:
         """
         Scan data for PII and optionally anonymize.
 
@@ -229,7 +239,9 @@ class PrivacyGuardrails:
             "anonymized": anonymize,
         }
 
-    def validate_data_minimization(self, collected_fields: List[str], required_fields: List[str]) -> Dict[str, Any]:
+    def validate_data_minimization(
+        self, collected_fields: List[str], required_fields: List[str]
+    ) -> Dict[str, Any]:
         """
         Validate data minimization principle - only collect necessary data.
 
@@ -245,7 +257,11 @@ class PrivacyGuardrails:
         result = {
             "compliant": len(excessive_fields) == 0,
             "excessive_fields": list(excessive_fields),
-            "recommendation": ("Remove unnecessary data collection" if excessive_fields else "Compliant"),
+            "recommendation": (
+                "Remove unnecessary data collection"
+                if excessive_fields
+                else "Compliant"
+            ),
             "timestamp": datetime.utcnow().isoformat(),
         }
 

@@ -57,7 +57,9 @@ class VoiceProcessor:
     def _init_azure_speech(self):
         """Initialize Azure Speech Services"""
         if not speechsdk:
-            logger.warning("Azure Speech SDK not available. Install with: pip install azure-cognitiveservices-speech")
+            logger.warning(
+                "Azure Speech SDK not available. Install with: pip install azure-cognitiveservices-speech"
+            )
             self.speech_config = None
             return
 
@@ -93,7 +95,9 @@ class VoiceProcessor:
                     detected_language=preferred_language,
                 )
 
-            detected_language = preferred_language or await self.language_detector.detect(transcription)
+            detected_language = (
+                preferred_language or await self.language_detector.detect(transcription)
+            )
             parsed_command = await self.command_parser.parse(
                 text=transcription, language=detected_language, user_id=user_id
             )
@@ -128,7 +132,9 @@ class VoiceProcessor:
             logger.error(f"Voice processing error: {e}", exc_info=True)
             return VoiceCommandResponse(success=False, error=str(e))
 
-    async def _speech_to_text(self, audio_data: bytes, language: Optional[str] = None) -> Optional[str]:
+    async def _speech_to_text(
+        self, audio_data: bytes, language: Optional[str] = None
+    ) -> Optional[str]:
         """Convert speech to text with automatic language detection"""
         if not self.speech_config:
             return await self._whisper_fallback(audio_data)
@@ -136,8 +142,10 @@ class VoiceProcessor:
         try:
             # Enable automatic language detection if no language specified
             if not language:
-                auto_detect_source_language_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
-                    languages=list(self.SUPPORTED_LANGUAGES.keys())
+                auto_detect_source_language_config = (
+                    speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+                        languages=list(self.SUPPORTED_LANGUAGES.keys())
+                    )
                 )
 
                 stream = speechsdk.audio.PushAudioInputStream()
@@ -207,7 +215,11 @@ class VoiceProcessor:
             if hasattr(transcription, "language"):
                 logger.info(f"Whisper detected language: {transcription.language}")
 
-            return transcription.text if hasattr(transcription, "text") else str(transcription)
+            return (
+                transcription.text
+                if hasattr(transcription, "text")
+                else str(transcription)
+            )
 
         except Exception as e:
             logger.error(f"Whisper fallback error: {e}")

@@ -153,7 +153,9 @@ class TestDataMinimizationGuard:
         with caplog.at_level("WARNING"):
             DataMinimizationGuard.validate_fields("session", data)
 
-        assert any("unauthorized" in record.message.lower() for record in caplog.records)
+        assert any(
+            "unauthorized" in record.message.lower() for record in caplog.records
+        )
 
 
 class TestAccessControlValidator:
@@ -231,7 +233,9 @@ class TestConsentManager:
             "phi_access": True,
         }
 
-        result = ConsentManager.validate_consent(user_consents, ["data_collection", "data_processing"])
+        result = ConsentManager.validate_consent(
+            user_consents, ["data_collection", "data_processing"]
+        )
         assert result is True
 
     def test_missing_consent(self):
@@ -239,7 +243,9 @@ class TestConsentManager:
         user_consents = {"data_collection": True, "data_processing": False}
 
         with pytest.raises(ComplianceViolationError) as exc:
-            ConsentManager.validate_consent(user_consents, ["data_collection", "data_processing"])
+            ConsentManager.validate_consent(
+                user_consents, ["data_collection", "data_processing"]
+            )
 
         assert "data_processing" in str(exc.value)
 
@@ -310,7 +316,9 @@ class TestCOPPACompliance:
         }
 
         with pytest.raises(ComplianceViolationError):
-            ConsentManager.validate_consent(child_consents, ["data_collection", "minors_data"])
+            ConsentManager.validate_consent(
+                child_consents, ["data_collection", "minors_data"]
+            )
 
 
 class TestFERPACompliance:

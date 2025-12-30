@@ -20,14 +20,18 @@ class GoogleAssistantIntegration(BaseVoicePlatform):
     async def authenticate(self, credentials: Dict[str, Any]) -> bool:
         return credentials.get("token") is not None
 
-    async def handle_intent(self, intent: str, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def handle_intent(
+        self, intent: str, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         if intent == "actions.intent.MAIN":
             return {"success": True, "speech": "Hi! I'm Mew. How can I help?"}
         elif intent == "schedule.create":
             return await self._handle_schedule(slots, user_id)
         return {"success": True, "speech": "I can help with scheduling"}
 
-    async def _handle_schedule(self, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_schedule(
+        self, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         message_service = MessageService()
         result = await message_service.process_scheduling_request(
             user_id=user_id,

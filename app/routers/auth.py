@@ -34,7 +34,9 @@ from app.utils.auth import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user account.
@@ -64,7 +66,11 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
             counter += 1
 
     # Check if user already exists
-    existing_user = db.query(User).filter((User.email == user_data.email) | (User.username == username)).first()
+    existing_user = (
+        db.query(User)
+        .filter((User.email == user_data.email) | (User.username == username))
+        .first()
+    )
 
     if existing_user:
         if existing_user.email == user_data.email:
@@ -73,7 +79,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered",
             )
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
+            )
 
     # Create new user
     db_user = User(
@@ -120,7 +128,9 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         )
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
+        )
 
     # Update last login
     user.last_login = datetime.utcnow()
@@ -140,7 +150,9 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login/form", response_model=Token)
-async def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login_form(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
     """
     OAuth2 compatible login endpoint.
 
@@ -172,7 +184,9 @@ async def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Sessi
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)):
+async def refresh_token(
+    refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)
+):
     """
     Refresh access token using refresh token.
 
@@ -188,11 +202,15 @@ async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends
 
         # Verify it's a refresh token
         if payload.get("type") != "refresh":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
+            )
 
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            )
 
     except HTTPException:
         raise
@@ -290,8 +308,12 @@ async def change_password(
     from app.utils.auth import verify_password
 
     # Verify current password
-    if not verify_password(password_data.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password")
+    if not verify_password(
+        password_data.current_password, current_user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password"
+        )
 
     # Update password
     current_user.hashed_password = get_password_hash(password_data.new_password)
@@ -309,7 +331,9 @@ async def logout(current_user: User = Depends(get_current_user)):
     Note: JWT tokens are stateless, so this is just a placeholder.
     Clients should delete their stored tokens.
     """
-    return {"message": "Logged out successfully. Please delete your tokens on the client side."}
+    return {
+        "message": "Logged out successfully. Please delete your tokens on the client side."
+    }
 
 
 # CAPTCHA endpoints for bot protection
@@ -328,5 +352,7 @@ async def verify_captcha(challenge_id: str, response: str):
     """Verify CAPTCHA response"""
     is_valid = captcha_verifier.verify_response(challenge_id, response)
     if not is_valid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired CAPTCHA")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired CAPTCHA"
+        )
     return {"verified": True}

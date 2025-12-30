@@ -7,6 +7,7 @@ SECURITY NOTE: This script is for initial setup/testing only.
 Passwords should be changed immediately after first login.
 For production, use environment variables or secure password prompts.
 """
+
 import os
 import secrets
 import string

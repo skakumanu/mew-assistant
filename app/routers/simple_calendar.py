@@ -78,7 +78,9 @@ async def get_calendar_events(
                     token_data = token_response.json()
                     fed_identity.access_token = token_data["access_token"]
                     db.commit()
-                    logger.info(f"Refreshed Google token for user {sanitize_user_id(current_user.id)}")
+                    logger.info(
+                        f"Refreshed Google token for user {sanitize_user_id(current_user.id)}"
+                    )
                     return True
                 else:
                     logger.error(f"Token refresh failed: {token_response.text}")
@@ -108,7 +110,9 @@ async def get_calendar_events(
 
             # If token expired, try to refresh and retry once
             if response.status_code == 401:
-                logger.info(f"Google token expired for user {sanitize_user_id(current_user.id)}, attempting refresh...")
+                logger.info(
+                    f"Google token expired for user {sanitize_user_id(current_user.id)}, attempting refresh..."
+                )
                 if await refresh_google_token():
                     # Retry with new token
                     response = await client.get(
@@ -119,7 +123,9 @@ async def get_calendar_events(
                             "singleEvents": True,
                             "timeMin": time_min,  # Use same timeMin
                         },
-                        headers={"Authorization": f"Bearer {fed_identity.access_token}"},
+                        headers={
+                            "Authorization": f"Bearer {fed_identity.access_token}"
+                        },
                     )
                 else:
                     raise HTTPException(
@@ -143,8 +149,10 @@ async def get_calendar_events(
                     {
                         "id": event.get("id"),
                         "summary": event.get("summary", "No title"),
-                        "start": event.get("start", {}).get("dateTime") or event.get("start", {}).get("date"),
-                        "end": event.get("end", {}).get("dateTime") or event.get("end", {}).get("date"),
+                        "start": event.get("start", {}).get("dateTime")
+                        or event.get("start", {}).get("date"),
+                        "end": event.get("end", {}).get("dateTime")
+                        or event.get("end", {}).get("date"),
                         "description": event.get("description", ""),
                         "location": event.get("location", ""),
                         "link": event.get("htmlLink"),
@@ -159,4 +167,6 @@ async def get_calendar_events(
 
     except httpx.HTTPError as e:
         logger.error(f"HTTP error calling Google Calendar: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error connecting to Google Calendar: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error connecting to Google Calendar: {str(e)}"
+        )

@@ -26,10 +26,10 @@ async def test_connect_google_calendar(calendar_integration):
         "client_secret": "[REDACTED]",
     }
 
-    with patch("app.integrations.calendar_integration.Credentials") as mock_creds, patch(
-        "app.integrations.calendar_integration.build"
-    ) as mock_build:
-
+    with (
+        patch("app.integrations.calendar_integration.Credentials") as mock_creds,
+        patch("app.integrations.calendar_integration.build") as mock_build,
+    ):
         mock_creds.from_authorized_user_info.return_value = Mock()
         mock_build.return_value = Mock()
 
@@ -91,7 +91,9 @@ async def test_get_upcoming_events(calendar_integration):
     }
     calendar_integration.google_client.events.return_value = mock_events
 
-    events = await calendar_integration.get_upcoming_events(provider=CalendarProvider.GOOGLE, days_ahead=7)
+    events = await calendar_integration.get_upcoming_events(
+        provider=CalendarProvider.GOOGLE, days_ahead=7
+    )
 
     assert len(events) == 2
     assert events[0]["id"] == "event_1"
@@ -133,7 +135,9 @@ async def test_connect_outlook_calendar(calendar_integration):
 
     with patch("app.integrations.calendar_integration.msal") as mock_msal:
         mock_app = Mock()
-        mock_app.acquire_token_for_client.return_value = {"access_token": "test_access_token"}
+        mock_app.acquire_token_for_client.return_value = {
+            "access_token": "test_access_token"
+        }
         mock_msal.ConfidentialClientApplication.return_value = mock_app
 
         result = await calendar_integration.connect_outlook_calendar(credentials)
@@ -160,6 +164,8 @@ async def test_create_event_invalid_provider(calendar_integration):
 @pytest.mark.asyncio
 async def test_get_events_without_connection(calendar_integration):
     """Test getting events without established connection"""
-    events = await calendar_integration.get_upcoming_events(provider=CalendarProvider.GOOGLE, days_ahead=7)
+    events = await calendar_integration.get_upcoming_events(
+        provider=CalendarProvider.GOOGLE, days_ahead=7
+    )
 
     assert events == []

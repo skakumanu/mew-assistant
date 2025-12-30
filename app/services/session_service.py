@@ -43,7 +43,9 @@ class SessionService:
             >>> session = service.create_session(session_data)
         """
         # Check for priority escalation
-        should_escalate, new_priority = should_escalate_priority(session_data.priority, session_data.session_type.value)
+        should_escalate, new_priority = should_escalate_priority(
+            session_data.priority, session_data.session_type.value
+        )
 
         if should_escalate:
             priority = new_priority
@@ -81,7 +83,11 @@ class SessionService:
             ValueError: If session not found or already confirmed
             PermissionError: If session is in cooldown and override not allowed
         """
-        session = self.db.query(SessionModel).filter(SessionModel.id == confirm_data.session_id).first()
+        session = (
+            self.db.query(SessionModel)
+            .filter(SessionModel.id == confirm_data.session_id)
+            .first()
+        )
 
         if not session:
             raise ValueError(f"Session {confirm_data.session_id} not found")
@@ -98,7 +104,8 @@ class SessionService:
                 reset_cooldown(session)
             else:
                 raise PermissionError(
-                    f"Session in cooldown until {cooldown_until}. " "Use override_cooldown=true for urgent sessions."
+                    f"Session in cooldown until {cooldown_until}. "
+                    "Use override_cooldown=true for urgent sessions."
                 )
 
         # Confirm session
@@ -109,7 +116,9 @@ class SessionService:
             session.notes = confirm_data.notes
 
         # Set cooldown for future requests
-        cooldown_hours = calculate_cooldown_duration(session.session_type, session.priority)
+        cooldown_hours = calculate_cooldown_duration(
+            session.session_type, session.priority
+        )
         if cooldown_hours > 0:
             set_cooldown(session, hours=cooldown_hours)
 
@@ -118,7 +127,9 @@ class SessionService:
 
         return session
 
-    def update_session(self, session_id: int, update_data: SessionUpdate) -> SessionModel:
+    def update_session(
+        self, session_id: int, update_data: SessionUpdate
+    ) -> SessionModel:
         """
         Update session details.
 
@@ -129,7 +140,9 @@ class SessionService:
         Returns:
             Updated session object
         """
-        session = self.db.query(SessionModel).filter(SessionModel.id == session_id).first()
+        session = (
+            self.db.query(SessionModel).filter(SessionModel.id == session_id).first()
+        )
 
         if not session:
             raise ValueError(f"Session {session_id} not found")

@@ -43,11 +43,15 @@ async def mew_exception_handler(request: Request, exc: MewException) -> JSONResp
     )
 
 
-async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
     """Handle HTTP exceptions"""
     logger.warning(
         f"HTTP exception: {exc.detail}",
-        extra={"extra_data": {"status_code": exc.status_code, "path": request.url.path}},
+        extra={
+            "extra_data": {"status_code": exc.status_code, "path": request.url.path}
+        },
     )
 
     return JSONResponse(
@@ -62,7 +66,9 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Handle validation errors"""
     errors = []
     for error in exc.errors():
@@ -92,7 +98,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
-async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+async def sqlalchemy_exception_handler(
+    request: Request, exc: SQLAlchemyError
+) -> JSONResponse:
     """Handle database errors"""
     logger.error(
         f"Database error: {str(exc)}",

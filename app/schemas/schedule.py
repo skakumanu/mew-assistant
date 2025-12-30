@@ -80,4 +80,6 @@ class ScheduleOptimizationRequest(BaseModel):
     """Request for schedule optimization"""
 
     date: datetime
-    optimization_goals: List[str] = Field(default_factory=lambda: ["minimize_transitions", "respect_energy_levels"])
+    optimization_goals: List[str] = Field(
+        default_factory=lambda: ["minimize_transitions", "respect_energy_levels"]
+    )

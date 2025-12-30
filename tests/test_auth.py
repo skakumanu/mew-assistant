@@ -122,7 +122,9 @@ def test_get_current_user_no_token(client: TestClient):
 
 def test_get_current_user_invalid_token(client: TestClient):
     """Test accessing protected route with invalid token"""
-    response = client.get("/auth/me", headers={"Authorization": "Bearer invalid_token_here"})
+    response = client.get(
+        "/auth/me", headers={"Authorization": "Bearer invalid_token_here"}
+    )
     assert response.status_code == 401
 
 
@@ -151,7 +153,9 @@ def test_update_profile(client: TestClient):
         "timezone": "America/New_York",
     }
 
-    response = client.patch("/auth/me", json=update_data, headers={"Authorization": f"Bearer {token}"})
+    response = client.patch(
+        "/auth/me", json=update_data, headers={"Authorization": f"Bearer {token}"}
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["full_name"] == "Updated Name"

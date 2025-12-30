@@ -10,7 +10,13 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..database.models import ApprovalAuditLog, ApprovalRequest, ApprovalStatus, RequestType, User
+from ..database.models import (
+    ApprovalAuditLog,
+    ApprovalRequest,
+    ApprovalStatus,
+    RequestType,
+    User,
+)
 from ..services.calendar_service import CalendarService
 from ..services.notification_service import NotificationService
 
@@ -44,7 +50,9 @@ class ApprovalService:
         # Verify kid account
         kid = self.db.query(User).filter(User.id == kid_id).first()
         if not kid or not kid.is_kid_account:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid kid account")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid kid account"
+            )
 
         # Verify parent relationship
         if kid.parent_id != parent_id:
@@ -238,7 +246,11 @@ class ApprovalService:
         Returns count of expired requests.
         """
         expired_count = 0
-        pending_requests = self.db.query(ApprovalRequest).filter(ApprovalRequest.status == ApprovalStatus.PENDING).all()
+        pending_requests = (
+            self.db.query(ApprovalRequest)
+            .filter(ApprovalRequest.status == ApprovalStatus.PENDING)
+            .all()
+        )
 
         for request in pending_requests:
             if request.is_expired():
@@ -261,9 +273,15 @@ class ApprovalService:
 
         return expired_count
 
-    def _get_and_validate_request(self, request_id: int, parent_id: int) -> ApprovalRequest:
+    def _get_and_validate_request(
+        self, request_id: int, parent_id: int
+    ) -> ApprovalRequest:
         """Get approval request and validate parent access"""
-        approval_request = self.db.query(ApprovalRequest).filter(ApprovalRequest.id == request_id).first()
+        approval_request = (
+            self.db.query(ApprovalRequest)
+            .filter(ApprovalRequest.id == request_id)
+            .first()
+        )
 
         if not approval_request:
             raise HTTPException(

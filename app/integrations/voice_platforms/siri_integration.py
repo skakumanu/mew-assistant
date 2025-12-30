@@ -30,13 +30,17 @@ class SiriIntegration(BaseVoicePlatform):
         try:
             signature = credentials.get("signature")
             body = credentials.get("body")
-            expected = hmac.new(self.signing_key.encode(), body.encode(), hashlib.sha256).hexdigest()
+            expected = hmac.new(
+                self.signing_key.encode(), body.encode(), hashlib.sha256
+            ).hexdigest()
             return hmac.compare_digest(signature, expected)
         except Exception as e:
             logger.error(f"Siri auth failed: {e}")
             return False
 
-    async def handle_intent(self, intent: str, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def handle_intent(
+        self, intent: str, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         if intent not in self.SUPPORTED_INTENTS:
             return {"success": False, "speech": "Unsupported action"}
 
@@ -44,7 +48,9 @@ class SiriIntegration(BaseVoicePlatform):
             return await self._handle_create_event(slots, user_id)
         return {"success": False, "speech": "Error"}
 
-    async def _handle_create_event(self, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_create_event(
+        self, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         message_service = MessageService()
         result = await message_service.process_scheduling_request(
             user_id=user_id,

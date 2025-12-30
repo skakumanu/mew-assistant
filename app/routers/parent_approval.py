@@ -21,8 +21,12 @@ class ApprovalResponse(BaseModel):
     """Parent's response to kid request"""
 
     approved: bool = Field(..., description="Approve or deny the request")
-    parent_note: Optional[str] = Field(None, max_length=500, description="Message for your kid")
-    alternative_suggestion: Optional[str] = Field(None, max_length=300, description="Alternative suggestion")
+    parent_note: Optional[str] = Field(
+        None, max_length=500, description="Message for your kid"
+    )
+    alternative_suggestion: Optional[str] = Field(
+        None, max_length=300, description="Alternative suggestion"
+    )
 
 
 class ApprovalRequestDetail(BaseModel):
@@ -45,7 +49,9 @@ class ApprovalRequestDetail(BaseModel):
 
 
 @router.get("/pending", response_model=List[ApprovalRequestDetail])
-async def get_pending_approvals(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_pending_approvals(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get all pending approval requests waiting for parent review.
     Shows requests from all linked kids.
@@ -71,7 +77,9 @@ async def get_pending_approvals(current_user: User = Depends(get_current_user), 
                 kid_reason=request.kid_reason,
                 status=request.status.value,
                 created_at=request.created_at.isoformat(),
-                expires_at=(request.expires_at.isoformat() if request.expires_at else None),
+                expires_at=(
+                    request.expires_at.isoformat() if request.expires_at else None
+                ),
                 original_activity_name=None,  # TODO: Fetch from calendar
             )
         )
@@ -210,7 +218,9 @@ async def get_approval_history(
                 "requested_activity": req.requested_activity,
                 "status": req.status.value,
                 "created_at": req.created_at.isoformat(),
-                "processed_at": (req.processed_at.isoformat() if req.processed_at else None),
+                "processed_at": (
+                    req.processed_at.isoformat() if req.processed_at else None
+                ),
                 "parent_note": req.parent_note,
                 "applied_to_calendar": req.applied_to_calendar,
             }
@@ -220,7 +230,9 @@ async def get_approval_history(
 
 
 @router.get("/stats")
-async def get_approval_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_approval_stats(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get statistics about approval requests.
     Helps parents understand their kids' patterns and needs.

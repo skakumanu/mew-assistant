@@ -6,7 +6,17 @@ Tracks sessions, messages, and user interactions.
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 
 from .connection import Base
@@ -98,10 +108,18 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
 
     # Relationships
-    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
-    messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
-    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
-    federated_identities = relationship("FederatedIdentity", back_populates="user", cascade="all, delete-orphan")
+    sessions = relationship(
+        "Session", back_populates="user", cascade="all, delete-orphan"
+    )
+    messages = relationship(
+        "Message", back_populates="user", cascade="all, delete-orphan"
+    )
+    api_keys = relationship(
+        "APIKey", back_populates="user", cascade="all, delete-orphan"
+    )
+    federated_identities = relationship(
+        "FederatedIdentity", back_populates="user", cascade="all, delete-orphan"
+    )
     kids = relationship("User", backref="parent", remote_side=[id])
 
     __table_args__ = (
@@ -141,7 +159,9 @@ class FederatedIdentity(Base):
     # Relationships
     user = relationship("User", back_populates="federated_identities")
 
-    __table_args__ = (Index("idx_provider_user", "provider", "provider_user_id", unique=True),)
+    __table_args__ = (
+        Index("idx_provider_user", "provider", "provider_user_id", unique=True),
+    )
 
 
 class Session(Base):
@@ -180,10 +200,14 @@ class Session(Base):
 
     # Relationships
     user = relationship("User", back_populates="sessions")
-    messages = relationship("Message", back_populates="session", cascade="all, delete-orphan")
+    messages = relationship(
+        "Message", back_populates="session", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
-        return f"<Session(id={self.id}, type={self.session_type}, status={self.status})>"
+        return (
+            f"<Session(id={self.id}, type={self.session_type}, status={self.status})>"
+        )
 
 
 class Message(Base):
@@ -323,7 +347,9 @@ class ApprovalRequest(Base):
 
     # Request details
     request_type = Column(Enum(RequestType), nullable=False)
-    status = Column(Enum(ApprovalStatus), default=ApprovalStatus.PENDING, nullable=False)
+    status = Column(
+        Enum(ApprovalStatus), default=ApprovalStatus.PENDING, nullable=False
+    )
 
     # What the kid wants
     original_activity_id = Column(Integer, nullable=True)
@@ -362,10 +388,16 @@ class ApprovalRequest(Base):
 
     def can_approve(self) -> bool:
         """Check if request can still be approved"""
-        return self.status == ApprovalStatus.PENDING and not self.is_expired() and not self.applied_to_calendar
+        return (
+            self.status == ApprovalStatus.PENDING
+            and not self.is_expired()
+            and not self.applied_to_calendar
+        )
 
     # Relationship to audit logs for easy access in tests
-    audit_logs = relationship("ApprovalAuditLog", backref="approval_request", cascade="all, delete-orphan")
+    audit_logs = relationship(
+        "ApprovalAuditLog", backref="approval_request", cascade="all, delete-orphan"
+    )
 
 
 class ApprovalAuditLog(Base):
@@ -375,7 +407,9 @@ class ApprovalAuditLog(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
-    approval_request_id = Column(Integer, ForeignKey("approval_requests.id"), nullable=False)
+    approval_request_id = Column(
+        Integer, ForeignKey("approval_requests.id"), nullable=False
+    )
 
     action = Column(String(50), nullable=False)
     performed_by = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -462,7 +496,9 @@ class ApprovalRule(Base):
     priority = Column(Integer, default=100, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
 
@@ -494,7 +530,9 @@ class ScheduleEntry(Base):
     # Entry details
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    activity_type = Column(Enum(ActivityType), default=ActivityType.OTHER, nullable=False)
+    activity_type = Column(
+        Enum(ActivityType), default=ActivityType.OTHER, nullable=False
+    )
 
     # Time
     start_time = Column(DateTime, nullable=False)
@@ -521,7 +559,9 @@ class ScheduleEntry(Base):
     # Recurrence
     is_recurring = Column(Boolean, default=False)
     recurrence_rule = Column(Text, nullable=True)  # iCal RRULE format
-    parent_recurrence_id = Column(Integer, ForeignKey("schedule_entries.id"), nullable=True)
+    parent_recurrence_id = Column(
+        Integer, ForeignKey("schedule_entries.id"), nullable=True
+    )
 
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -6,7 +6,11 @@ module so callers can `from app.middleware import ErrorHandlingMiddleware`.
 """
 
 from .error_handler import register_exception_handlers
-from .middlewares import CORSSecurityMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
+from .middlewares import (
+    CORSSecurityMiddleware,
+    ErrorHandlingMiddleware,
+    RequestLoggingMiddleware,
+)
 from .request_id import RequestIDMiddleware
 
 __all__ = [

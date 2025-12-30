@@ -9,14 +9,21 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..schemas.session import SessionConfirm, SessionCreate, SessionResponse, SessionUpdate
+from ..schemas.session import (
+    SessionConfirm,
+    SessionCreate,
+    SessionResponse,
+    SessionUpdate,
+)
 from ..services.session_service import SessionService
 from ..utils.cooldown import check_cooldown
 
 router = APIRouter(prefix="/mew", tags=["sessions"])
 
 
-@router.post("/session", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/session", response_model=SessionResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_session(session_data: SessionCreate, db: Session = Depends(get_db)):
     """
     Create a new session (tutoring, scheduling, or caregiver summary).
@@ -91,7 +98,9 @@ async def confirm_session(confirm_data: SessionConfirm, db: Session = Depends(ge
 
 
 @router.patch("/session/{session_id}", response_model=SessionResponse)
-async def update_session(session_id: int, update_data: SessionUpdate, db: Session = Depends(get_db)):
+async def update_session(
+    session_id: int, update_data: SessionUpdate, db: Session = Depends(get_db)
+):
     """
     Update session details.
 
@@ -136,7 +145,9 @@ async def get_session(session_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/sessions/user/{user_id}", response_model=List[SessionResponse])
-async def get_user_sessions(user_id: str, status: str = None, limit: int = 100, db: Session = Depends(get_db)):
+async def get_user_sessions(
+    user_id: str, status: str = None, limit: int = 100, db: Session = Depends(get_db)
+):
     """
     Get all sessions for a user.
 

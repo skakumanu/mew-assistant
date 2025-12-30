@@ -41,7 +41,9 @@ async def suggest_activity(
     # Filter content for appropriateness
     content_filter = ContentFilter()
     if not content_filter.is_kid_safe(request.activity_description):
-        return SimplifiedResponse(success=False, message="Let's use nice words! 😊 Try again?", emoji="🤔")
+        return SimplifiedResponse(
+            success=False, message="Let's use nice words! 😊 Try again?", emoji="🤔"
+        )
 
     kid_service = KidService(db)
     approval_service = ApprovalService(db)
@@ -49,7 +51,9 @@ async def suggest_activity(
     # Get parent
     parent = kid_service.get_parent(current_user.id)
     if not parent:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No parent account linked")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No parent account linked"
+        )
 
     # Create approval request - DOES NOT change calendar yet
     approval_request = approval_service.create_approval_request(
@@ -68,7 +72,13 @@ async def suggest_activity(
     return SimplifiedResponse(
         success=True,
         # keep lines short for flake8 E501
-        message=("Great idea! 🎉 I'll ask " + parent_name + " about " + request.activity_name + "!"),
+        message=(
+            "Great idea! 🎉 I'll ask "
+            + parent_name
+            + " about "
+            + request.activity_name
+            + "!"
+        ),
         emoji="✅",
         data={
             "request_id": approval_request.id,
@@ -80,7 +90,9 @@ async def suggest_activity(
 
 
 @router.get("/my-schedule", response_model=KidScheduleResponse)
-async def get_my_schedule(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_my_schedule(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get kid's schedule in simple, visual format
     - Shows activities with emoji
@@ -174,10 +186,16 @@ async def request_schedule_change(
     # Get parent
     parent = kid_service.get_parent(current_user.id)
     if not parent:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No parent account linked")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No parent account linked"
+        )
 
     # Determine request type based on whether there's an alternative
-    request_type = RequestType.SCHEDULE_CHANGE if request.alternative else RequestType.SKIP_ACTIVITY
+    request_type = (
+        RequestType.SCHEDULE_CHANGE
+        if request.alternative
+        else RequestType.SKIP_ACTIVITY
+    )
 
     # Create approval request - DOES NOT change calendar yet
     change_request = approval_service.create_approval_request(
@@ -206,7 +224,9 @@ async def request_schedule_change(
 
 
 @router.get("/stickers", response_model=dict)
-async def get_sticker_collection(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_sticker_collection(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Gamification: Kids earn stickers for completing activities
     - Visual rewards for task completion

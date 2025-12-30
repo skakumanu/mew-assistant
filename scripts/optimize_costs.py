@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Mew Assistant - Cost Optimization Helper"""
+
 from datetime import datetime
 
 print("=" * 60)

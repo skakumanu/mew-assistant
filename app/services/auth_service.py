@@ -16,10 +16,14 @@ class AuthService:
         return create_access_token(data={"sub": user.email, "user_id": user.id})
 
     @staticmethod
-    def create_user(db: Session, email: str, password: str, full_name: str, role: str = "PARENT"):
+    def create_user(
+        db: Session, email: str, password: str, full_name: str, role: str = "PARENT"
+    ):
         """Create a new user"""
         hashed_password = get_password_hash(password)
-        user = User(email=email, hashed_password=hashed_password, full_name=full_name, role=role)
+        user = User(
+            email=email, hashed_password=hashed_password, full_name=full_name, role=role
+        )
         db.add(user)
         db.commit()
         db.refresh(user)

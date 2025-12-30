@@ -58,7 +58,10 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
         # If running tests, clear any transient blocks for the in-process
         # TestClient (host 'testclient') when TESTING_SKIP_STRICT_RATE_LIMIT
         # is enabled to avoid cross-test interference.
-        if os.environ.get("TESTING", "").lower() == "true" and client_ip == "testclient":
+        if (
+            os.environ.get("TESTING", "").lower() == "true"
+            and client_ip == "testclient"
+        ):
             if os.environ.get("TESTING_SKIP_STRICT_RATE_LIMIT", "").lower() == "true":
                 try:
                     self.request_counts.pop(client_id, None)
@@ -143,7 +146,9 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
 
         # Clean old requests
         self.request_counts[client_id] = [
-            req_time for req_time in self.request_counts[client_id] if req_time > window_start
+            req_time
+            for req_time in self.request_counts[client_id]
+            if req_time > window_start
         ]
 
         # Check rate limit
@@ -157,13 +162,19 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
     async def _check_suspicious_content(self, request: Request) -> bool:
         """Check for malicious patterns in request"""
         # Check URL path
-        if any(re.search(pattern, request.url.path, re.IGNORECASE) for pattern in self.suspicious_patterns):
+        if any(
+            re.search(pattern, request.url.path, re.IGNORECASE)
+            for pattern in self.suspicious_patterns
+        ):
             return True
 
         # Check query parameters
         for key, value in request.query_params.items():
             combined = f"{key}={value}"
-            if any(re.search(pattern, combined, re.IGNORECASE) for pattern in self.suspicious_patterns):
+            if any(
+                re.search(pattern, combined, re.IGNORECASE)
+                for pattern in self.suspicious_patterns
+            ):
                 return True
             # Quick heuristic: detect common tautology SQL injections like "OR '1'='1'"
             if re.search(r"\bOR\b", combined, re.IGNORECASE) and (
@@ -176,7 +187,10 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
             try:
                 body = await request.body()
                 body_str = body.decode("utf-8", errors="ignore")
-                if any(re.search(pattern, body_str, re.IGNORECASE) for pattern in self.suspicious_patterns):
+                if any(
+                    re.search(pattern, body_str, re.IGNORECASE)
+                    for pattern in self.suspicious_patterns
+                ):
                     return True
             except Exception:
                 # Ignore errors reading or decoding the request body; skip body content check if it fails
@@ -219,7 +233,9 @@ class CaptchaVerifier:
         num2 = random.randint(1, 10)
         answer = num1 + num2
 
-        challenge_id = hashlib.sha256(f"{user_id}{datetime.utcnow()}".encode()).hexdigest()[:16]
+        challenge_id = hashlib.sha256(
+            f"{user_id}{datetime.utcnow()}".encode()
+        ).hexdigest()[:16]
         self.pending_verifications[challenge_id] = (
             str(answer),
             datetime.utcnow() + timedelta(minutes=5),
@@ -251,7 +267,9 @@ class CaptchaVerifier:
     def cleanup_expired(self):
         """Remove expired challenges"""
         now = datetime.utcnow()
-        expired = [cid for cid, (_, exp) in self.pending_verifications.items() if now > exp]
+        expired = [
+            cid for cid, (_, exp) in self.pending_verifications.items() if now > exp
+        ]
         for cid in expired:
             del self.pending_verifications[cid]
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fix database enum types"""
+
 import os
 import sys
 

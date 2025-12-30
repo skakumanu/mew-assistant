@@ -43,11 +43,17 @@ async def connect_calendar(
         success = False
 
         if provider == CalendarProvider.GOOGLE:
-            success = await calendar_integration.connect_google_calendar(connection_data.credentials)
+            success = await calendar_integration.connect_google_calendar(
+                connection_data.credentials
+            )
         elif provider == CalendarProvider.APPLE:
-            success = await calendar_integration.connect_apple_calendar(connection_data.credentials)
+            success = await calendar_integration.connect_apple_calendar(
+                connection_data.credentials
+            )
         elif provider == CalendarProvider.OUTLOOK:
-            success = await calendar_integration.connect_outlook_calendar(connection_data.credentials)
+            success = await calendar_integration.connect_outlook_calendar(
+                connection_data.credentials
+            )
 
         if not success:
             raise HTTPException(

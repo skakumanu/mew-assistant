@@ -28,11 +28,17 @@ class MessageIngest(BaseModel):
     channel: ChannelType = Field(..., description="Communication channel")
     sender: str = Field(..., description="Sender identifier (email, phone number)")
     recipient: Optional[str] = Field(None, description="Recipient identifier")
-    subject: Optional[str] = Field(None, max_length=500, description="Message subject (email only)")
+    subject: Optional[str] = Field(
+        None, max_length=500, description="Message subject (email only)"
+    )
     body: str = Field(..., min_length=1, description="Message body/content")
-    raw_content: Optional[str] = Field(None, description="Raw message data for debugging")
+    raw_content: Optional[str] = Field(
+        None, description="Raw message data for debugging"
+    )
     session_id: Optional[int] = Field(None, description="Link to existing session")
-    received_at: Optional[datetime] = Field(None, description="When message was received")
+    received_at: Optional[datetime] = Field(
+        None, description="When message was received"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={

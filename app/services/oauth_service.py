@@ -19,7 +19,9 @@ oauth = OAuth()
 
 def generate_apple_client_secret():
     """Generate Apple client secret JWT"""
-    if not all([settings.APPLE_TEAM_ID, settings.APPLE_KEY_ID, settings.APPLE_PRIVATE_KEY]):
+    if not all(
+        [settings.APPLE_TEAM_ID, settings.APPLE_KEY_ID, settings.APPLE_PRIVATE_KEY]
+    ):
         return None
 
     headers = {"kid": settings.APPLE_KEY_ID, "alg": "ES256"}
@@ -33,7 +35,11 @@ def generate_apple_client_secret():
     }
 
     client_secret = jwt.encode(headers, payload, settings.APPLE_PRIVATE_KEY)
-    return client_secret.decode("utf-8") if isinstance(client_secret, bytes) else client_secret
+    return (
+        client_secret.decode("utf-8")
+        if isinstance(client_secret, bytes)
+        else client_secret
+    )
 
 
 # Register OAuth providers
@@ -104,7 +110,9 @@ class OAuthService:
         return f"{auth_url}?{query_string}"
 
     @staticmethod
-    async def handle_callback(provider: str, code: str, redirect_uri: str, db: Session) -> Dict:
+    async def handle_callback(
+        provider: str, code: str, redirect_uri: str, db: Session
+    ) -> Dict:
         """
         Handle OAuth callback and create/login user
         Returns user info and JWT token
@@ -129,7 +137,9 @@ class OAuthService:
             if token_response.status_code != 200:
                 error_detail = token_response.text
                 print(f"Token exchange error: {error_detail}")
-                raise ValueError(f"Token exchange failed [{token_response.status_code}]: {error_detail}")
+                raise ValueError(
+                    f"Token exchange failed [{token_response.status_code}]: {error_detail}"
+                )
 
             try:
                 token = token_response.json()
@@ -150,7 +160,9 @@ class OAuthService:
                     raise ValueError(
                         f"OAuth error: {token.get('error')} - {token.get('error_description', 'No description')}"
                     )
-                raise ValueError(f"No access_token in response. Response keys: {list(token.keys())}")
+                raise ValueError(
+                    f"No access_token in response. Response keys: {list(token.keys())}"
+                )
 
         # Get user info from provider
         if provider == "facebook":
@@ -179,7 +191,8 @@ class OAuthService:
         # Extract standard fields
         email = user_info.get("email")
         full_name = (
-            user_info.get("name") or f"{user_info.get('given_name', '')} {user_info.get('family_name', '')}".strip()
+            user_info.get("name")
+            or f"{user_info.get('given_name', '')} {user_info.get('family_name', '')}".strip()
         )
         provider_user_id = user_info.get("sub") or user_info.get("id")
 
@@ -204,7 +217,11 @@ class OAuthService:
 
         # Link OAuth provider to user
         oauth_link = (
-            db.query(OAuthProvider).filter(OAuthProvider.user_id == user.id, OAuthProvider.provider == provider).first()
+            db.query(OAuthProvider)
+            .filter(
+                OAuthProvider.user_id == user.id, OAuthProvider.provider == provider
+            )
+            .first()
         )
 
         if not oauth_link:
@@ -214,14 +231,22 @@ class OAuthService:
                 provider_user_id=provider_user_id,
                 access_token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
-                token_expires_at=(datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None),
+                token_expires_at=(
+                    datetime.fromtimestamp(token["expires_at"])
+                    if "expires_at" in token
+                    else None
+                ),
             )
             db.add(oauth_link)
         else:
             # Update existing link
             oauth_link.access_token = token.get("access_token")
             oauth_link.refresh_token = token.get("refresh_token")
-            oauth_link.token_expires_at = datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None
+            oauth_link.token_expires_at = (
+                datetime.fromtimestamp(token["expires_at"])
+                if "expires_at" in token
+                else None
+            )
             oauth_link.updated_at = datetime.utcnow()
 
         db.commit()
@@ -250,10 +275,14 @@ class OAuthService:
         }
 
     @staticmethod
-    async def link_provider(user_id: int, provider: str, code: str, redirect_uri: str, db: Session) -> bool:
+    async def link_provider(
+        user_id: int, provider: str, code: str, redirect_uri: str, db: Session
+    ) -> bool:
         """Link an OAuth provider to an existing user account"""
         client = oauth.create_client(provider)
-        token = await client.authorize_access_token(code=code, redirect_uri=redirect_uri)
+        token = await client.authorize_access_token(
+            code=code, redirect_uri=redirect_uri
+        )
 
         if provider == "facebook":
             async with httpx.AsyncClient() as http_client:
@@ -284,7 +313,11 @@ class OAuthService:
             # Update token
             existing.access_token = token.get("access_token")
             existing.refresh_token = token.get("refresh_token")
-            existing.token_expires_at = datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None
+            existing.token_expires_at = (
+                datetime.fromtimestamp(token["expires_at"])
+                if "expires_at" in token
+                else None
+            )
             existing.updated_at = datetime.utcnow()
         else:
             # Create new link
@@ -294,7 +327,11 @@ class OAuthService:
                 provider_user_id=provider_user_id,
                 access_token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
-                token_expires_at=(datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None),
+                token_expires_at=(
+                    datetime.fromtimestamp(token["expires_at"])
+                    if "expires_at" in token
+                    else None
+                ),
             )
             db.add(oauth_link)
 
@@ -305,7 +342,11 @@ class OAuthService:
     def unlink_provider(user_id: int, provider: str, db: Session) -> bool:
         """Unlink an OAuth provider from user account"""
         oauth_link = (
-            db.query(OAuthProvider).filter(OAuthProvider.user_id == user_id, OAuthProvider.provider == provider).first()
+            db.query(OAuthProvider)
+            .filter(
+                OAuthProvider.user_id == user_id, OAuthProvider.provider == provider
+            )
+            .first()
         )
 
         if oauth_link:
@@ -317,7 +358,9 @@ class OAuthService:
     @staticmethod
     def get_linked_providers(user_id: int, db: Session) -> list:
         """Get all OAuth providers linked to a user"""
-        providers = db.query(OAuthProvider).filter(OAuthProvider.user_id == user_id).all()
+        providers = (
+            db.query(OAuthProvider).filter(OAuthProvider.user_id == user_id).all()
+        )
 
         return [
             {

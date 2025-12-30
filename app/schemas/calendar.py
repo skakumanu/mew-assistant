@@ -44,10 +44,16 @@ class CalendarEventCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="Event title")
     start_time: datetime = Field(..., description="Event start time (UTC)")
     end_time: datetime = Field(..., description="Event end time (UTC)")
-    description: Optional[str] = Field(None, max_length=1000, description="Event description")
+    description: Optional[str] = Field(
+        None, max_length=1000, description="Event description"
+    )
     location: Optional[str] = Field(None, max_length=200, description="Event location")
-    attendees: Optional[List[str]] = Field(None, description="List of attendee email addresses")
-    reminder_minutes: int = Field(30, ge=0, le=10080, description="Reminder time before event (minutes)")
+    attendees: Optional[List[str]] = Field(
+        None, description="List of attendee email addresses"
+    )
+    reminder_minutes: int = Field(
+        30, ge=0, le=10080, description="Reminder time before event (minutes)"
+    )
 
     class Config:
         json_schema_extra = {

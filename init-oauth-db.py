@@ -3,6 +3,7 @@
 Initialize database with OAuth token columns
 Run this once to add missing columns to federated_identities table
 """
+
 import os
 import sys
 

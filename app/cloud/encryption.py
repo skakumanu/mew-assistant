@@ -38,7 +38,9 @@ class EncryptionService:
             logger.error(f"Invalid encryption key format: {e}. Generating new key...")
             encryption_key = Fernet.generate_key()
             self.cipher = Fernet(encryption_key)
-            logger.warning(f"Generated new encryption key. Store this in production: {encryption_key.decode()}")
+            logger.warning(
+                f"Generated new encryption key. Store this in production: {encryption_key.decode()}"
+            )
 
     def encrypt_bytes(self, data: bytes) -> bytes:
         return self.cipher.encrypt(data)

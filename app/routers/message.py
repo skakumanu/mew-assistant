@@ -9,7 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..schemas.message import ChannelType, MessageBatchIngest, MessageIngest, MessageResponse
+from ..schemas.message import (
+    ChannelType,
+    MessageBatchIngest,
+    MessageIngest,
+    MessageResponse,
+)
 from ..services.message_service import MessageService
 from ..utils.logger import get_logger
 from ..utils.privacy import privacy_guardrails
@@ -18,7 +23,9 @@ router = APIRouter(prefix="/mew", tags=["messages"])
 logger = get_logger(__name__)
 
 
-@router.post("/ingest", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/ingest", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
+)
 async def ingest_message(message_data: MessageIngest, db: Session = Depends(get_db)):
     """
     Ingest a message from any supported channel (email, SMS, WhatsApp).
@@ -59,10 +66,14 @@ async def ingest_message(message_data: MessageIngest, db: Session = Depends(get_
     try:
         # Privacy scan for informational purposes
         message_dict = message_data.model_dump()
-        privacy_scan = privacy_guardrails.scan_and_protect(message_dict, anonymize=False)
+        privacy_scan = privacy_guardrails.scan_and_protect(
+            message_dict, anonymize=False
+        )
 
         if privacy_scan["pii_detected"]:
-            logger.info(f"PII detected in message from {message_data.sender}: {privacy_scan['findings']}")
+            logger.info(
+                f"PII detected in message from {message_data.sender}: {privacy_scan['findings']}"
+            )
 
         message = service.ingest_message(message_data)
         return MessageResponse.model_validate(message)
@@ -128,7 +139,9 @@ async def mark_message_processed(message_id: int, db: Session = Depends(get_db))
 
 
 @router.get("/messages/unprocessed", response_model=List[MessageResponse])
-async def get_unprocessed_messages(channel: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)):
+async def get_unprocessed_messages(
+    channel: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)
+):
     """
     Get unprocessed messages for background processing.
 
@@ -151,7 +164,9 @@ async def get_unprocessed_messages(channel: Optional[str] = None, limit: int = 1
 
 
 @router.get("/messages/session/{session_id}", response_model=List[MessageResponse])
-async def get_session_messages(session_id: int, limit: int = 100, db: Session = Depends(get_db)):
+async def get_session_messages(
+    session_id: int, limit: int = 100, db: Session = Depends(get_db)
+):
     """
     Get all messages for a specific session.
 

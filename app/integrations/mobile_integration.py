@@ -119,9 +119,13 @@ class MobileIntegration:
         """
         try:
             if platform == MobilePlatform.IOS:
-                return await self._send_apns_notification(device_token, title, body, data, badge, sound)
+                return await self._send_apns_notification(
+                    device_token, title, body, data, badge, sound
+                )
             elif platform == MobilePlatform.ANDROID:
-                return await self._send_fcm_notification(device_token, title, body, data, sound)
+                return await self._send_fcm_notification(
+                    device_token, title, body, data, sound
+                )
             else:
                 logger.error(f"Unsupported mobile platform: {platform}")
                 return False
@@ -163,7 +167,9 @@ class MobileIntegration:
 
             if data:
                 # Ensure message exists and merge
-                if hasattr(notification, "message") and isinstance(notification.message, dict):
+                if hasattr(notification, "message") and isinstance(
+                    notification.message, dict
+                ):
                     notification.message.update(data)
 
             await self.apns_client.send_notification(notification)
@@ -194,7 +200,9 @@ class MobileIntegration:
 
             notification = messaging_mod.Notification(title=title, body=body)
             android_config = messaging_mod.AndroidConfig(
-                notification=messaging_mod.AndroidNotification(sound=sound, priority="high")
+                notification=messaging_mod.AndroidNotification(
+                    sound=sound, priority="high"
+                )
             )
 
             message = messaging_mod.Message(
@@ -235,13 +243,18 @@ class MobileIntegration:
         failure_count = 0
 
         for token in device_tokens:
-            result = await self.send_push_notification(platform, token, title, body, data)
+            result = await self.send_push_notification(
+                platform, token, title, body, data
+            )
             if result:
                 success_count += 1
             else:
                 failure_count += 1
 
-        logger.info(f"Batch notification results - Success: {success_count}, " f"Failed: {failure_count}")
+        logger.info(
+            f"Batch notification results - Success: {success_count}, "
+            f"Failed: {failure_count}"
+        )
 
         return {
             "success": success_count,
@@ -249,7 +262,9 @@ class MobileIntegration:
             "total": len(device_tokens),
         }
 
-    def generate_deep_link(self, screen: str, params: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    def generate_deep_link(
+        self, screen: str, params: Optional[Dict[str, str]] = None
+    ) -> Dict[str, str]:
         """
         Generate deep links for mobile app navigation
 
@@ -303,7 +318,10 @@ class MobileIntegration:
             # Store device token in database for future notifications
             # This would integrate with your database layer
 
-            logger.info(f"Registered {platform} device for user {user_id}: " f"{device_token[:8]}...")
+            logger.info(
+                f"Registered {platform} device for user {user_id}: "
+                f"{device_token[:8]}..."
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to register device: {e}")
@@ -358,7 +376,9 @@ class MobileIntegration:
             # This would integrate with a job scheduler (e.g., Celery, APScheduler)
             # For now, we'll log the scheduled reminder
 
-            logger.info(f"Scheduled reminder for user {user_id} at {scheduled_time}: " f"{title}")
+            logger.info(
+                f"Scheduled reminder for user {user_id} at {scheduled_time}: {title}"
+            )
 
             # In production, you would:
             # 1. Store the reminder in the database

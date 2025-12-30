@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Initialize Azure PostgreSQL database with credentials from environment."""
+
 import os
 import sys
 

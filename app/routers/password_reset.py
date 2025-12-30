@@ -19,7 +19,9 @@ async def reset_password(request: PasswordResetRequest, db: Session = Depends(ge
     """Reset user password (for admin/development use)"""
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     user.hashed_password = get_password_hash(request.new_password)
     db.commit()

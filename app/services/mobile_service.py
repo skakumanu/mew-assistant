@@ -26,7 +26,9 @@ class MobileService:
     def __init__(self, db: Session):
         self.db = db
 
-    async def register_device(self, user_id: int, device_info: MobileDeviceRegister) -> MobileDeviceResponse:
+    async def register_device(
+        self, user_id: int, device_info: MobileDeviceRegister
+    ) -> MobileDeviceResponse:
         """Register a mobile device for push notifications"""
         # In production, store in database
         logger.info(f"Registered {device_info.platform} device for user {user_id}")
@@ -38,7 +40,9 @@ class MobileService:
             push_enabled=True,
         )
 
-    async def get_app_config(self, app_version: str, platform: str, user_id: int) -> AppConfigResponse:
+    async def get_app_config(
+        self, app_version: str, platform: str, user_id: int
+    ) -> AppConfigResponse:
         """Get mobile app configuration"""
         return AppConfigResponse(
             api_version="1.0.0",
@@ -95,7 +99,9 @@ class MobileService:
             next_sync_recommended=datetime.utcnow() + timedelta(minutes=5),
         )
 
-    async def send_push_notification(self, user_id: int, notification: PushNotificationRequest) -> Dict[str, Any]:
+    async def send_push_notification(
+        self, user_id: int, notification: PushNotificationRequest
+    ) -> Dict[str, Any]:
         """Send push notification to user's devices"""
         # In production, integrate with FCM/APNS
         logger.info(f"Push notification sent to user {user_id}: {notification.title}")

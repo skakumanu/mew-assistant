@@ -139,10 +139,14 @@ class SummaryService:
         # Count by type
         type_counts = {}
         for session in sessions:
-            type_counts[session.session_type] = type_counts.get(session.session_type, 0) + 1
+            type_counts[session.session_type] = (
+                type_counts.get(session.session_type, 0) + 1
+            )
 
         # Build summary
-        summary_parts = [f"Summary of {session_count} session(s) for the specified period."]
+        summary_parts = [
+            f"Summary of {session_count} session(s) for the specified period."
+        ]
 
         for session_type, count in type_counts.items():
             summary_parts.append(f"{count} {session_type} session(s) completed.")
@@ -167,7 +171,9 @@ class SummaryService:
         # Sessions by type
         type_counts = {}
         for session in sessions:
-            type_counts[session.session_type] = type_counts.get(session.session_type, 0) + 1
+            type_counts[session.session_type] = (
+                type_counts.get(session.session_type, 0) + 1
+            )
 
         for session_type, count in type_counts.items():
             key_points.append(f"{session_type.title()}: {count} sessions")
@@ -191,17 +197,23 @@ class SummaryService:
         if len(sessions) >= 3:
             recommendations.append("Great job maintaining regular sessions!")
         else:
-            recommendations.append("Consider scheduling more regular sessions for better outcomes")
+            recommendations.append(
+                "Consider scheduling more regular sessions for better outcomes"
+            )
 
         # Type-specific recommendations
         type_counts = {}
         for session in sessions:
-            type_counts[session.session_type] = type_counts.get(session.session_type, 0) + 1
+            type_counts[session.session_type] = (
+                type_counts.get(session.session_type, 0) + 1
+            )
 
         if "tutoring" in type_counts:
             recommendations.append("Continue daily practice between tutoring sessions")
 
         if "scheduling" in type_counts:
-            recommendations.append("Try to schedule sessions at consistent times for routine building")
+            recommendations.append(
+                "Try to schedule sessions at consistent times for routine building"
+            )
 
         return recommendations

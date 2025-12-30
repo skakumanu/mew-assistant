@@ -36,7 +36,10 @@ class TestContentFilter:
     def test_sanitization(self):
         """Test input sanitization"""
         assert self.filter.sanitize_kid_input("Hello!!!!!!") == "Hello!!"
-        assert self.filter.sanitize_kid_input("  Too   many   spaces  ") == "Too many spaces"
+        assert (
+            self.filter.sanitize_kid_input("  Too   many   spaces  ")
+            == "Too many spaces"
+        )
 
     def test_sensitive_info_masking(self):
         """Test masking of sensitive information"""
@@ -98,7 +101,9 @@ class TestKidSchedule:
 
     def test_get_kid_schedule(self, client, kid_user_token):
         """Test retrieving kid's schedule"""
-        response = client.get("/kid/my-schedule", headers={"Authorization": f"Bearer {kid_user_token}"})
+        response = client.get(
+            "/kid/my-schedule", headers={"Authorization": f"Bearer {kid_user_token}"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -208,7 +213,9 @@ class TestStickerRewards:
 
     def test_get_sticker_collection(self, client, kid_user_token):
         """Test retrieving sticker collection"""
-        response = client.get("/kid/stickers", headers={"Authorization": f"Bearer {kid_user_token}"})
+        response = client.get(
+            "/kid/stickers", headers={"Authorization": f"Bearer {kid_user_token}"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

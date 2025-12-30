@@ -23,7 +23,9 @@ class BaseVoicePlatform(ABC):
         """Authenticate with the voice platform"""
 
     @abstractmethod
-    async def handle_intent(self, intent: str, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def handle_intent(
+        self, intent: str, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         """Process voice intent from the platform"""
 
     @abstractmethod
@@ -34,7 +36,9 @@ class BaseVoicePlatform(ABC):
     async def register_skill(self, skill_config: Dict[str, Any]) -> bool:
         """Register/update skill on the platform"""
 
-    async def log_interaction(self, user_id: str, intent: str, success: bool, metadata: Dict[str, Any] = None):
+    async def log_interaction(
+        self, user_id: str, intent: str, success: bool, metadata: Dict[str, Any] = None
+    ):
         """Log voice interaction for analytics"""
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),

@@ -81,7 +81,9 @@ async def sync_offline_data(
     - Conflict resolution
     """
     service = MobileService(db)
-    return await service.sync_offline_data(current_user.id, sync_request, background_tasks)
+    return await service.sync_offline_data(
+        current_user.id, sync_request, background_tasks
+    )
 
 
 @router.post("/push/send", response_model=dict)
@@ -168,7 +170,9 @@ async def get_ios_shortcuts(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/widgets/config", response_model=dict)
-async def get_widget_config(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_widget_config(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get configuration for home screen widgets
 

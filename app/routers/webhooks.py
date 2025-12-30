@@ -62,7 +62,8 @@ async def receive_sms(
         # Return TwiML response (keep lines short for flake8)
         reply = response.get("reply", "Message received")
         twiml_response = (
-            '<?xml version="1.0" encoding="UTF-8"?>' "<Response><Message>" + reply + "</Message></Response>"
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<Response><Message>" + reply + "</Message></Response>"
         )
 
         return twiml_response
@@ -115,14 +116,17 @@ async def receive_whatsapp(
         # Return TwiML response (keep lines short for flake8)
         reply = response.get("reply", "Message received")
         twiml_response = (
-            '<?xml version="1.0" encoding="UTF-8"?>' "<Response><Message>" + reply + "</Message></Response>"
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<Response><Message>" + reply + "</Message></Response>"
         )
 
         return twiml_response
 
     except Exception as e:
         logger.error(f"Error processing incoming WhatsApp: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process WhatsApp message")
+        raise HTTPException(
+            status_code=500, detail="Failed to process WhatsApp message"
+        )
 
 
 @router.get("/sms/status")

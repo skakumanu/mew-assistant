@@ -31,22 +31,33 @@ class TutorService:
             "subjects": [],
         }
 
-    def generate_lesson_plan(self, subject: str, grade_level: str, focus_areas: list) -> Dict:
+    def generate_lesson_plan(
+        self, subject: str, grade_level: str, focus_areas: list
+    ) -> Dict:
         """Generate a simple lesson plan based on inputs."""
         plan = {
-            "lesson_plan": [{"title": f"Intro to {area}", "duration_minutes": 20} for area in focus_areas],
+            "lesson_plan": [
+                {"title": f"Intro to {area}", "duration_minutes": 20}
+                for area in focus_areas
+            ],
             "subject": subject,
             "grade_level": grade_level,
             "notes": "Auto-generated plan",
         }
         return plan
 
-    def track_progress(self, user_id: str, subject: str, assessment_scores: list) -> Dict:
+    def track_progress(
+        self, user_id: str, subject: str, assessment_scores: list
+    ) -> Dict:
         """Return a lightweight progress summary and improvement metric."""
         if not assessment_scores:
             improvement = None
         else:
-            improvement = max(0, assessment_scores[-1] - assessment_scores[0]) if len(assessment_scores) > 1 else 0
+            improvement = (
+                max(0, assessment_scores[-1] - assessment_scores[0])
+                if len(assessment_scores) > 1
+                else 0
+            )
 
         return {
             "user_id": user_id,

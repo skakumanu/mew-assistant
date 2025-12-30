@@ -11,7 +11,9 @@ class VoiceCommandCreate(BaseModel):
 
     audio_data: bytes = Field(..., description="Audio data in WAV format")
     session_id: Optional[str] = Field(None, description="Conversation session ID")
-    preferred_language: Optional[str] = Field(None, description="Preferred language code (e.g., en-US)")
+    preferred_language: Optional[str] = Field(
+        None, description="Preferred language code (e.g., en-US)"
+    )
 
 
 class VoiceCommandResponse(BaseModel):
@@ -71,7 +73,9 @@ class VoiceLanguageInfo(BaseModel):
     name: str = Field(..., description="Language name (e.g., English, Spanish)")
 
     class Config:
-        json_schema_extra = {"example": {"code": "en-US", "name": "English (United States)"}}
+        json_schema_extra = {
+            "example": {"code": "en-US", "name": "English (United States)"}
+        }
 
 
 class SupportedLanguagesResponse(BaseModel):

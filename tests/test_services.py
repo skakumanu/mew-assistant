@@ -60,7 +60,9 @@ def test_generate_daily_summary():
 def test_generate_weekly_summary():
     """Test weekly summary generation."""
     service = CaregiverService()
-    result = service.generate_weekly_summary(user_id="user_001", start_date="2024-01-08")
+    result = service.generate_weekly_summary(
+        user_id="user_001", start_date="2024-01-08"
+    )
     assert "summary" in result
     assert "activities" in result
     assert result["period"] == "week"
@@ -95,7 +97,9 @@ def test_scheduler_conflict_detection():
 def test_tutor_progress_tracking():
     """Test progress tracking in tutor service."""
     service = TutorService()
-    result = service.track_progress(user_id="user_001", subject="Math", assessment_scores=[85, 90, 88])
+    result = service.track_progress(
+        user_id="user_001", subject="Math", assessment_scores=[85, 90, 88]
+    )
     assert "progress" in result
     assert result["improvement"] is not None
 

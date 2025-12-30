@@ -6,6 +6,7 @@ SECURITY WARNING: This script contains default passwords for initial setup.
 These should be changed immediately after first login.
 For production use, set SUPERUSER_PASSWORD and ADMIN_PASSWORD environment variables.
 """
+
 import os
 import secrets
 import string
@@ -52,7 +53,9 @@ def create_admin_users():
             )
             db.add(superuser)
             print("✓ Created superuser: skakumanu@gmail.com")
-            passwords_to_show.append(("skakumanu@gmail.com (SUPERUSER)", superuser_password))
+            passwords_to_show.append(
+                ("skakumanu@gmail.com (SUPERUSER)", superuser_password)
+            )
         else:
             superuser.role = "SUPERUSER"
             print("✓ Updated to superuser: skakumanu@gmail.com")

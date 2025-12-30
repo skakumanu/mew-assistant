@@ -73,7 +73,9 @@ def test_session_user_relationship(test_db):
     test_db.add(session)
     test_db.commit()
 
-    retrieved_session = test_db.query(Session).filter(Session.session_id == "sess_002").first()
+    retrieved_session = (
+        test_db.query(Session).filter(Session.session_id == "sess_002").first()
+    )
     assert retrieved_session.user_id == "user_002"
 
 

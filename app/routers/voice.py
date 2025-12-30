@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 async def process_voice_command(
     audio: UploadFile = File(..., description="Audio file (WAV, MP3, OGG, M4A, FLAC)"),
     session_id: Optional[str] = Form(None),
-    hint_language: Optional[str] = Form(None, description="Optional language hint (e.g., 'es' for Spanish)"),
+    hint_language: Optional[str] = Form(
+        None, description="Optional language hint (e.g., 'es' for Spanish)"
+    ),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -69,7 +71,9 @@ async def process_voice_command(
             raise HTTPException(status_code=400, detail="Empty audio file")
 
         if len(audio_data) > 10 * 1024 * 1024:  # 10MB limit
-            raise HTTPException(status_code=400, detail="Audio file too large (max 10MB)")
+            raise HTTPException(
+                status_code=400, detail="Audio file too large (max 10MB)"
+            )
 
         # Process voice command with automatic language detection
         voice_service = VoiceService(db)
@@ -86,7 +90,11 @@ async def process_voice_command(
         # avoid long f-strings (E501) and use structured logging
         lang = result.language_name
         det = result.detected_language
-        trans = getattr(result.transcription, "text", "") if getattr(result, "transcription", None) else ""
+        trans = (
+            getattr(result.transcription, "text", "")
+            if getattr(result, "transcription", None)
+            else ""
+        )
         logger.info(
             "Voice command processed successfully in %s (%s): %s",
             lang,
@@ -103,7 +111,9 @@ async def process_voice_command(
 
 
 @router.get("/languages", response_model=List[VoiceLanguageInfo])
-async def get_supported_languages(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_supported_languages(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get complete list of all 100+ supported languages for voice recognition
 
@@ -120,11 +130,15 @@ async def get_supported_languages(current_user: User = Depends(get_current_user)
     voice_service = VoiceService(db)
     languages = voice_service.get_supported_languages()
 
-    return [VoiceLanguageInfo(code=lang["code"], name=lang["name"]) for lang in languages]
+    return [
+        VoiceLanguageInfo(code=lang["code"], name=lang["name"]) for lang in languages
+    ]
 
 
 @router.get("/statistics", response_model=VoiceStatisticsResponse)
-async def get_voice_statistics(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_voice_statistics(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get voice command usage statistics for the current user
 

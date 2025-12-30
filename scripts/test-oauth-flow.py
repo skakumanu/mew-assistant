@@ -2,6 +2,7 @@
 """
 Test OAuth flow to debug authentication issues
 """
+
 import asyncio
 
 import httpx
@@ -20,7 +21,9 @@ async def test_oauth_flow():
         if response.status_code == 307:
             redirect_url = response.headers.get("location")
             print(f"\nRedirect URL: {redirect_url}")
-            print("\nPlease visit this URL in your browser and complete the Google sign-in.")
+            print(
+                "\nPlease visit this URL in your browser and complete the Google sign-in."
+            )
             print("After signing in, copy the full callback URL from your browser.")
 
 

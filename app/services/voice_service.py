@@ -185,7 +185,9 @@ class VoiceService:
             )
 
             detected_language = transcription.language
-            detected_language_name = SUPPORTED_LANGUAGES.get(detected_language, "Unknown")
+            detected_language_name = SUPPORTED_LANGUAGES.get(
+                detected_language, "Unknown"
+            )
             confidence = transcription.confidence
 
             logger.info(
@@ -254,13 +256,19 @@ class VoiceService:
         logger.info(f"Processing intent: {intent} with entities: {entities}")
 
         if intent == "schedule_appointment":
-            return await self._handle_schedule_appointment(entities=entities, user_id=user_id, session_id=session_id)
+            return await self._handle_schedule_appointment(
+                entities=entities, user_id=user_id, session_id=session_id
+            )
 
         elif intent == "reschedule_appointment":
-            return await self._handle_reschedule_appointment(entities=entities, user_id=user_id)
+            return await self._handle_reschedule_appointment(
+                entities=entities, user_id=user_id
+            )
 
         elif intent == "cancel_appointment":
-            return await self._handle_cancel_appointment(entities=entities, user_id=user_id)
+            return await self._handle_cancel_appointment(
+                entities=entities, user_id=user_id
+            )
 
         elif intent == "query_schedule":
             return await self._handle_query_schedule(entities=entities, user_id=user_id)
@@ -333,7 +341,9 @@ class VoiceService:
             "message": "Appointment created successfully",
         }
 
-    async def _handle_reschedule_appointment(self, entities: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_reschedule_appointment(
+        self, entities: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         """Handle appointment rescheduling"""
         # TODO: Implement rescheduling logic
         return {
@@ -342,7 +352,9 @@ class VoiceService:
             "message": "Rescheduling functionality coming soon",
         }
 
-    async def _handle_cancel_appointment(self, entities: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_cancel_appointment(
+        self, entities: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         """Handle appointment cancellation"""
         # TODO: Implement cancellation logic
         return {
@@ -351,7 +363,9 @@ class VoiceService:
             "message": "Cancellation functionality coming soon",
         }
 
-    async def _handle_query_schedule(self, entities: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_query_schedule(
+        self, entities: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         """Handle schedule queries"""
         # TODO: Implement schedule query logic
         return {
@@ -360,7 +374,9 @@ class VoiceService:
             "message": "Schedule query functionality coming soon",
         }
 
-    async def _handle_set_reminder(self, entities: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_set_reminder(
+        self, entities: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         """Handle reminder creation"""
         # TODO: Implement reminder logic
         return {
@@ -371,11 +387,16 @@ class VoiceService:
 
     def get_supported_languages(self) -> List[Dict[str, str]]:
         """Get list of all supported languages"""
-        return [{"code": code, "name": name} for code, name in sorted(SUPPORTED_LANGUAGES.items(), key=lambda x: x[1])]
+        return [
+            {"code": code, "name": name}
+            for code, name in sorted(SUPPORTED_LANGUAGES.items(), key=lambda x: x[1])
+        ]
 
     def get_language_statistics(self, user_id: str) -> Dict[str, Any]:
         """Get language usage statistics for a user"""
-        commands = self.db.query(VoiceCommand).filter(VoiceCommand.user_id == user_id).all()
+        commands = (
+            self.db.query(VoiceCommand).filter(VoiceCommand.user_id == user_id).all()
+        )
 
         if not commands:
             return {"total_commands": 0, "languages_used": []}
@@ -394,7 +415,13 @@ class VoiceService:
                     "count": count,
                     "percentage": (count / len(commands)) * 100,
                 }
-                for code, count in sorted(language_counts.items(), key=lambda x: x[1], reverse=True)
+                for code, count in sorted(
+                    language_counts.items(), key=lambda x: x[1], reverse=True
+                )
             ],
-            "primary_language": (max(language_counts.items(), key=lambda x: x[1])[0] if language_counts else None),
+            "primary_language": (
+                max(language_counts.items(), key=lambda x: x[1])[0]
+                if language_counts
+                else None
+            ),
         }

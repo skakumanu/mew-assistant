@@ -37,10 +37,14 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     # Dangerous patterns that indicate potential attacks
     DANGEROUS_PATTERNS = [
         re.compile(r"(\bUNION\b.*\bSELECT\b)", re.IGNORECASE),  # SQL injection
-        re.compile(r"(\bOR\b\s+['\"][^'\"]+['\"]\s*=\s*['\"][^'\"]+['\"])", re.IGNORECASE),  # tautology SQLi
+        re.compile(
+            r"(\bOR\b\s+['\"][^'\"]+['\"]\s*=\s*['\"][^'\"]+['\"])", re.IGNORECASE
+        ),  # tautology SQLi
         re.compile(r"(--|;)", re.IGNORECASE),  # SQL comment/terminator
         re.compile(r"(<script[^>]*>.*?</script>)", re.IGNORECASE),  # XSS
-        re.compile(r"(javascript:|data:|vbscript:)", re.IGNORECASE),  # Protocol injection
+        re.compile(
+            r"(javascript:|data:|vbscript:)", re.IGNORECASE
+        ),  # Protocol injection
         re.compile(r"(\.\./|\.\./\.\./)", re.IGNORECASE),  # Path traversal
         re.compile(r"(\bEXEC\b|\bEVAL\b|\bDROP\b)", re.IGNORECASE),  # Command injection
     ]
@@ -56,7 +60,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app):
         super().__init__(app)
-        self.request_counts: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
+        self.request_counts: Dict[str, Dict[str, list]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         try:
             # Expose middleware instance on app.state for test helpers to reset rate limits
             if hasattr(app, "state"):
@@ -104,7 +110,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 if callable(check):
                     blocked = await check(request)
                     if blocked:
-                        raise SecurityViolationError("Potentially malicious request detected")
+                        raise SecurityViolationError(
+                            "Potentially malicious request detected"
+                        )
 
             # 2. Internal scanning for malicious payloads
             await self._scan_request(request)
@@ -127,13 +135,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=429, content={"detail": str(rexc)})
         except Exception as exc:
             logger.exception("Unexpected error in security middleware: %s", exc)
-            return JSONResponse(status_code=500, content={"detail": "Internal security error"})
+            return JSONResponse(
+                status_code=500, content={"detail": "Internal security error"}
+            )
 
         # 6. Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
@@ -144,7 +156,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "frame-ancestors 'none';"
         )
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
 
         return response
 
@@ -169,7 +183,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # tests for the in-process test client named 'testclient'. Tests that
         # assert rate-limiting explicitly should unset
         # `TESTING_SKIP_STRICT_RATE_LIMIT` themselves.
-        if os.environ.get("TESTING", "").lower() == "true" and client_ip == "testclient":
+        if (
+            os.environ.get("TESTING", "").lower() == "true"
+            and client_ip == "testclient"
+        ):
             if os.environ.get("TESTING_SKIP_STRICT_RATE_LIMIT", "").lower() == "true":
                 # Clear any stored counters for this test client to avoid
                 # cross-test 429s and be deterministic in test runs.
@@ -192,14 +209,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Clean up old requests (older than 1 minute)
         current_time = time.time()
         self.request_counts[client_ip][path] = [
-            req_time for req_time in self.request_counts[client_ip][path] if current_time - req_time < 60
+            req_time
+            for req_time in self.request_counts[client_ip][path]
+            if current_time - req_time < 60
         ]
 
         # Check if rate limit exceeded
         request_count = len(self.request_counts[client_ip][path])
         if request_count >= rate_limit:
             logger.warning(f"Rate limit exceeded for {client_ip} on {path}")
-            raise RateLimitExceeded(f"Rate limit exceeded. Maximum {rate_limit} requests per minute allowed.")
+            raise RateLimitExceeded(
+                f"Rate limit exceeded. Maximum {rate_limit} requests per minute allowed."
+            )
 
         # Record this request
         self.request_counts[client_ip][path].append(current_time)
@@ -212,8 +233,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if content_length:
             size_mb = int(content_length) / (1024 * 1024)
             if size_mb > 10:  # 10 MB limit
-                logger.warning(f"Large request blocked: {size_mb:.2f}MB from {request.client.host}")
-                raise SecurityViolationError("Request payload too large. Maximum 10MB allowed.")
+                logger.warning(
+                    f"Large request blocked: {size_mb:.2f}MB from {request.client.host}"
+                )
+                raise SecurityViolationError(
+                    "Request payload too large. Maximum 10MB allowed."
+                )
 
     async def _scan_request(self, request: Request):
         """
@@ -253,23 +278,35 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 # Still run simple dangerous-pattern matches (e.g., explicit script tags)
                 for pattern in self.DANGEROUS_PATTERNS:
                     if pattern.search(str(header_value)):
-                        logger.error(f"Malicious pattern in header {header_name}: {header_value}")
-                        raise SecurityViolationError("Potentially malicious request detected")
+                        logger.error(
+                            f"Malicious pattern in header {header_name}: {header_value}"
+                        )
+                        raise SecurityViolationError(
+                            "Potentially malicious request detected"
+                        )
                 continue
 
             for pattern in self.DANGEROUS_PATTERNS:
                 if pattern.search(str(header_value)):
-                    logger.error(f"Malicious pattern in header {header_name}: {header_value}")
-                    raise SecurityViolationError("Potentially malicious request detected")
+                    logger.error(
+                        f"Malicious pattern in header {header_name}: {header_value}"
+                    )
+                    raise SecurityViolationError(
+                        "Potentially malicious request detected"
+                    )
 
             # Also run SQLi heuristics against header values for non-whitelisted headers
             header_sqli = False
             try:
-                header_sqli = SQLInjectionPrevention.is_sql_injection_attempt(str(header_value))
+                header_sqli = SQLInjectionPrevention.is_sql_injection_attempt(
+                    str(header_value)
+                )
             except Exception:
                 header_sqli = False
             if header_sqli:
-                logger.error(f"SQL injection heuristics matched in header {header_name}: {header_value}")
+                logger.error(
+                    f"SQL injection heuristics matched in header {header_name}: {header_value}"
+                )
                 raise SecurityViolationError("Potentially malicious request detected")
 
     async def _verify_csrf_token(self, request: Request):
@@ -325,7 +362,9 @@ class InputSanitizer:
             pass
 
         # Run bleach.clean to strip any remaining disallowed tags/attributes
-        return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+        return bleach.clean(
+            text, tags=allowed_tags, attributes=allowed_attributes, strip=True
+        )
 
     @staticmethod
     def sanitize_sql(text: str) -> str:
@@ -469,7 +508,9 @@ class SQLInjectionPrevention:
         Validate input doesn't contain SQL injection
         """
         if cls.is_sql_injection_attempt(text):
-            logger.error(f"SQL injection attempt detected in {field_name}: {text[:100]}")
+            logger.error(
+                f"SQL injection attempt detected in {field_name}: {text[:100]}"
+            )
             raise SecurityViolationError(f"Invalid input for {field_name}")
 
         return text

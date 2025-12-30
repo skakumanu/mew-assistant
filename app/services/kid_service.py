@@ -143,7 +143,9 @@ class KidService:
         ]
         return random.choice(facts)
 
-    def record_activity_reaction(self, kid_id: int, activity_id: int, emoji: str, feeling: Optional[str] = None):
+    def record_activity_reaction(
+        self, kid_id: int, activity_id: int, emoji: str, feeling: Optional[str] = None
+    ):
         """Record kid's emotional reaction to an activity"""
         reaction = {
             "kid_id": kid_id,

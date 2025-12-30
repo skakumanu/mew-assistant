@@ -58,12 +58,18 @@ async def create_auto_approval_rule(
 
 
 @router.get("/rules", response_model=List[ApprovalRuleResponse])
-async def get_auto_approval_rules(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_auto_approval_rules(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """Get all active auto-approval rules."""
     from app.database.models import ApprovalRule
 
     rules = (
-        db.query(ApprovalRule).filter(ApprovalRule.user_id == current_user.id, ApprovalRule.is_active.is_(True)).all()
+        db.query(ApprovalRule)
+        .filter(
+            ApprovalRule.user_id == current_user.id, ApprovalRule.is_active.is_(True)
+        )
+        .all()
     )
     return rules
 
@@ -77,7 +83,11 @@ async def delete_auto_approval_rule(
     """Disable an auto-approval rule."""
     from app.database.models import ApprovalRule
 
-    rule = db.query(ApprovalRule).filter(ApprovalRule.id == rule_id, ApprovalRule.user_id == current_user.id).first()
+    rule = (
+        db.query(ApprovalRule)
+        .filter(ApprovalRule.id == rule_id, ApprovalRule.user_id == current_user.id)
+        .first()
+    )
 
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
@@ -89,7 +99,9 @@ async def delete_auto_approval_rule(
 
 
 @router.get("/suggestions", response_model=List[RuleSuggestion])
-async def get_rule_suggestions(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_rule_suggestions(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     Get AI-powered suggestions for auto-approval rules based on your history.
 

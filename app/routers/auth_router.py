@@ -39,7 +39,9 @@ from app.utils.auth import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user account.
@@ -51,7 +53,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     # Check if user already exists
     existing_user = (
-        db.query(User).filter((User.email == user_data.email) | (User.username == user_data.username)).first()
+        db.query(User)
+        .filter((User.email == user_data.email) | (User.username == user_data.username))
+        .first()
     )
 
     if existing_user:
@@ -61,7 +65,9 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered",
             )
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
+            )
 
     # Create new user
     hashed_password = get_password_hash(user_data.password)
@@ -102,7 +108,9 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         )
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
+        )
 
     # Create tokens
     access_token = create_access_token(data={"sub": user.email})
@@ -122,7 +130,9 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)):
+async def refresh_token(
+    refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)
+):
     """
     Refresh access token using refresh token.
 
@@ -132,11 +142,15 @@ async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends
         payload = decode_token(refresh_data.refresh_token)
 
         if payload.get("type") != "refresh":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
+            )
 
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            )
 
         user = db.query(User).filter(User.email == email).first()
         if not user or not user.is_active:
@@ -159,7 +173,9 @@ async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
 
 @router.get("/me", response_model=UserResponse)
@@ -210,8 +226,12 @@ async def change_password(
 
     Requires current password for verification.
     """
-    if not verify_password(password_data.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password")
+    if not verify_password(
+        password_data.current_password, current_user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password"
+        )
 
     current_user.hashed_password = get_password_hash(password_data.new_password)
     current_user.updated_at = datetime.utcnow()
@@ -266,7 +286,9 @@ async def create_api_key(
 
 
 @router.get("/api-keys", response_model=list[APIKeyResponse])
-async def list_api_keys(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_api_keys(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     """
     List all API keys for the current user.
 
@@ -301,10 +323,16 @@ async def delete_api_key(
 
     The key will be immediately deactivated and cannot be used.
     """
-    api_key = db.query(APIKey).filter(APIKey.id == key_id, APIKey.user_id == current_user.id).first()
+    api_key = (
+        db.query(APIKey)
+        .filter(APIKey.id == key_id, APIKey.user_id == current_user.id)
+        .first()
+    )
 
     if not api_key:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
+        )
 
     db.delete(api_key)
     db.commit()

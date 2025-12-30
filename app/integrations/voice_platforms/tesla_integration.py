@@ -20,7 +20,9 @@ class TeslaIntegration(BaseVoicePlatform):
     async def authenticate(self, credentials: Dict[str, Any]) -> bool:
         return credentials.get("vehicle_id") and credentials.get("token")
 
-    async def handle_intent(self, intent: str, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def handle_intent(
+        self, intent: str, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         command_type = slots.get("command_type", "general")
 
         if command_type == "schedule":
@@ -33,7 +35,9 @@ class TeslaIntegration(BaseVoicePlatform):
 
         return await self._handle_general(slots, user_id)
 
-    async def _handle_schedule(self, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_schedule(
+        self, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         message_service = MessageService()
         result = await message_service.process_scheduling_request(
             user_id=user_id,
@@ -42,9 +46,13 @@ class TeslaIntegration(BaseVoicePlatform):
         )
         return {"success": result["success"], "speech": "Scheduled", "brief": True}
 
-    async def _handle_general(self, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    async def _handle_general(
+        self, slots: Dict[str, Any], user_id: str
+    ) -> Dict[str, Any]:
         message_service = MessageService()
-        result = await message_service.process_message(user_id=user_id, message=slots.get("text", ""), channel="tesla")
+        result = await message_service.process_message(
+            user_id=user_id, message=slots.get("text", ""), channel="tesla"
+        )
         return {
             "success": True,
             "speech": result.get("response", "Done"),

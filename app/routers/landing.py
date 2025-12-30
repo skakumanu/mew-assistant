@@ -112,7 +112,9 @@ async def landing_page(request: Request):
     </html>
     """
     # During tests or when an API client requests JSON, return a small JSON payload
-    if os.getenv("TESTING") == "true" or "application/json" in request.headers.get("accept", ""):
+    if os.getenv("TESTING") == "true" or "application/json" in request.headers.get(
+        "accept", ""
+    ):
         return JSONResponse(
             {
                 "status": "ok",
