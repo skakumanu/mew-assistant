@@ -63,7 +63,7 @@ async def receive_sms(
         reply = response.get("reply", "Message received")
         twiml_response = (
             '<?xml version="1.0" encoding="UTF-8"?>'
-            '<Response><Message>' + reply + '</Message></Response>'
+            "<Response><Message>" + reply + "</Message></Response>"
         )
 
         return twiml_response
@@ -117,7 +117,7 @@ async def receive_whatsapp(
         reply = response.get("reply", "Message received")
         twiml_response = (
             '<?xml version="1.0" encoding="UTF-8"?>'
-            '<Response><Message>' + reply + '</Message></Response>'
+            "<Response><Message>" + reply + "</Message></Response>"
         )
 
         return twiml_response

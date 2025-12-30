@@ -294,7 +294,9 @@ async def oauth_callback(
         )
         xfwd = sanitize_for_log(request.headers.get("x-forwarded-proto"))
         scheme_s = sanitize_for_log(request.url.scheme)
-        print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {xfwd}, scheme: {scheme_s}")
+        print(
+            f"[OAuth Callback] Headers - X-Forwarded-Proto: {xfwd}, scheme: {scheme_s}"
+        )
 
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
 

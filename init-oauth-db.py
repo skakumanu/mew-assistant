@@ -7,7 +7,6 @@ import os
 import sys
 
 import psycopg2
-from psycopg2 import sql
 
 
 def run_migration():

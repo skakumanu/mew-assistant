@@ -11,7 +11,8 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from ..database.connection import get_db
-from ..database.models import Session as SessionModel, User, UserRole
+from ..database.models import Session as SessionModel
+from ..database.models import User, UserRole
 from ..schemas.auth import UserCreate
 from ..services.auth_service import AuthService
 from ..utils.notifications import NotificationService

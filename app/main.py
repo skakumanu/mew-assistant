@@ -48,8 +48,9 @@ app.add_middleware(
 # Include landing page router first
 app.include_router(landing.router, tags=["landing"])
 
-# Import other routers
-from .routers import (ai_scheduler_router, auth_router, calendar_router,  # noqa: E402
+# Import other routers (moved below app to avoid circular imports)
+from .routers import auth_router  # noqa: E402
+from .routers import (ai_scheduler_router, calendar_router,  # noqa: E402
                       calendar_web_router, debug_router, kid_router,
                       message_router, mobile_router, oauth_web,
                       parent_approval_router, session_router,

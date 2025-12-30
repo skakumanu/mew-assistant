@@ -11,8 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database.connection import Base, get_db
-from app.database.models import (ApprovalRequest, ApprovalStatus, RequestType,
-                                 User, UserRole)
+from app.database.models import ApprovalStatus, RequestType, User, UserRole
 from app.main import app
 from app.services.approval_service import ApprovalService
 

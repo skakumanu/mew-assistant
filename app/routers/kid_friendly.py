@@ -69,7 +69,11 @@ async def suggest_activity(
         success=True,
         # keep lines short for flake8 E501
         message=(
-            "Great idea! 🎉 I'll ask " + parent_name + " about " + request.activity_name + "!"
+            "Great idea! 🎉 I'll ask "
+            + parent_name
+            + " about "
+            + request.activity_name
+            + "!"
         ),
         emoji="✅",
         data={
@@ -205,9 +209,7 @@ async def request_schedule_change(
     return SimplifiedResponse(
         success=True,
         # keep lines short for flake8 E501
-        message=(
-            "Got it! 👍 I'll ask " + parent_name + " about this. No changes yet!"
-        ),
+        message=("Got it! 👍 I'll ask " + parent_name + " about this. No changes yet!"),
         emoji="📝",
         data={
             "request_id": change_request.id,
@@ -237,9 +239,7 @@ async def get_sticker_collection(
         "stickers": stickers["collection"],
         "next_reward": stickers["next_reward"],
         # shorten long line to avoid E501
-        "message": (
-            "You have " + str(stickers["count"]) + " stickers! Keep it up! 🌟"
-        ),
+        "message": ("You have " + str(stickers["count"]) + " stickers! Keep it up! 🌟"),
     }
 
 

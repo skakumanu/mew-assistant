@@ -86,7 +86,11 @@ async def process_voice_command(
         # avoid long f-strings (E501) and use structured logging
         lang = result.language_name
         det = result.detected_language
-        trans = getattr(result.transcription, "text", "") if getattr(result, "transcription", None) else ""
+        trans = (
+            getattr(result.transcription, "text", "")
+            if getattr(result, "transcription", None)
+            else ""
+        )
         logger.info(
             "Voice command processed successfully in %s (%s): %s",
             lang,

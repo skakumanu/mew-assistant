@@ -19,7 +19,7 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database.models import Base, User
+from app.database.models import User
 from app.utils.auth import get_password_hash
 from app.utils.config import settings
 
