@@ -126,10 +126,7 @@ jobs:
     - name: Ensure SECRET_KEY
       run: |
         if [ -z "${{ secrets.SECRET_KEY }}" ]; then
-          python - <<'PY' >> $GITHUB_ENV
-import secrets
-print("SECRET_KEY=" + secrets.token_urlsafe(32))
-PY
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
         else
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
         fi
@@ -219,10 +216,7 @@ PY
     - name: Ensure SECRET_KEY
       run: |
         if [ -z "${{ secrets.SECRET_KEY }}" ]; then
-          python - <<'PY' >> $GITHUB_ENV
-import secrets
-print("SECRET_KEY=" + secrets.token_urlsafe(32))
-PY
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
         else
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
         fi
@@ -233,7 +227,7 @@ PY
       env:
         DATABASE_URL: postgresql://mew:test_password@localhost:5432/mew_test
         REDIS_URL: redis://localhost:6379
-        JWT_SECRET_KEY: [REDACTED]  # replaced test CI placeholder
+        JWT_SECRET_KEY: "[REDACTED]"  # replaced test CI placeholder
         ENVIRONMENT: test
         
 
@@ -288,10 +282,7 @@ PY
     - name: Ensure SECRET_KEY
       run: |
         if [ -z "${{ secrets.SECRET_KEY }}" ]; then
-          python - <<'PY' >> $GITHUB_ENV
-import secrets
-print("SECRET_KEY=" + secrets.token_urlsafe(32))
-PY
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
         else
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
         fi
