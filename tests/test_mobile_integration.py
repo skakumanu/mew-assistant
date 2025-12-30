@@ -58,9 +58,7 @@ async def test_send_apns_notification(mobile_integration):
     mobile_integration.apns_client = Mock()
     mobile_integration.apns_client.send_notification = AsyncMock()
 
-    with patch(
-        "app.integrations.mobile_integration.NotificationRequest"
-    ) as mock_request:
+    with patch("app.integrations.mobile_integration.NotificationRequest") as mock_request:
         mock_request.return_value = Mock(message={})
 
         result = await mobile_integration.send_push_notification(

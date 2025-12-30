@@ -25,9 +25,7 @@ class NotificationService:
         """
         try:
             # TODO: Implement actual notification sending (email, SMS, push)
-            logger.info(
-                f"Sending approval notification to parent {parent_id} for kid {kid_name}"
-            )
+            logger.info(f"Sending approval notification to parent {parent_id} for kid {kid_name}")
             logger.info(f"Request details: {request_details}")
             return True
         except Exception as e:
@@ -103,9 +101,7 @@ class NotificationService:
         details = details or kwargs.get("details") or {}
 
         try:
-            logger.info(
-                f"Notify parent {parent_id} about approval {request_id} for kid {kid_name}"
-            )
+            logger.info(f"Notify parent {parent_id} about approval {request_id} for kid {kid_name}")
             logger.debug(f"Approval details: {details}")
             return True
         except Exception as e:
@@ -161,9 +157,7 @@ class NotificationService:
     ) -> bool:
         """Notify a parent about a concern raised by a kid."""
         try:
-            logger.info(
-                f"Notify parent {parent_id} of concern from kid {kid_id}: {concern}"
-            )
+            logger.info(f"Notify parent {parent_id} of concern from kid {kid_id}: {concern}")
             return True
         except Exception as e:
             logger.error(f"Failed to notify parent of kid concern: {e}")
@@ -178,9 +172,7 @@ class NotificationService:
     ) -> bool:
         """Notify parent that their kid requested help."""
         try:
-            logger.info(
-                f"Notify parent {parent_id} that kid {kid_id} requested help: {details}"
-            )
+            logger.info(f"Notify parent {parent_id} that kid {kid_id} requested help: {details}")
             return True
         except Exception as e:
             logger.error(f"Failed to notify parent help request: {e}")
@@ -191,9 +183,7 @@ class NotificationService:
     ) -> bool:
         """Send an urgent alert to a parent (synchronous helper for tests)."""
         try:
-            logger.info(
-                f"Urgent alert to parent {parent_id} about kid {kid_id}: {message}"
-            )
+            logger.info(f"Urgent alert to parent {parent_id} about kid {kid_id}: {message}")
             return True
         except Exception as e:
             logger.error(f"Failed to send urgent alert: {e}")

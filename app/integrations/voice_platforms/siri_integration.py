@@ -48,9 +48,7 @@ class SiriIntegration(BaseVoicePlatform):
             return await self._handle_create_event(slots, user_id)
         return {"success": False, "speech": "Error"}
 
-    async def _handle_create_event(
-        self, slots: Dict[str, Any], user_id: str
-    ) -> Dict[str, Any]:
+    async def _handle_create_event(self, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         message_service = MessageService()
         result = await message_service.process_scheduling_request(
             user_id=user_id,

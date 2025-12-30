@@ -73,11 +73,7 @@ async def suggest_activity(
         success=True,
         # keep lines short for flake8 E501
         message=(
-            "Great idea! 🎉 I'll ask "
-            + parent_name
-            + " about "
-            + request.activity_name
-            + "!"
+            "Great idea! 🎉 I'll ask " + parent_name + " about " + request.activity_name + "!"
         ),
         emoji="✅",
         data={
@@ -191,11 +187,7 @@ async def request_schedule_change(
         )
 
     # Determine request type based on whether there's an alternative
-    request_type = (
-        RequestType.SCHEDULE_CHANGE
-        if request.alternative
-        else RequestType.SKIP_ACTIVITY
-    )
+    request_type = RequestType.SCHEDULE_CHANGE if request.alternative else RequestType.SKIP_ACTIVITY
 
     # Create approval request - DOES NOT change calendar yet
     change_request = approval_service.create_approval_request(

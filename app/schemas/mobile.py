@@ -14,12 +14,8 @@ class DeviceRegistrationRequest(BaseModel):
     """Request model for registering a mobile device"""
 
     platform: str = Field(..., description="Mobile platform (ios or android)")
-    device_token: str = Field(
-        ..., min_length=10, description="Device push notification token"
-    )
-    device_info: Optional[Dict[str, Any]] = Field(
-        None, description="Additional device information"
-    )
+    device_token: str = Field(..., min_length=10, description="Device push notification token")
+    device_info: Optional[Dict[str, Any]] = Field(None, description="Additional device information")
 
     class Config:
         json_schema_extra = {
@@ -48,12 +44,8 @@ class PushNotificationRequest(BaseModel):
 
     platform: str = Field(..., description="Mobile platform")
     device_token: str = Field(..., description="Device push notification token")
-    title: str = Field(
-        ..., min_length=1, max_length=100, description="Notification title"
-    )
-    body: str = Field(
-        ..., min_length=1, max_length=500, description="Notification body"
-    )
+    title: str = Field(..., min_length=1, max_length=100, description="Notification title")
+    body: str = Field(..., min_length=1, max_length=500, description="Notification body")
     data: Optional[Dict[str, Any]] = Field(None, description="Additional data payload")
     badge: Optional[int] = Field(None, ge=0, description="Badge count (iOS only)")
     sound: str = Field("default", description="Notification sound")
@@ -83,15 +75,9 @@ class BatchNotificationRequest(BaseModel):
     """Request model for sending batch notifications"""
 
     platform: str = Field(..., description="Mobile platform")
-    device_tokens: List[str] = Field(
-        ..., min_items=1, description="List of device tokens"
-    )
-    title: str = Field(
-        ..., min_length=1, max_length=100, description="Notification title"
-    )
-    body: str = Field(
-        ..., min_length=1, max_length=500, description="Notification body"
-    )
+    device_tokens: List[str] = Field(..., min_items=1, description="List of device tokens")
+    title: str = Field(..., min_length=1, max_length=100, description="Notification title")
+    body: str = Field(..., min_length=1, max_length=500, description="Notification body")
     data: Optional[Dict[str, Any]] = Field(None, description="Additional data payload")
 
     class Config:
@@ -144,12 +130,8 @@ class ScheduledReminderRequest(BaseModel):
 
     platform: str = Field(..., description="Mobile platform")
     device_token: str = Field(..., description="Device push notification token")
-    title: str = Field(
-        ..., min_length=1, max_length=100, description="Notification title"
-    )
-    body: str = Field(
-        ..., min_length=1, max_length=500, description="Notification body"
-    )
+    title: str = Field(..., min_length=1, max_length=100, description="Notification title")
+    body: str = Field(..., min_length=1, max_length=500, description="Notification body")
     scheduled_time: str = Field(
         ..., description="ISO format datetime string for scheduled delivery"
     )

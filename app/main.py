@@ -6,11 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database.connection import init_db
-from .middleware import (
-    CORSSecurityMiddleware,
-    ErrorHandlingMiddleware,
-    RequestLoggingMiddleware,
-)
+from .middleware import CORSSecurityMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
 from .middleware.bot_protection import BotProtectionMiddleware
 from .routers import landing
 

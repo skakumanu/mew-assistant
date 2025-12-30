@@ -17,9 +17,7 @@ from app.services.approval_service import ApprovalService
 
 # Test database setup
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test_approval.db"
-engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -238,9 +236,7 @@ class TestParentApproval:
 
         # Try to approve
         with pytest.raises(Exception) as exc:
-            approval_service.approve_request(
-                request_id=request.id, parent_id=parent_user.id
-            )
+            approval_service.approve_request(request_id=request.id, parent_id=parent_user.id)
 
         assert "cannot be approved" in str(exc.value).lower()
 
@@ -327,9 +323,7 @@ class TestParentDenial:
 class TestCalendarIntegration:
     """Test that calendar changes only happen after approval"""
 
-    def test_pending_request_does_not_change_calendar(
-        self, test_db, kid_user, parent_user
-    ):
+    def test_pending_request_does_not_change_calendar(self, test_db, kid_user, parent_user):
         """Pending requests do not affect calendar"""
         approval_service = ApprovalService(test_db)
 
@@ -345,9 +339,7 @@ class TestCalendarIntegration:
         assert request.applied_to_calendar is False
         assert request.calendar_event_id is None
 
-    def test_only_approved_requests_affect_calendar(
-        self, test_db, kid_user, parent_user
-    ):
+    def test_only_approved_requests_affect_calendar(self, test_db, kid_user, parent_user):
         """Calendar changes happen only after parent approval"""
         approval_service = ApprovalService(test_db)
 
@@ -363,9 +355,7 @@ class TestCalendarIntegration:
 
         # After approval - calendar should be updated
         # Note: In real implementation, this would call CalendarService
-        approval_service.approve_request(
-            request_id=request.id, parent_id=parent_user.id
-        )
+        approval_service.approve_request(request_id=request.id, parent_id=parent_user.id)
 
         test_db.refresh(request)
         # applied_to_calendar flag should be set

@@ -102,9 +102,7 @@ class AIService:
         """Calculate break time in minutes"""
         return int((s2.start_time - s1.end_time).total_seconds() / 60)
 
-    def _has_insufficient_travel_time(
-        self, s1: ScheduleCreate, s2: ScheduleCreate
-    ) -> bool:
+    def _has_insufficient_travel_time(self, s1: ScheduleCreate, s2: ScheduleCreate) -> bool:
         """Check if there's insufficient time to travel between locations"""
         # Simple heuristic: assume at least 15 minutes travel time for different locations
         if s1.location != s2.location:
@@ -150,9 +148,7 @@ class AIService:
             current_time = datetime.now().replace(
                 hour=start_hour, minute=0, second=0, microsecond=0
             )
-            end_time = datetime.now().replace(
-                hour=end_hour, minute=0, second=0, microsecond=0
-            )
+            end_time = datetime.now().replace(hour=end_hour, minute=0, second=0, microsecond=0)
 
             while current_time < end_time:
                 proposed_end = current_time + timedelta(minutes=duration_minutes)
@@ -165,9 +161,7 @@ class AIService:
                     user_id=0,
                 )
 
-                conflicts = self.detect_conflicts(
-                    [proposed_schedule] + existing_schedules
-                )
+                conflicts = self.detect_conflicts([proposed_schedule] + existing_schedules)
                 if not conflicts:
                     suggestions.append(
                         ScheduleSuggestion(
@@ -214,19 +208,14 @@ class AIService:
             List of alternative suggestions
         """
         duration_minutes = int(
-            (
-                conflicting_schedule.end_time - conflicting_schedule.start_time
-            ).total_seconds()
-            / 60
+            (conflicting_schedule.end_time - conflicting_schedule.start_time).total_seconds() / 60
         )
 
         return self.suggest_time_slots(
             duration_minutes=duration_minutes, existing_schedules=existing_schedules
         )
 
-    def optimize_schedule(
-        self, schedules: List[ScheduleCreate]
-    ) -> List[ScheduleCreate]:
+    def optimize_schedule(self, schedules: List[ScheduleCreate]) -> List[ScheduleCreate]:
         """
         Optimize schedule order considering location proximity and time efficiency
 
@@ -261,9 +250,7 @@ class AIService:
 
         return optimized
 
-    def _optimize_by_location(
-        self, schedules: List[ScheduleCreate]
-    ) -> List[ScheduleCreate]:
+    def _optimize_by_location(self, schedules: List[ScheduleCreate]) -> List[ScheduleCreate]:
         """Optimize schedule order by location proximity (simple heuristic)"""
         # This is a simplified version - in production, use actual geocoding
         return schedules  # For now, keep original order
@@ -298,18 +285,12 @@ class AIService:
             # Find preferred hour
             hours = [s.get("hour") for s in activity_schedules if "hour" in s]
             if hours:
-                patterns[activity]["preferred_hour"] = Counter(hours).most_common(1)[0][
-                    0
-                ]
+                patterns[activity]["preferred_hour"] = Counter(hours).most_common(1)[0][0]
 
             # Find typical duration
-            durations = [
-                s.get("duration") for s in activity_schedules if "duration" in s
-            ]
+            durations = [s.get("duration") for s in activity_schedules if "duration" in s]
             if durations:
-                patterns[activity]["typical_duration"] = Counter(durations).most_common(
-                    1
-                )[0][0]
+                patterns[activity]["typical_duration"] = Counter(durations).most_common(1)[0][0]
 
             # Determine frequency
             dates = [s.get("date") for s in activity_schedules if "date" in s]
@@ -369,9 +350,7 @@ class AIService:
             Predicted next occurrence datetime
         """
         activity_schedules = [
-            s
-            for s in historical_schedules
-            if s.get("activity") == activity and "date" in s
+            s for s in historical_schedules if s.get("activity") == activity and "date" in s
         ]
 
         if len(activity_schedules) < 2:

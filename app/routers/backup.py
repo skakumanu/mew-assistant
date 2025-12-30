@@ -37,9 +37,7 @@ async def create_backup(
         backup_name = f"backup_{timestamp}.db.enc"
 
         # Run backup in background
-        background_tasks.add_task(
-            azure_storage.backup_database, "mew_assistant.db", backup_name
-        )
+        background_tasks.add_task(azure_storage.backup_database, "mew_assistant.db", backup_name)
 
         return BackupResponse(
             success=True,
@@ -87,9 +85,7 @@ async def restore_backup(
         raise HTTPException(status_code=403, detail="Admin access required")
 
     try:
-        success = azure_storage.restore_database(
-            request.backup_name, "mew_assistant.db"
-        )
+        success = azure_storage.restore_database(request.backup_name, "mew_assistant.db")
 
         if success:
             return BackupResponse(

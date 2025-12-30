@@ -158,9 +158,7 @@ class MessageService:
 
     async def _handle_report_request(self, message: str) -> str:
         """Handle report/summary requests."""
-        return (
-            "I'll generate a report for you. What time period would you like covered?"
-        )
+        return "I'll generate a report for you. What time period would you like covered?"
 
     async def _handle_general_message(self, message: str) -> str:
         """Handle general messages."""

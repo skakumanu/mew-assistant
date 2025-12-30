@@ -122,9 +122,7 @@ def test_get_current_user_no_token(client: TestClient):
 
 def test_get_current_user_invalid_token(client: TestClient):
     """Test accessing protected route with invalid token"""
-    response = client.get(
-        "/auth/me", headers={"Authorization": "Bearer invalid_token_here"}
-    )
+    response = client.get("/auth/me", headers={"Authorization": "Bearer invalid_token_here"})
     assert response.status_code == 401
 
 

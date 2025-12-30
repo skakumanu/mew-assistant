@@ -8,10 +8,7 @@ import yaml
 
 def main():
     files = sorted(
-        set(
-            glob.glob("**/*.yml", recursive=True)
-            + glob.glob("**/*.yaml", recursive=True)
-        )
+        set(glob.glob("**/*.yml", recursive=True) + glob.glob("**/*.yaml", recursive=True))
     )
     if not files:
         print("No .yml/.yaml files found")

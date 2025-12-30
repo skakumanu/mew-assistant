@@ -78,9 +78,7 @@ class WhatsAppIntegration:
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
-    async def send_reminder(
-        self, to_number: str, reminder_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def send_reminder(self, to_number: str, reminder_data: Dict[str, Any]) -> Dict[str, Any]:
         """Send a formatted reminder via WhatsApp."""
         message = f"""
 📅 *Reminder from Mew*
@@ -93,9 +91,7 @@ class WhatsAppIntegration:
 
         return await self.send_message(to_number, message)
 
-    async def send_summary(
-        self, to_number: str, summary_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def send_summary(self, to_number: str, summary_data: Dict[str, Any]) -> Dict[str, Any]:
         """Send a daily summary via WhatsApp."""
         message = f"""
 📊 *Daily Summary*

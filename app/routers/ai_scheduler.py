@@ -118,9 +118,7 @@ async def get_learning_status(
         patterns = await service._learn_user_patterns(current_user.id, activity)
         status[activity] = {
             "has_patterns": patterns.get("has_patterns", False),
-            "data_points": (
-                patterns.get("data_points", 0) if patterns.get("has_patterns") else 0
-            ),
+            "data_points": (patterns.get("data_points", 0) if patterns.get("has_patterns") else 0),
         }
 
     return {

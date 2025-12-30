@@ -66,9 +66,7 @@ class CalendarService:
             logger.error(f"Failed to update calendar event: {e}")
             return {"success": False, "error": str(e)}
 
-    async def delete_calendar_event(
-        self, event_id: str, provider: str = "google"
-    ) -> bool:
+    async def delete_calendar_event(self, event_id: str, provider: str = "google") -> bool:
         """
         Delete a calendar event
         """
@@ -86,9 +84,7 @@ class CalendarService:
         Get upcoming events from calendar
         """
         try:
-            logger.info(
-                f"Getting upcoming events for user {user_id} - next {days_ahead} days"
-            )
+            logger.info(f"Getting upcoming events for user {user_id} - next {days_ahead} days")
             # TODO: Implement actual calendar fetch
             return []
         except Exception as e:

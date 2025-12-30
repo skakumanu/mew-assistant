@@ -67,9 +67,7 @@ class SmartApprovalEngine:
             "requested_at": datetime.utcnow().isoformat(),
         }
 
-    def _can_auto_approve(
-        self, child_id: str, request_type: str, request_data: Dict
-    ) -> bool:
+    def _can_auto_approve(self, child_id: str, request_type: str, request_data: Dict) -> bool:
         """Check if request can be auto-approved."""
         rules_key = f"{child_id}_{request_type}"
 

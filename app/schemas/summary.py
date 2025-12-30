@@ -44,9 +44,7 @@ class SummaryResponse(BaseModel):
     user_id: str
     summary_text: str
     key_points: Optional[List[str]] = Field(default=None, description="Key highlights")
-    recommendations: Optional[List[str]] = Field(
-        default=None, description="AI recommendations"
-    )
+    recommendations: Optional[List[str]] = Field(default=None, description="AI recommendations")
     period_start: Optional[datetime]
     period_end: Optional[datetime]
     generated_at: datetime
@@ -87,6 +85,4 @@ class SummaryList(BaseModel):
     summaries: List[SummaryResponse]
     total: int
 
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"summaries": [], "total": 0}}
-    )
+    model_config = ConfigDict(json_schema_extra={"example": {"summaries": [], "total": 0}})

@@ -173,9 +173,7 @@ class VoiceIntegration:
                     f"Voice integration initialized with {len(SUPPORTED_LANGUAGES)} language support"
                 )
             except ImportError:
-                logger.warning(
-                    "Azure Speech SDK not installed. Voice features will be mocked."
-                )
+                logger.warning("Azure Speech SDK not installed. Voice features will be mocked.")
                 self.enabled = False
 
     async def transcribe_audio(
@@ -205,13 +203,11 @@ class VoiceIntegration:
             audio_config = speechsdk.audio.AudioConfig(stream=audio_stream)
 
             # Configure automatic language detection with all supported languages
-            auto_detect_config = (
-                speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
-                    languages=(
-                        SUPPORTED_LANGUAGES[:10]
-                        if not hint_language
-                        else [hint_language] + SUPPORTED_LANGUAGES[:9]
-                    )
+            auto_detect_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+                languages=(
+                    SUPPORTED_LANGUAGES[:10]
+                    if not hint_language
+                    else [hint_language] + SUPPORTED_LANGUAGES[:9]
                 )
             )
 
@@ -291,10 +287,7 @@ class VoiceIntegration:
         text_lower = text.lower()
 
         # Schedule-related intents
-        if any(
-            word in text_lower
-            for word in ["schedule", "book", "appointment", "meeting"]
-        ):
+        if any(word in text_lower for word in ["schedule", "book", "appointment", "meeting"]):
             return "schedule_appointment", self._extract_schedule_entities(text)
 
         elif any(word in text_lower for word in ["reschedule", "move", "change"]):
@@ -351,9 +344,7 @@ class VoiceIntegration:
             pass
         return 0.8  # Default confidence
 
-    def _mock_transcription(
-        self, hint_language: Optional[str] = None
-    ) -> VoiceTranscription:
+    def _mock_transcription(self, hint_language: Optional[str] = None) -> VoiceTranscription:
         """Mock transcription for testing when Azure Speech SDK is not available"""
         return VoiceTranscription(
             text="Schedule a doctor appointment for tomorrow at 2 PM",

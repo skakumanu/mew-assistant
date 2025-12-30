@@ -10,13 +10,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from ..database.models import (
-    ApprovalAuditLog,
-    ApprovalRequest,
-    ApprovalStatus,
-    RequestType,
-    User,
-)
+from ..database.models import ApprovalAuditLog, ApprovalRequest, ApprovalStatus, RequestType, User
 from ..services.calendar_service import CalendarService
 from ..services.notification_service import NotificationService
 
@@ -273,14 +267,10 @@ class ApprovalService:
 
         return expired_count
 
-    def _get_and_validate_request(
-        self, request_id: int, parent_id: int
-    ) -> ApprovalRequest:
+    def _get_and_validate_request(self, request_id: int, parent_id: int) -> ApprovalRequest:
         """Get approval request and validate parent access"""
         approval_request = (
-            self.db.query(ApprovalRequest)
-            .filter(ApprovalRequest.id == request_id)
-            .first()
+            self.db.query(ApprovalRequest).filter(ApprovalRequest.id == request_id).first()
         )
 
         if not approval_request:

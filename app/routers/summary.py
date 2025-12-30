@@ -15,9 +15,7 @@ from ..services.summary_service import SummaryService
 router = APIRouter(prefix="/mew", tags=["summaries"])
 
 
-@router.post(
-    "/summary", response_model=SummaryResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/summary", response_model=SummaryResponse, status_code=status.HTTP_201_CREATED)
 async def generate_summary(request: SummaryRequest, db: Session = Depends(get_db)):
     """
     Generate a caregiver summary with insights and recommendations.
@@ -118,9 +116,7 @@ async def get_summaries_for_user(
 
 
 @router.get("/summaries/user/{user_id}", response_model=SummaryList)
-async def get_user_summaries(
-    user_id: str, limit: int = 50, db: Session = Depends(get_db)
-):
+async def get_user_summaries(user_id: str, limit: int = 50, db: Session = Depends(get_db)):
     """
     Get all summaries for a user.
 

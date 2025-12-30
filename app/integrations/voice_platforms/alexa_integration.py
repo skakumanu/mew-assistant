@@ -25,11 +25,7 @@ class AlexaIntegration(BaseVoicePlatform):
 
     async def authenticate(self, credentials: Dict[str, Any]) -> bool:
         try:
-            app_id = (
-                credentials.get("session", {})
-                .get("application", {})
-                .get("applicationId")
-            )
+            app_id = credentials.get("session", {}).get("application", {}).get("applicationId")
             return app_id == self.skill_id
         except Exception as e:
             logger.error(f"Alexa auth failed: {e}")
@@ -47,9 +43,7 @@ class AlexaIntegration(BaseVoicePlatform):
 
         return {"success": False, "speech": "I didn't understand"}
 
-    async def _handle_schedule(
-        self, slots: Dict[str, Any], user_id: str
-    ) -> Dict[str, Any]:
+    async def _handle_schedule(self, slots: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         message_service = MessageService()
         activity = slots.get("Activity", {}).get("value", "")
         result = await message_service.process_scheduling_request(

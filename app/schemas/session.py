@@ -44,12 +44,8 @@ class SessionCreate(BaseModel):
     session_type: SessionType = Field(..., description="Type of session to create")
     title: Optional[str] = Field(None, max_length=255, description="Session title")
     description: Optional[str] = Field(None, description="Session description")
-    priority: PriorityLevel = Field(
-        default=PriorityLevel.NORMAL, description="Session priority"
-    )
-    scheduled_at: Optional[datetime] = Field(
-        None, description="Scheduled time (ISO format)"
-    )
+    priority: PriorityLevel = Field(default=PriorityLevel.NORMAL, description="Session priority")
+    scheduled_at: Optional[datetime] = Field(None, description="Scheduled time (ISO format)")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -112,9 +108,7 @@ class SessionResponse(BaseModel):
     scheduled_at: Optional[datetime]
     completed_at: Optional[datetime]
     cooldown_until: Optional[datetime]
-    in_cooldown: bool = Field(
-        default=False, description="Whether session is in cooldown period"
-    )
+    in_cooldown: bool = Field(default=False, description="Whether session is in cooldown period")
 
     model_config = ConfigDict(
         from_attributes=True,

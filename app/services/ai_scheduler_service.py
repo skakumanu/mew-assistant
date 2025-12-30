@@ -11,11 +11,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.database.models import PriorityLevel, ScheduleEntry, SessionStatus
-from app.schemas.schedule import (
-    OptimizationResult,
-    ScheduleConflict,
-    ScheduleSuggestion,
-)
+from app.schemas.schedule import OptimizationResult, ScheduleConflict, ScheduleSuggestion
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +23,7 @@ class AISchedulerService:
         self.db = db
         self.learning_threshold = 5  # Minimum patterns needed for learning
 
-    async def detect_conflicts(
-        self, user_id: int, proposed_entry: Dict
-    ) -> List[ScheduleConflict]:
+    async def detect_conflicts(self, user_id: int, proposed_entry: Dict) -> List[ScheduleConflict]:
         """
         Detect scheduling conflicts for a proposed entry
 
@@ -72,9 +66,7 @@ class AISchedulerService:
 
         for entry in existing_entries:
             severity = self._calculate_conflict_severity(entry, proposed_entry)
-            suggestions = await self._generate_conflict_resolution(
-                entry, proposed_entry
-            )
+            suggestions = await self._generate_conflict_resolution(entry, proposed_entry)
 
             conflicts.append(
                 ScheduleConflict(
@@ -82,16 +74,12 @@ class AISchedulerService:
                     schedule1_id=entry.id,
                     schedule2_id=proposed_entry.get("id", 0),
                     message=f"{entry.title} conflicts with {proposed_entry.get('title', 'proposed entry')}",
-                    suggested_resolution=(
-                        suggestions[0] if suggestions else "Adjust timing"
-                    ),
+                    suggested_resolution=(suggestions[0] if suggestions else "Adjust timing"),
                     severity=severity,
                     conflicting_entry_id=entry.id,
                     conflicting_title=entry.title,
                     conflict_type=self._determine_conflict_type(entry, proposed_entry),
-                    overlap_minutes=self._calculate_overlap_minutes(
-                        entry, proposed_entry
-                    ),
+                    overlap_minutes=self._calculate_overlap_minutes(entry, proposed_entry),
                     suggestions=suggestions,
                 )
             )
@@ -211,9 +199,7 @@ class AISchedulerService:
             improvements.extend(transition_improvements)
 
         if "respect_energy_levels" in optimization_goals:
-            optimized, energy_improvements = await self._respect_energy_patterns(
-                user_id, optimized
-            )
+            optimized, energy_improvements = await self._respect_energy_patterns(user_id, optimized)
             improvements.extend(energy_improvements)
 
         if "balance_activities" in optimization_goals:
@@ -224,9 +210,7 @@ class AISchedulerService:
             original_schedule=original_schedule,
             optimized_schedule=optimized,
             improvements=improvements,
-            efficiency_gain_percent=self._calculate_efficiency_gain(
-                original_schedule, optimized
-            ),
+            efficiency_gain_percent=self._calculate_efficiency_gain(original_schedule, optimized),
         )
 
     async def _learn_user_patterns(self, user_id: int, activity_type: str) -> Dict:
@@ -261,9 +245,7 @@ class AISchedulerService:
 
         return patterns
 
-    def _calculate_conflict_severity(
-        self, existing: ScheduleEntry, proposed: Dict
-    ) -> str:
+    def _calculate_conflict_severity(self, existing: ScheduleEntry, proposed: Dict) -> str:
         """Calculate severity of schedule conflict"""
         overlap_minutes = self._calculate_overlap_minutes(existing, proposed)
 
@@ -287,9 +269,7 @@ class AISchedulerService:
 
         return "low"
 
-    def _calculate_overlap_minutes(
-        self, existing: ScheduleEntry, proposed: Dict
-    ) -> int:
+    def _calculate_overlap_minutes(self, existing: ScheduleEntry, proposed: Dict) -> int:
         """Calculate minutes of overlap between two entries"""
         start = max(existing.start_time, proposed["start_time"])
         end = min(existing.end_time, proposed["end_time"])
@@ -352,9 +332,7 @@ class AISchedulerService:
         current_time = day_start
         for entry in existing_schedule:
             if current_time < entry["start_time"]:
-                gap_minutes = int(
-                    (entry["start_time"] - current_time).total_seconds() / 60
-                )
+                gap_minutes = int((entry["start_time"] - current_time).total_seconds() / 60)
                 if gap_minutes >= duration_minutes:
                     slots.append(
                         {
@@ -450,9 +428,7 @@ class AISchedulerService:
             for e in entries
         ]
 
-    def _minimize_transitions(
-        self, schedule: List[Dict]
-    ) -> Tuple[List[Dict], List[str]]:
+    def _minimize_transitions(self, schedule: List[Dict]) -> Tuple[List[Dict], List[str]]:
         """Optimize schedule to minimize location/context transitions"""
         # Group similar activities
         improvements = []
@@ -469,9 +445,7 @@ class AISchedulerService:
         improvements.append("Moved tutoring to morning peak focus period")
         return schedule, improvements
 
-    def _balance_activity_types(
-        self, schedule: List[Dict]
-    ) -> Tuple[List[Dict], List[str]]:
+    def _balance_activity_types(self, schedule: List[Dict]) -> Tuple[List[Dict], List[str]]:
         """Balance different types of activities throughout day"""
         improvements = []
         improvements.append("Added breaks between intensive activities")
@@ -509,20 +483,12 @@ class AISchedulerService:
         # Placeholder for success rate analysis
         return {"morning": 0.85, "afternoon": 0.75, "evening": 0.65}
 
-    def _check_buffer_time(
-        self, slot: Dict, schedule: List, buffer_minutes: int
-    ) -> bool:
+    def _check_buffer_time(self, slot: Dict, schedule: List, buffer_minutes: int) -> bool:
         """Check if slot has adequate buffer time"""
         for entry in schedule:
-            if (
-                abs((slot["start"] - entry["end_time"]).total_seconds() / 60)
-                < buffer_minutes
-            ):
+            if abs((slot["start"] - entry["end_time"]).total_seconds() / 60) < buffer_minutes:
                 return False
-            if (
-                abs((entry["start_time"] - slot["end"]).total_seconds() / 60)
-                < buffer_minutes
-            ):
+            if abs((entry["start_time"] - slot["end"]).total_seconds() / 60) < buffer_minutes:
                 return False
         return True
 
@@ -540,6 +506,4 @@ class AISchedulerService:
         elif score >= 0.6:
             return f"Good option: {'; '.join(factors)}"
         else:
-            return (
-                f"Available: {'; '.join(factors) if factors else 'Basic availability'}"
-            )
+            return f"Available: {'; '.join(factors) if factors else 'Basic availability'}"

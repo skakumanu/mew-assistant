@@ -47,9 +47,7 @@ async def connect_calendar(
                 connection_data.credentials
             )
         elif provider == CalendarProvider.APPLE:
-            success = await calendar_integration.connect_apple_calendar(
-                connection_data.credentials
-            )
+            success = await calendar_integration.connect_apple_calendar(connection_data.credentials)
         elif provider == CalendarProvider.OUTLOOK:
             success = await calendar_integration.connect_outlook_calendar(
                 connection_data.credentials

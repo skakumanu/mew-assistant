@@ -174,9 +174,7 @@ async def google_callback(
 
         if not code:
             logger.error("No authorization code received")
-            raise HTTPException(
-                status_code=400, detail="No authorization code received"
-            )
+            raise HTTPException(status_code=400, detail="No authorization code received")
 
         logger.info(f"Received authorization code: {code[:10]}...")
 
@@ -234,9 +232,7 @@ async def google_callback(
                 )
 
             user_info = userinfo_response.json()
-            logger.info(
-                f"User info retrieved: {sanitize_email(user_info.get('email'))}"
-            )
+            logger.info(f"User info retrieved: {sanitize_email(user_info.get('email'))}")
 
         # Find or create user
         email = user_info.get("email")
@@ -321,9 +317,7 @@ async def google_callback(
         raise
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")
 
 
 @router.get("/simple/microsoft")
@@ -355,9 +349,7 @@ async def microsoft_callback(
             raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
 
         if not code:
-            raise HTTPException(
-                status_code=400, detail="No authorization code received"
-            )
+            raise HTTPException(status_code=400, detail="No authorization code received")
 
         logger.info(f"Received authorization code: {code[:10]}...")
 
@@ -481,6 +473,4 @@ async def microsoft_callback(
         raise
     except Exception as e:
         logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"OAuth authentication failed: {str(e)}")

@@ -9,21 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..schemas.session import (
-    SessionConfirm,
-    SessionCreate,
-    SessionResponse,
-    SessionUpdate,
-)
+from ..schemas.session import SessionConfirm, SessionCreate, SessionResponse, SessionUpdate
 from ..services.session_service import SessionService
 from ..utils.cooldown import check_cooldown
 
 router = APIRouter(prefix="/mew", tags=["sessions"])
 
 
-@router.post(
-    "/session", response_model=SessionResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/session", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 async def create_session(session_data: SessionCreate, db: Session = Depends(get_db)):
     """
     Create a new session (tutoring, scheduling, or caregiver summary).

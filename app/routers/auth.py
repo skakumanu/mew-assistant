@@ -34,9 +34,7 @@ from app.utils.auth import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user account.
@@ -67,9 +65,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
     # Check if user already exists
     existing_user = (
-        db.query(User)
-        .filter((User.email == user_data.email) | (User.username == username))
-        .first()
+        db.query(User).filter((User.email == user_data.email) | (User.username == username)).first()
     )
 
     if existing_user:
@@ -184,9 +180,7 @@ async def login_form(
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(
-    refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)
-):
+async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)):
     """
     Refresh access token using refresh token.
 
@@ -208,9 +202,7 @@ async def refresh_token(
 
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     except HTTPException:
         raise
@@ -308,9 +300,7 @@ async def change_password(
     from app.utils.auth import verify_password
 
     # Verify current password
-    if not verify_password(
-        password_data.current_password, current_user.hashed_password
-    ):
+    if not verify_password(password_data.current_password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password"
         )
@@ -331,9 +321,7 @@ async def logout(current_user: User = Depends(get_current_user)):
     Note: JWT tokens are stateless, so this is just a placeholder.
     Clients should delete their stored tokens.
     """
-    return {
-        "message": "Logged out successfully. Please delete your tokens on the client side."
-    }
+    return {"message": "Logged out successfully. Please delete your tokens on the client side."}
 
 
 # CAPTCHA endpoints for bot protection

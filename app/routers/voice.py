@@ -71,9 +71,7 @@ async def process_voice_command(
             raise HTTPException(status_code=400, detail="Empty audio file")
 
         if len(audio_data) > 10 * 1024 * 1024:  # 10MB limit
-            raise HTTPException(
-                status_code=400, detail="Audio file too large (max 10MB)"
-            )
+            raise HTTPException(status_code=400, detail="Audio file too large (max 10MB)")
 
         # Process voice command with automatic language detection
         voice_service = VoiceService(db)
@@ -130,9 +128,7 @@ async def get_supported_languages(
     voice_service = VoiceService(db)
     languages = voice_service.get_supported_languages()
 
-    return [
-        VoiceLanguageInfo(code=lang["code"], name=lang["name"]) for lang in languages
-    ]
+    return [VoiceLanguageInfo(code=lang["code"], name=lang["name"]) for lang in languages]
 
 
 @router.get("/statistics", response_model=VoiceStatisticsResponse)

@@ -25,9 +25,7 @@ class CooldownManager:
 
     def record_request(self, user_id: str):
         """Record a request and start cooldown period."""
-        self.cooldowns[user_id] = datetime.utcnow() + timedelta(
-            hours=self.default_cooldown_hours
-        )
+        self.cooldowns[user_id] = datetime.utcnow() + timedelta(hours=self.default_cooldown_hours)
 
     def get_cooldown_until(self, user_id: str) -> Optional[datetime]:
         """Get when cooldown ends for user."""
@@ -104,9 +102,7 @@ def set_cooldown(session: Session, hours: int = 24) -> datetime:
     return cooldown_until
 
 
-def can_override_cooldown(
-    session: Session, priority: Optional[PriorityLevel] = None
-) -> bool:
+def can_override_cooldown(session: Session, priority: Optional[PriorityLevel] = None) -> bool:
     """
     Check if cooldown can be overridden based on priority.
 

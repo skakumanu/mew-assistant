@@ -84,9 +84,7 @@ class SessionService:
             PermissionError: If session is in cooldown and override not allowed
         """
         session = (
-            self.db.query(SessionModel)
-            .filter(SessionModel.id == confirm_data.session_id)
-            .first()
+            self.db.query(SessionModel).filter(SessionModel.id == confirm_data.session_id).first()
         )
 
         if not session:
@@ -116,9 +114,7 @@ class SessionService:
             session.notes = confirm_data.notes
 
         # Set cooldown for future requests
-        cooldown_hours = calculate_cooldown_duration(
-            session.session_type, session.priority
-        )
+        cooldown_hours = calculate_cooldown_duration(session.session_type, session.priority)
         if cooldown_hours > 0:
             set_cooldown(session, hours=cooldown_hours)
 
@@ -127,9 +123,7 @@ class SessionService:
 
         return session
 
-    def update_session(
-        self, session_id: int, update_data: SessionUpdate
-    ) -> SessionModel:
+    def update_session(self, session_id: int, update_data: SessionUpdate) -> SessionModel:
         """
         Update session details.
 
@@ -140,9 +134,7 @@ class SessionService:
         Returns:
             Updated session object
         """
-        session = (
-            self.db.query(SessionModel).filter(SessionModel.id == session_id).first()
-        )
+        session = self.db.query(SessionModel).filter(SessionModel.id == session_id).first()
 
         if not session:
             raise ValueError(f"Session {session_id} not found")

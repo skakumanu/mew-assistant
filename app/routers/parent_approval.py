@@ -21,9 +21,7 @@ class ApprovalResponse(BaseModel):
     """Parent's response to kid request"""
 
     approved: bool = Field(..., description="Approve or deny the request")
-    parent_note: Optional[str] = Field(
-        None, max_length=500, description="Message for your kid"
-    )
+    parent_note: Optional[str] = Field(None, max_length=500, description="Message for your kid")
     alternative_suggestion: Optional[str] = Field(
         None, max_length=300, description="Alternative suggestion"
     )
@@ -77,9 +75,7 @@ async def get_pending_approvals(
                 kid_reason=request.kid_reason,
                 status=request.status.value,
                 created_at=request.created_at.isoformat(),
-                expires_at=(
-                    request.expires_at.isoformat() if request.expires_at else None
-                ),
+                expires_at=(request.expires_at.isoformat() if request.expires_at else None),
                 original_activity_name=None,  # TODO: Fetch from calendar
             )
         )
@@ -218,9 +214,7 @@ async def get_approval_history(
                 "requested_activity": req.requested_activity,
                 "status": req.status.value,
                 "created_at": req.created_at.isoformat(),
-                "processed_at": (
-                    req.processed_at.isoformat() if req.processed_at else None
-                ),
+                "processed_at": (req.processed_at.isoformat() if req.processed_at else None),
                 "parent_note": req.parent_note,
                 "applied_to_calendar": req.applied_to_calendar,
             }

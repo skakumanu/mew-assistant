@@ -260,17 +260,13 @@ async def oauth_login_page(request: Request):
 
 # OAuth Provider Login Endpoints
 @router.get("/login/{provider}")
-async def oauth_provider_login(
-    provider: str, redirect_uri: str, db: Session = Depends(get_db)
-):
+async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = Depends(get_db)):
     """Initiate OAuth flow for a provider"""
     try:
         auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
         return RedirectResponse(url=auth_url)
     except Exception as e:
-        raise HTTPException(
-            status_code=400, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
 
 
 @router.get("/callback/{provider}")
@@ -294,9 +290,7 @@ async def oauth_callback(
         )
         xfwd = sanitize_for_log(request.headers.get("x-forwarded-proto"))
         scheme_s = sanitize_for_log(request.url.scheme)
-        print(
-            f"[OAuth Callback] Headers - X-Forwarded-Proto: {xfwd}, scheme: {scheme_s}"
-        )
+        print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {xfwd}, scheme: {scheme_s}")
 
         result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
 
@@ -313,9 +307,7 @@ async def oauth_callback(
         )
         return response
     except Exception as e:
-        raise HTTPException(
-            status_code=400, detail=f"OAuth authentication failed: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

@@ -249,9 +249,7 @@ class TestPatternLearning:
             {"activity": "tutoring", "date": datetime(2025, 1, 15)},
         ]
 
-        prediction = ai_service.predict_next_occurrence(
-            "tutoring", historical_schedules
-        )
+        prediction = ai_service.predict_next_occurrence("tutoring", historical_schedules)
 
         assert prediction is not None
         assert prediction.date() == datetime(2025, 1, 22).date()

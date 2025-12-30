@@ -66,9 +66,7 @@ async def get_auto_approval_rules(
 
     rules = (
         db.query(ApprovalRule)
-        .filter(
-            ApprovalRule.user_id == current_user.id, ApprovalRule.is_active.is_(True)
-        )
+        .filter(ApprovalRule.user_id == current_user.id, ApprovalRule.is_active.is_(True))
         .all()
     )
     return rules

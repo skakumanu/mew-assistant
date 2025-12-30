@@ -254,9 +254,7 @@ async def get_current_active_user(
 async def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:
     """Dependency to require superuser/admin privileges."""
     if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     return current_user
 
 
@@ -309,20 +307,14 @@ async def verify_api_key(
 
     key_hash = hashlib.sha256(api_key.encode()).hexdigest()
     api_key_record = (
-        db.query(APIKey)
-        .filter(APIKey.key_hash == key_hash, APIKey.is_active.is_(True))
-        .first()
+        db.query(APIKey).filter(APIKey.key_hash == key_hash, APIKey.is_active.is_(True)).first()
     )
 
     if not api_key_record:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
     if api_key_record.expires_at and api_key_record.expires_at < datetime.utcnow():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="API key has expired"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key has expired")
 
     api_key_record.last_used = datetime.utcnow()
     db.commit()

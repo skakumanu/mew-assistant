@@ -36,10 +36,7 @@ class TestContentFilter:
     def test_sanitization(self):
         """Test input sanitization"""
         assert self.filter.sanitize_kid_input("Hello!!!!!!") == "Hello!!"
-        assert (
-            self.filter.sanitize_kid_input("  Too   many   spaces  ")
-            == "Too many spaces"
-        )
+        assert self.filter.sanitize_kid_input("  Too   many   spaces  ") == "Too many spaces"
 
     def test_sensitive_info_masking(self):
         """Test masking of sensitive information"""

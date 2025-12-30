@@ -50,18 +50,14 @@ def list_all_users(db):
     for user in users:
         # Check if user has OAuth federated identity
         has_oauth = (
-            db.query(FederatedIdentity)
-            .filter(FederatedIdentity.user_id == user.id)
-            .first()
+            db.query(FederatedIdentity).filter(FederatedIdentity.user_id == user.id).first()
             is not None
         )
 
         auth_type = "OAuth" if has_oauth else "Password"
         status = "✅ KEEP" if has_oauth or user.email in PRESERVE_USERS else "⚠️  REMOVE"
 
-        logger.info(
-            f"{status} | {sanitize_email(user.email):40s} | {user.role:10s} | {auth_type}"
-        )
+        logger.info(f"{status} | {sanitize_email(user.email):40s} | {user.role:10s} | {auth_type}")
 
     logger.info("=" * 70)
     return users
@@ -95,9 +91,7 @@ def cleanup_compromised_users(db, dry_run=True):
         if user:
             # Check if user has OAuth (should keep if they do)
             has_oauth = (
-                db.query(FederatedIdentity)
-                .filter(FederatedIdentity.user_id == user.id)
-                .first()
+                db.query(FederatedIdentity).filter(FederatedIdentity.user_id == user.id).first()
                 is not None
             )
 
@@ -105,9 +99,7 @@ def cleanup_compromised_users(db, dry_run=True):
                 logger.warning(f"⚠️  {sanitize_email(email)} has OAuth - will KEEP")
                 users_to_keep.append(user)
             else:
-                logger.info(
-                    f"🗑️  {sanitize_email(email)} - password-based - will REMOVE"
-                )
+                logger.info(f"🗑️  {sanitize_email(email)} - password-based - will REMOVE")
                 users_to_remove.append(user)
         else:
             logger.info(f"ℹ️  {sanitize_email(email)} - not found in database")
@@ -118,22 +110,16 @@ def cleanup_compromised_users(db, dry_run=True):
     for user in all_users:
         if user.email not in COMPROMISED_USERS and user.email not in PRESERVE_USERS:
             has_oauth = (
-                db.query(FederatedIdentity)
-                .filter(FederatedIdentity.user_id == user.id)
-                .first()
+                db.query(FederatedIdentity).filter(FederatedIdentity.user_id == user.id).first()
                 is not None
             )
 
             if not has_oauth:
-                logger.warning(
-                    f"⚠️  Found unlisted password user: {sanitize_email(user.email)}"
-                )
+                logger.warning(f"⚠️  Found unlisted password user: {sanitize_email(user.email)}")
                 # Don't auto-remove, just warn
 
     logger.info("\n" + "=" * 70)
-    logger.info(
-        f"Summary: {len(users_to_remove)} users to remove, {len(users_to_keep)} to keep"
-    )
+    logger.info(f"Summary: {len(users_to_remove)} users to remove, {len(users_to_keep)} to keep")
     logger.info("=" * 70)
 
     if not users_to_remove:
@@ -153,9 +139,7 @@ def cleanup_compromised_users(db, dry_run=True):
             logger.info(f"Deleting user: {sanitize_email(user.email)} (ID: {user.id})")
 
             # Delete associated federated identities first (if any)
-            db.query(FederatedIdentity).filter(
-                FederatedIdentity.user_id == user.id
-            ).delete()
+            db.query(FederatedIdentity).filter(FederatedIdentity.user_id == user.id).delete()
 
             # Delete the user
             db.delete(user)

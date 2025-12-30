@@ -50,11 +50,7 @@ class SchedulerService:
 
     def list_sessions(self, user_id: str) -> List[Dict]:
         """List all sessions for a user."""
-        return [
-            session
-            for session in self.sessions.values()
-            if session["user_id"] == user_id
-        ]
+        return [session for session in self.sessions.values() if session["user_id"] == user_id]
 
     def cancel_session(self, session_id: str) -> bool:
         """Cancel a session."""

@@ -77,10 +77,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
 
         try:
             # Skip all compliance checks for exempt endpoints
-            if any(
-                request.url.path.startswith(endpoint)
-                for endpoint in self.EXEMPT_ENDPOINTS
-            ):
+            if any(request.url.path.startswith(endpoint) for endpoint in self.EXEMPT_ENDPOINTS):
                 response = await call_next(request)
                 # still add basic security headers for visibility
                 response.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -112,17 +109,13 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
             response.headers["X-XSS-Protection"] = "1; mode=block"
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
             response.headers["X-Privacy-Policy"] = "/privacy"
 
             # 7. Log audit trail completion
             if self._requires_audit(request.url.path):
                 duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-                await self._create_audit_log(
-                    request, "RESPONSE", response.status_code, duration
-                )
+                await self._create_audit_log(request, "RESPONSE", response.status_code, duration)
 
             return response
 
@@ -132,9 +125,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
 
             logger.warning(f"Compliance violation: {exc}")
             body = json.dumps({"detail": str(exc)})
-            return Response(
-                content=body, status_code=403, media_type="application/json"
-            )
+            return Response(content=body, status_code=403, media_type="application/json")
 
     async def _verify_consent(self, request: Request):
         """
@@ -142,12 +133,11 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         """
         # Enforce consent for configured endpoints. Tests expect consent enforcement
         if any(
-            request.url.path.startswith(endpoint)
-            for endpoint in self.CONSENT_REQUIRED_ENDPOINTS
+            request.url.path.startswith(endpoint) for endpoint in self.CONSENT_REQUIRED_ENDPOINTS
         ):
-            consent_header = request.headers.get(
-                "X-User-Consent"
-            ) or request.headers.get("X-Consent-Given")
+            consent_header = request.headers.get("X-User-Consent") or request.headers.get(
+                "X-Consent-Given"
+            )
 
             if not consent_header or consent_header != "true":
                 logger.warning(f"Missing consent for {request.url.path}")
@@ -172,8 +162,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         Check if endpoint requires audit logging
         """
         return any(
-            path.startswith(endpoint.split("{")[0])
-            for endpoint in self.AUDIT_REQUIRED_ENDPOINTS
+            path.startswith(endpoint.split("{")[0]) for endpoint in self.AUDIT_REQUIRED_ENDPOINTS
         )
 
     async def _create_audit_log(
@@ -282,9 +271,7 @@ class AccessControlValidator:
     }
 
     @classmethod
-    def validate_access(
-        cls, user_role: str, operation: str, resource_owner: str, user_id: str
-    ):
+    def validate_access(cls, user_role: str, operation: str, resource_owner: str, user_id: str):
         """
         Validate user has permission to perform operation
         """

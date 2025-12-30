@@ -122,9 +122,7 @@ async def send_push_notification(
                 detail="Failed to send push notification",
             )
 
-        return PushNotificationResponse(
-            success=True, message="Push notification sent successfully"
-        )
+        return PushNotificationResponse(success=True, message="Push notification sent successfully")
 
     except Exception as e:
         raise HTTPException(

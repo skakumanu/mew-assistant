@@ -73,9 +73,7 @@ class VoiceLanguageInfo(BaseModel):
     name: str = Field(..., description="Language name (e.g., English, Spanish)")
 
     class Config:
-        json_schema_extra = {
-            "example": {"code": "en-US", "name": "English (United States)"}
-        }
+        json_schema_extra = {"example": {"code": "en-US", "name": "English (United States)"}}
 
 
 class SupportedLanguagesResponse(BaseModel):

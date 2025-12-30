@@ -123,9 +123,7 @@ async def get_calendar_events(
                             "singleEvents": True,
                             "timeMin": time_min,  # Use same timeMin
                         },
-                        headers={
-                            "Authorization": f"Bearer {fed_identity.access_token}"
-                        },
+                        headers={"Authorization": f"Bearer {fed_identity.access_token}"},
                     )
                 else:
                     raise HTTPException(

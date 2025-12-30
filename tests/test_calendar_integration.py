@@ -135,9 +135,7 @@ async def test_connect_outlook_calendar(calendar_integration):
 
     with patch("app.integrations.calendar_integration.msal") as mock_msal:
         mock_app = Mock()
-        mock_app.acquire_token_for_client.return_value = {
-            "access_token": "test_access_token"
-        }
+        mock_app.acquire_token_for_client.return_value = {"access_token": "test_access_token"}
         mock_msal.ConfidentialClientApplication.return_value = mock_app
 
         result = await calendar_integration.connect_outlook_calendar(credentials)

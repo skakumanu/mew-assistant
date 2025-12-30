@@ -35,18 +35,14 @@ tesla = TeslaIntegration(config={})
 
 
 @router.post("/siri/webhook", response_model=VoicePlatformResponse)
-async def siri_webhook(
-    request: SiriRequest, authorization: Optional[str] = Header(None)
-):
+async def siri_webhook(request: SiriRequest, authorization: Optional[str] = Header(None)):
     """
     Apple Siri webhook endpoint
     Receives SiriKit intents and iOS Shortcuts
     """
     try:
         # Authenticate request
-        auth_valid = await siri.authenticate(
-            {"signature": authorization, "body": request.json()}
-        )
+        auth_valid = await siri.authenticate({"signature": authorization, "body": request.json()})
 
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Siri signature")
@@ -92,9 +88,7 @@ async def alexa_webhook(request: AlexaRequest):
         user_id = request.session.get("user", {}).get("userId", "")
 
         # Process intent
-        result = await alexa.handle_intent(
-            intent=intent_name, slots=slots, user_id=user_id
-        )
+        result = await alexa.handle_intent(intent=intent_name, slots=slots, user_id=user_id)
 
         # Send response
         await alexa.send_response(result)
@@ -119,9 +113,7 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
     """
     try:
         # Authenticate request
-        auth_valid = await google.authenticate(
-            {"token": request.user.get("accessToken")}
-        )
+        auth_valid = await google.authenticate({"token": request.user.get("accessToken")})
 
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Google request")
@@ -135,9 +127,7 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
         slots = {p.get("name"): p.get("value") for p in parameters}
 
         # Process intent
-        result = await google.handle_intent(
-            intent=intent_name, slots=slots, user_id=user_id
-        )
+        result = await google.handle_intent(intent=intent_name, slots=slots, user_id=user_id)
 
         # Send response
         await google.send_response(result)
@@ -155,9 +145,7 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
 
 
 @router.post("/tesla/webhook", response_model=VoicePlatformResponse)
-async def tesla_webhook(
-    request: TeslaRequest, x_tesla_signature: Optional[str] = Header(None)
-):
+async def tesla_webhook(request: TeslaRequest, x_tesla_signature: Optional[str] = Header(None)):
     """
     Tesla voice command endpoint
     Receives voice commands from Tesla vehicles

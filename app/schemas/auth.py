@@ -137,9 +137,7 @@ class LoginRequest(BaseModel):
     password: str
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"email": "parent@example.com", "password": "SecureP@ssw0rd"}
-        }
+        json_schema_extra={"example": {"email": "parent@example.com", "password": "SecureP@ssw0rd"}}
     )
 
 
@@ -179,9 +177,7 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
-        }
+        json_schema_extra={"example": {"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}}
     )
 
 

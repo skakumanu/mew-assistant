@@ -81,9 +81,7 @@ async def sync_offline_data(
     - Conflict resolution
     """
     service = MobileService(db)
-    return await service.sync_offline_data(
-        current_user.id, sync_request, background_tasks
-    )
+    return await service.sync_offline_data(current_user.id, sync_request, background_tasks)
 
 
 @router.post("/push/send", response_model=dict)

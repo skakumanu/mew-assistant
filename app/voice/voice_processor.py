@@ -95,8 +95,8 @@ class VoiceProcessor:
                     detected_language=preferred_language,
                 )
 
-            detected_language = (
-                preferred_language or await self.language_detector.detect(transcription)
+            detected_language = preferred_language or await self.language_detector.detect(
+                transcription
             )
             parsed_command = await self.command_parser.parse(
                 text=transcription, language=detected_language, user_id=user_id
@@ -215,11 +215,7 @@ class VoiceProcessor:
             if hasattr(transcription, "language"):
                 logger.info(f"Whisper detected language: {transcription.language}")
 
-            return (
-                transcription.text
-                if hasattr(transcription, "text")
-                else str(transcription)
-            )
+            return transcription.text if hasattr(transcription, "text") else str(transcription)
 
         except Exception as e:
             logger.error(f"Whisper fallback error: {e}")

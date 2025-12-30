@@ -136,9 +136,7 @@ class AIIntegration:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    async def generate_summary(
-        self, content: str, summary_type: str = "daily"
-    ) -> Dict[str, Any]:
+    async def generate_summary(self, content: str, summary_type: str = "daily") -> Dict[str, Any]:
         """Generate a summary of content."""
         prompts = {
             "daily": "Summarize the following daily activities clearly and concisely:",
@@ -163,9 +161,7 @@ class AIIntegration:
 
         return result
 
-    async def analyze_message(
-        self, message: str, context: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def analyze_message(self, message: str, context: Optional[str] = None) -> Dict[str, Any]:
         """Analyze a message to determine intent."""
         system_prompt = """Extract intent and key information. Return JSON:
 {

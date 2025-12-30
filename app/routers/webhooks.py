@@ -124,9 +124,7 @@ async def receive_whatsapp(
 
     except Exception as e:
         logger.error(f"Error processing incoming WhatsApp: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to process WhatsApp message"
-        )
+        raise HTTPException(status_code=500, detail="Failed to process WhatsApp message")
 
 
 @router.get("/sms/status")

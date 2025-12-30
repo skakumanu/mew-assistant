@@ -19,9 +19,7 @@ oauth = OAuth()
 
 def generate_apple_client_secret():
     """Generate Apple client secret JWT"""
-    if not all(
-        [settings.APPLE_TEAM_ID, settings.APPLE_KEY_ID, settings.APPLE_PRIVATE_KEY]
-    ):
+    if not all([settings.APPLE_TEAM_ID, settings.APPLE_KEY_ID, settings.APPLE_PRIVATE_KEY]):
         return None
 
     headers = {"kid": settings.APPLE_KEY_ID, "alg": "ES256"}
@@ -35,11 +33,7 @@ def generate_apple_client_secret():
     }
 
     client_secret = jwt.encode(headers, payload, settings.APPLE_PRIVATE_KEY)
-    return (
-        client_secret.decode("utf-8")
-        if isinstance(client_secret, bytes)
-        else client_secret
-    )
+    return client_secret.decode("utf-8") if isinstance(client_secret, bytes) else client_secret
 
 
 # Register OAuth providers
@@ -110,9 +104,7 @@ class OAuthService:
         return f"{auth_url}?{query_string}"
 
     @staticmethod
-    async def handle_callback(
-        provider: str, code: str, redirect_uri: str, db: Session
-    ) -> Dict:
+    async def handle_callback(provider: str, code: str, redirect_uri: str, db: Session) -> Dict:
         """
         Handle OAuth callback and create/login user
         Returns user info and JWT token
@@ -218,9 +210,7 @@ class OAuthService:
         # Link OAuth provider to user
         oauth_link = (
             db.query(OAuthProvider)
-            .filter(
-                OAuthProvider.user_id == user.id, OAuthProvider.provider == provider
-            )
+            .filter(OAuthProvider.user_id == user.id, OAuthProvider.provider == provider)
             .first()
         )
 
@@ -232,9 +222,7 @@ class OAuthService:
                 access_token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
                 token_expires_at=(
-                    datetime.fromtimestamp(token["expires_at"])
-                    if "expires_at" in token
-                    else None
+                    datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None
                 ),
             )
             db.add(oauth_link)
@@ -243,9 +231,7 @@ class OAuthService:
             oauth_link.access_token = token.get("access_token")
             oauth_link.refresh_token = token.get("refresh_token")
             oauth_link.token_expires_at = (
-                datetime.fromtimestamp(token["expires_at"])
-                if "expires_at" in token
-                else None
+                datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None
             )
             oauth_link.updated_at = datetime.utcnow()
 
@@ -280,9 +266,7 @@ class OAuthService:
     ) -> bool:
         """Link an OAuth provider to an existing user account"""
         client = oauth.create_client(provider)
-        token = await client.authorize_access_token(
-            code=code, redirect_uri=redirect_uri
-        )
+        token = await client.authorize_access_token(code=code, redirect_uri=redirect_uri)
 
         if provider == "facebook":
             async with httpx.AsyncClient() as http_client:
@@ -314,9 +298,7 @@ class OAuthService:
             existing.access_token = token.get("access_token")
             existing.refresh_token = token.get("refresh_token")
             existing.token_expires_at = (
-                datetime.fromtimestamp(token["expires_at"])
-                if "expires_at" in token
-                else None
+                datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None
             )
             existing.updated_at = datetime.utcnow()
         else:
@@ -328,9 +310,7 @@ class OAuthService:
                 access_token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
                 token_expires_at=(
-                    datetime.fromtimestamp(token["expires_at"])
-                    if "expires_at" in token
-                    else None
+                    datetime.fromtimestamp(token["expires_at"]) if "expires_at" in token else None
                 ),
             )
             db.add(oauth_link)
@@ -343,9 +323,7 @@ class OAuthService:
         """Unlink an OAuth provider from user account"""
         oauth_link = (
             db.query(OAuthProvider)
-            .filter(
-                OAuthProvider.user_id == user_id, OAuthProvider.provider == provider
-            )
+            .filter(OAuthProvider.user_id == user_id, OAuthProvider.provider == provider)
             .first()
         )
 
@@ -358,9 +336,7 @@ class OAuthService:
     @staticmethod
     def get_linked_providers(user_id: int, db: Session) -> list:
         """Get all OAuth providers linked to a user"""
-        providers = (
-            db.query(OAuthProvider).filter(OAuthProvider.user_id == user_id).all()
-        )
+        providers = db.query(OAuthProvider).filter(OAuthProvider.user_id == user_id).all()
 
         return [
             {
