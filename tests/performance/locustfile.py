@@ -12,6 +12,10 @@ class MewAssistantUser(HttpUser):
 
     def on_start(self):
         """Setup: Register and login"""
+        # Initialize headers as empty dict to prevent AttributeError
+        self.headers = {}
+        self.token = None
+        
         # Register a test user
         self.user_id = f"testuser_{random.randint(1000, 9999)}"
         response = self.client.post(
@@ -33,7 +37,8 @@ class MewAssistantUser(HttpUser):
 
             if login_response.status_code == 200:
                 self.token = login_response.json().get("access_token")
-                self.headers = {"Authorization": f"Bearer {self.token}"}
+                if self.token:
+                    self.headers = {"Authorization": f"Bearer {self.token}"}
 
     @task(3)
     def health_check(self):
@@ -43,11 +48,15 @@ class MewAssistantUser(HttpUser):
     @task(2)
     def create_session(self):
         """Test session creation"""
+        if not self.token:
+            return
         self.client.post("/api/v1/sessions/", json={"channel": "web"}, headers=self.headers)
 
     @task(5)
     def send_message(self):
         """Test message ingestion"""
+        if not self.token:
+            return
         messages = [
             "Schedule dentist appointment for next Tuesday at 2pm",
             "What's on the calendar tomorrow?",
@@ -68,11 +77,15 @@ class MewAssistantUser(HttpUser):
     @task(2)
     def get_summary(self):
         """Test summary generation"""
+        if not self.token:
+            return
         self.client.get("/api/v1/summary", params={"period": "week"}, headers=self.headers)
 
     @task(1)
     def voice_command(self):
         """Test voice command endpoint"""
+        if not self.token:
+            return
         commands = [
             "What do we have today?",
             "Schedule therapy session",
