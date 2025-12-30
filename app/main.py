@@ -6,8 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database.connection import init_db
-from .middleware import (CORSSecurityMiddleware, ErrorHandlingMiddleware,
-                         RequestLoggingMiddleware)
+from .middleware import CORSSecurityMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
 from .middleware.bot_protection import BotProtectionMiddleware
 from .routers import landing
 
@@ -50,12 +49,23 @@ app.include_router(landing.router, tags=["landing"])
 
 # Import other routers (moved below app to avoid circular imports)
 from .routers import auth_router  # noqa: E402
-from .routers import (ai_scheduler_router, calendar_router,  # noqa: E402
-                      calendar_web_router, debug_router, kid_router,
-                      message_router, mobile_router, oauth_web,
-                      parent_approval_router, session_router,
-                      simple_calendar_router, simple_oauth_router,
-                      summary_router, voice_router)
+# flake8: noqa
+from .routers import (
+    ai_scheduler_router,
+    calendar_router,  # noqa: E402
+    calendar_web_router,
+    debug_router,
+    kid_router,
+    message_router,
+    mobile_router,
+    oauth_web,
+    parent_approval_router,
+    session_router,
+    simple_calendar_router,
+    simple_oauth_router,
+    summary_router,
+    voice_router,
+)
 
 app.include_router(auth_router, tags=["auth"])
 app.include_router(oauth_web.router, tags=["oauth"])
