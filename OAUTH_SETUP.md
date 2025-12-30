@@ -168,7 +168,10 @@ export APPLE_TEAM_ID='YOUR_TEAM_ID'  # Found in top-right of Apple Developer Por
 export APPLE_KEY_ID='YOUR_KEY_ID'  # From Step 3
 # Do NOT paste your private key directly into the repository or docs.
 # Store the .p8 file securely and set the environment variable from the file:
-# export APPLE_PRIVATE_KEY="$(cat /path/to/AuthKey_YOUR_KEY_ID.p8)"
+# Note: Do NOT paste your private key into files or the repository.
+# Save the downloaded `.p8` file securely and load it into your environment or Key Vault.
+# Example (local, only for initial testing):
+# export APPLE_PRIVATE_KEY="[REDACTED_PRIVATE_KEY_CONTENT]"  # DO NOT COMMIT THIS  load from secure storage or Key Vault
 ```
 
 Store in Key Vault:
@@ -177,7 +180,7 @@ Store in Key Vault:
 az keyvault secret set --vault-name mew-assistant-kv-dev --name APPLE-CLIENT-ID --value "$APPLE_CLIENT_ID"
 az keyvault secret set --vault-name mew-assistant-kv-dev --name APPLE-TEAM-ID --value "$APPLE_TEAM_ID"
 az keyvault secret set --vault-name mew-assistant-kv-dev --name APPLE-KEY-ID --value "$APPLE_KEY_ID"
-az keyvault secret set --vault-name mew-assistant-kv-dev --name APPLE-PRIVATE-KEY --value "$APPLE_PRIVATE_KEY"
+az keyvault secret set --vault-name mew-assistant-kv-dev --name APPLE-PRIVATE-KEY --value "[REDACTED_PRIVATE_KEY_CONTENT]"  # use secure secret value source
 ```
 
 Update Container App:

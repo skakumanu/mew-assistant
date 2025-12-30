@@ -50,13 +50,13 @@ Post-merge follow-ups
 - Consider adding pre-commit hooks to prevent accidental secrets and to run basic tests.
 
 Notes & reproduction commands
-- To reproduce tests locally (Windows PowerShell, from repo root):
+ To reproduce tests locally (Windows PowerShell, from repo root):
 
 ```powershell
 # use venv python from repo
-C:/Users/skaku/Projects/mew-assistant/.venv/Scripts/python.exe -m pip install -r requirements.txt
+$env:SECRET_KEY = "[REDACTED]"
 $env:DATABASE_URL = "sqlite:///./test.db"
-$env:SECRET_KEY = "<SET_YOUR_SECRET_KEY_HERE>"
+$env:SECRET_KEY = "[REDACTED]"
 C:/Users/skaku/Projects/mew-assistant/.venv/Scripts/python.exe -m pytest -q
 ```
 
