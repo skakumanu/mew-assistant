@@ -282,7 +282,9 @@ class MobileIntegration:
         # Universal links (iOS) and App Links (Android)
         universal_link = f"https://app.mewassistant.com/{path}{query_string}"
 
-        logger.info(f"Generated deep links for screen: {screen}")
+        # Sanitize user-controlled screen parameter to prevent log injection
+        safe_screen = str(screen).replace('\n', '').replace('\r', '')[:100]
+        logger.info(f"Generated deep links for screen: {safe_screen}")
 
         return {"ios": ios_link, "android": android_link, "universal": universal_link}
 
@@ -309,7 +311,10 @@ class MobileIntegration:
             # Store device token in database for future notifications
             # This would integrate with your database layer
 
-            logger.info(f"Registered {platform} device for user {user_id}: {device_token[:8]}...")
+            # Sanitize user-controlled parameters to prevent log injection
+            safe_platform = str(platform).replace('\n', '').replace('\r', '')[:20]
+            safe_token_preview = str(device_token[:8]).replace('\n', '').replace('\r', '')
+            logger.info(f"Registered {safe_platform} device for user {user_id}: {safe_token_preview}...")
             return True
         except Exception as e:
             logger.error(f"Failed to register device: {e}")
@@ -364,7 +369,9 @@ class MobileIntegration:
             # This would integrate with a job scheduler (e.g., Celery, APScheduler)
             # For now, we'll log the scheduled reminder
 
-            logger.info(f"Scheduled reminder for user {user_id} at {scheduled_time}: {title}")
+            # Sanitize user-controlled title to prevent log injection
+            safe_title = str(title).replace('\n', '').replace('\r', '')[:200]
+            logger.info(f"Scheduled reminder for user {user_id} at {scheduled_time}: {safe_title}")
 
             # In production, you would:
             # 1. Store the reminder in the database

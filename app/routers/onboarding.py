@@ -164,6 +164,11 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.id == session.user_id).first()
 
+    # Escape user data to prevent XSS
+    from html import escape
+    safe_username = escape(user.username if user and user.username else "User")
+    safe_email = escape(user.email if user and user.email else "")
+
     return HTMLResponse(
         f"""
     <!DOCTYPE html>
@@ -180,8 +185,8 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
         </style>
     </head>
     <body>
-        <h1>🎉 Welcome {user.full_name}!</h1>
-        <p>Your Mew Assistant is ready to help with scheduling and caregiving tasks!</p>
+        <h1>🎉 Welcome {safe_username}!</h1>
+        <p>Your Mew Assistant ({safe_email}) is ready to help with scheduling and caregiving tasks!</p>
 
         <h2>Quick Setup (Optional)</h2>
 

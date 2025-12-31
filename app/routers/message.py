@@ -62,8 +62,11 @@ async def ingest_message(message_data: MessageIngest, db: Session = Depends(get_
         privacy_scan = privacy_guardrails.scan_and_protect(message_dict, anonymize=False)
 
         if privacy_scan["pii_detected"]:
+            # Sanitize user-controlled data to prevent log injection
+            safe_sender = str(message_data.sender).replace('\n', '').replace('\r', '')[:50]
+            safe_findings = str(privacy_scan['findings']).replace('\n', '').replace('\r', '')[:200]
             logger.info(
-                f"PII detected in message from {message_data.sender}: {privacy_scan['findings']}"
+                f"PII detected in message from {safe_sender}: {safe_findings}"
             )
 
         message = service.ingest_message(message_data)
