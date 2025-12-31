@@ -14,7 +14,7 @@ async def calendar_page(request: Request):
     Simple web page to view calendar.
     No downloads, no complexity - just a webpage!
     """
-    
+
     html = """
     <!DOCTYPE html>
     <html>
@@ -100,7 +100,7 @@ async def calendar_page(request: Request):
         <div class="container">
             <h1>📅 My Calendar</h1>
             <p class="subtitle">View your Google Calendar events</p>
-            
+
             <!-- Not signed in -->
             <div id="needSignIn" style="display:none;">
                 <div class="message info">
@@ -111,7 +111,7 @@ async def calendar_page(request: Request):
                     🔐 Sign in with Google
                 </a>
             </div>
-            
+
             <!-- Signed in -->
             <div id="signedIn" style="display:none;">
                 <div class="message success" id="welcome"></div>
@@ -122,7 +122,7 @@ async def calendar_page(request: Request):
                     Sign Out
                 </button>
             </div>
-            
+
             <!-- Loading -->
             <div id="loading" style="display:none;">
                 <div class="loading">
@@ -130,10 +130,10 @@ async def calendar_page(request: Request):
                     <p>Loading your calendar...</p>
                 </div>
             </div>
-            
+
             <!-- Messages -->
             <div id="message"></div>
-            
+
             <!-- Events -->
             <div id="events"></div>
         </div>
@@ -145,11 +145,11 @@ async def calendar_page(request: Request):
                 const urlParams = new URLSearchParams(window.location.search);
                 const urlToken = urlParams.get('token');
                 const userName = urlParams.get('name');
-                
+
                 console.log('Calendar page loaded');
                 console.log('Token in URL:', urlToken ? 'YES' : 'NO');
                 console.log('Current localStorage token:', localStorage.getItem('mew_token') ? 'EXISTS' : 'NONE');
-                
+
                 if (urlToken) {
                     console.log('Saving token to localStorage...');
                     // Save token from URL to localStorage
@@ -161,14 +161,14 @@ async def calendar_page(request: Request):
                     // Clean URL (remove token from address bar)
                     window.history.replaceState({}, document.title, '/calendar');
                 }
-                
+
                 checkAuth();
             };
-            
+
             function checkAuth() {
                 const token = localStorage.getItem('mew_token');
                 const userName = localStorage.getItem('mew_name');
-                
+
                 if (token) {
                     document.getElementById('signedIn').style.display = 'block';
                     document.getElementById('needSignIn').style.display = 'none';
@@ -178,32 +178,32 @@ async def calendar_page(request: Request):
                     document.getElementById('needSignIn').style.display = 'block';
                 }
             }
-            
+
             function signOut() {
                 localStorage.removeItem('mew_token');
                 localStorage.removeItem('mew_user');
                 localStorage.removeItem('mew_name');
                 location.reload();
             }
-            
+
             function showMessage(text, type) {
                 const msg = document.getElementById('message');
                 msg.className = 'message ' + type;
                 msg.innerHTML = text;
             }
-            
+
             function loadCalendar() {
                 const token = localStorage.getItem('mew_token');
-                
+
                 if (!token) {
                     showMessage('Please sign in first', 'error');
                     return;
                 }
-                
+
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('events').innerHTML = '';
                 document.getElementById('message').innerHTML = '';
-                
+
                 fetch('/simple-calendar/events?max_results=25', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
@@ -218,34 +218,34 @@ async def calendar_page(request: Request):
                 })
                 .then(data => {
                     document.getElementById('loading').style.display = 'none';
-                    
+
                     if (data.events && data.events.length > 0) {
                         showMessage('✅ Found ' + data.count + ' event' + (data.count !== 1 ? 's' : ''), 'success');
-                        
+
                         const eventsDiv = document.getElementById('events');
                         data.events.forEach(event => {
                             const div = document.createElement('div');
                             div.className = 'event';
-                            
+
                             const title = document.createElement('div');
                             title.className = 'event-title';
                             title.textContent = event.summary || 'Untitled Event';
-                            
+
                             const time = document.createElement('div');
                             time.className = 'event-time';
                             const date = new Date(event.start);
                             time.textContent = '🕐 ' + date.toLocaleString();
-                            
+
                             div.appendChild(title);
                             div.appendChild(time);
-                            
+
                             if (event.location) {
                                 const loc = document.createElement('div');
                                 loc.className = 'event-location';
                                 loc.textContent = '📍 ' + event.location;
                                 div.appendChild(loc);
                             }
-                            
+
                             eventsDiv.appendChild(div);
                         });
                     } else {
@@ -264,21 +264,21 @@ async def calendar_page(request: Request):
     </body>
     </html>
     """
-    
+
     return HTMLResponse(content=html)
 
 
 @router.get("/test-token")
 async def test_token():
     """Debug endpoint to test token generation"""
-    from ..utils.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-    
+    from ..utils.auth import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
+
     test_data = {"sub": "test", "email": "test@test.com", "role": "user"}
     token = create_access_token(test_data)
-    
+
     return {
         "token_length": len(token),
         "token_preview": token[:50] + "...",
         "expire_minutes_setting": ACCESS_TOKEN_EXPIRE_MINUTES,
-        "expire_days": ACCESS_TOKEN_EXPIRE_MINUTES / 1440
+        "expire_days": ACCESS_TOKEN_EXPIRE_MINUTES / 1440,
     }

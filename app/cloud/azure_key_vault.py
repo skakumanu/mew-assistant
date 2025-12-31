@@ -2,8 +2,10 @@
 Azure Key Vault Integration
 Securely stores and retrieves secrets, API keys, and credentials
 """
+
 import os
 from typing import Optional
+
 from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -11,7 +13,7 @@ logger = get_logger(__name__)
 
 class AzureKeyVaultClient:
     """Manages secrets in Azure Key Vault"""
-    
+
     def __init__(self):
         # Check if Azure is enabled
         azure_enabled = os.getenv("AZURE_ENABLED", "false").lower() == "true"
@@ -19,17 +21,17 @@ class AzureKeyVaultClient:
             logger.info("Azure Key Vault disabled, using local .env")
             self.client = None
             return
-            
+
         vault_url = os.getenv("AZURE_KEY_VAULT_URL")
         if not vault_url:
             logger.warning("AZURE_KEY_VAULT_URL not set, using local .env fallback")
             self.client = None
             return
-        
+
         try:
             from azure.identity import DefaultAzureCredential
             from azure.keyvault.secrets import SecretClient
-            
+
             credential = DefaultAzureCredential()
             self.client = SecretClient(vault_url=vault_url, credential=credential)
             logger.info(f"Connected to Azure Key Vault: {vault_url}")
@@ -39,7 +41,7 @@ class AzureKeyVaultClient:
         except Exception as e:
             logger.error(f"Failed to connect to Key Vault: {e}")
             self.client = None
-    
+
     def get_secret(self, secret_name: str) -> Optional[str]:
         """Retrieve a secret from Key Vault, falls back to environment variables"""
         if self.client:
@@ -49,7 +51,7 @@ class AzureKeyVaultClient:
             except Exception as e:
                 logger.warning(f"Failed to get secret {secret_name} from Key Vault: {e}")
         return os.getenv(secret_name)
-    
+
     def set_secret(self, secret_name: str, secret_value: str) -> bool:
         """Store a secret in Key Vault"""
         if not self.client:

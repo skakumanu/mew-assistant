@@ -1,11 +1,8 @@
 """Test main application"""
-from fastapi.testclient import TestClient
-from app.main import app
 
 
-def test_root_endpoint():
+def test_root_endpoint(client):
     """Test root endpoint returns welcome message"""
-    client = TestClient(app)
     response = client.get("/")
     assert response.status_code == 200
     data = response.json()
@@ -13,9 +10,8 @@ def test_root_endpoint():
     assert "Mew Assistant" in data["message"]
 
 
-def test_health_endpoint():
+def test_health_endpoint(client):
     """Test health check endpoint"""
-    client = TestClient(app)
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()

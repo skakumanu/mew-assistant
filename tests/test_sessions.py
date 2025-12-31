@@ -9,8 +9,8 @@ def test_create_session(client):
             "user_id": "test_user_001",
             "session_type": "tutoring",
             "title": "Math Homework",
-            "priority": "normal"
-        }
+            "priority": "normal",
+        },
     )
     assert response.status_code == 201
     data = response.json()
@@ -28,11 +28,11 @@ def test_get_session(client):
             "user_id": "test_user_002",
             "session_type": "scheduling",
             "title": "Doctor Appointment",
-            "priority": "high"
-        }
+            "priority": "high",
+        },
     )
     session_id = create_response.json()["id"]
-    
+
     # Get the session
     response = client.get(f"/mew/session/{session_id}")
     assert response.status_code == 200
@@ -44,7 +44,7 @@ def test_get_session(client):
 def test_list_user_sessions(client):
     """Test listing sessions for a user"""
     user_id = "test_user_003"
-    
+
     # Create multiple sessions
     for i in range(3):
         client.post(
@@ -53,10 +53,10 @@ def test_list_user_sessions(client):
                 "user_id": user_id,
                 "session_type": "tutoring",
                 "title": f"Session {i}",
-                "priority": "normal"
-            }
+                "priority": "normal",
+            },
         )
-    
+
     # List sessions
     response = client.get(f"/mew/sessions/user/{user_id}")
     assert response.status_code == 200

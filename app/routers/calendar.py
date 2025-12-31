@@ -2,22 +2,23 @@
 Calendar Router
 Endpoints for calendar integration and event management
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.integrations.calendar_integration import CalendarIntegration
+from app.schemas.auth import UserResponse
 from app.schemas.calendar import (
-    CalendarEventCreate,
-    CalendarEventResponse,
     CalendarConnectionRequest,
     CalendarConnectionResponse,
+    CalendarEventCreate,
+    CalendarEventResponse,
+    CalendarProvider,
     UpcomingEventsRequest,
     UpcomingEventsResponse,
-    CalendarProvider
 )
-from app.integrations.calendar_integration import CalendarIntegration
 from app.utils.auth import get_current_user
-from app.schemas.auth import UserResponse
 
 router = APIRouter(prefix="/calendar", tags=["Calendar"])
 calendar_integration = CalendarIntegration()
@@ -28,11 +29,11 @@ async def connect_calendar(
     provider: CalendarProvider,
     connection_data: CalendarConnectionRequest,
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Connect to a calendar provider (Google, Apple iCloud, or Outlook)
-    
+
     **Required credentials by provider:**
     - **Google**: OAuth2 credentials
     - **Apple**: CalDAV server, username, app-specific password
@@ -40,36 +41,34 @@ async def connect_calendar(
     """
     try:
         success = False
-        
+
         if provider == CalendarProvider.GOOGLE:
             success = await calendar_integration.connect_google_calendar(
                 connection_data.credentials
             )
         elif provider == CalendarProvider.APPLE:
-            success = await calendar_integration.connect_apple_calendar(
-                connection_data.credentials
-            )
+            success = await calendar_integration.connect_apple_calendar(connection_data.credentials)
         elif provider == CalendarProvider.OUTLOOK:
             success = await calendar_integration.connect_outlook_calendar(
                 connection_data.credentials
             )
-        
+
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to connect to {provider} calendar"
+                detail=f"Failed to connect to {provider} calendar",
             )
-        
+
         return CalendarConnectionResponse(
             success=True,
             provider=provider,
-            message=f"Successfully connected to {provider} calendar"
+            message=f"Successfully connected to {provider} calendar",
         )
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Calendar connection error: {str(e)}"
+            detail=f"Calendar connection error: {str(e)}",
         )
 
 
@@ -77,11 +76,11 @@ async def connect_calendar(
 async def create_calendar_event(
     event_data: CalendarEventCreate,
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Create a calendar event
-    
+
     Supports creating events in Google Calendar, Apple iCloud, or Outlook Calendar
     """
     try:
@@ -93,15 +92,15 @@ async def create_calendar_event(
             description=event_data.description,
             location=event_data.location,
             attendees=event_data.attendees,
-            reminder_minutes=event_data.reminder_minutes
+            reminder_minutes=event_data.reminder_minutes,
         )
-        
+
         if not event_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to create calendar event"
+                detail="Failed to create calendar event",
             )
-        
+
         return CalendarEventResponse(
             event_id=event_id,
             provider=event_data.provider,
@@ -109,13 +108,13 @@ async def create_calendar_event(
             start_time=event_data.start_time,
             end_time=event_data.end_time,
             success=True,
-            message="Calendar event created successfully"
+            message="Calendar event created successfully",
         )
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create event: {str(e)}"
+            detail=f"Failed to create event: {str(e)}",
         )
 
 
@@ -123,28 +122,27 @@ async def create_calendar_event(
 async def get_upcoming_events(
     request_data: UpcomingEventsRequest,
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Retrieve upcoming calendar events
-    
+
     Get events from the next N days across all connected calendars
     """
     try:
         events = await calendar_integration.get_upcoming_events(
-            provider=request_data.provider,
-            days_ahead=request_data.days_ahead
+            provider=request_data.provider, days_ahead=request_data.days_ahead
         )
-        
+
         return UpcomingEventsResponse(
             provider=request_data.provider,
             events=events,
             count=len(events),
-            days_ahead=request_data.days_ahead
+            days_ahead=request_data.days_ahead,
         )
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve events: {str(e)}"
+            detail=f"Failed to retrieve events: {str(e)}",
         )

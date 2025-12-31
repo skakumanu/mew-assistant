@@ -9,10 +9,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: '.'
     
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        # Run a single, supported Python version in CI for now to speed up runs.
+        python-version: ['3.11']
     
     steps:
     - uses: actions/checkout@v3
@@ -27,13 +30,22 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio pytest-cov
+        pip install argon2-cffi
     
+    - name: Ensure SECRET_KEY
+      run: |
+        if [ -z "${{ secrets.SECRET_KEY }}" ]; then
+          echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> $GITHUB_ENV
+        else
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
+        fi
+
     - name: Run tests with pytest
       run: |
         pytest tests/ --cov=app --cov-report=xml --cov-report=term
       env:
-        DATABASE_URL: sqlite:///./test.db
-    
+        DATABASE_URL: sqlite:///./test-${{ matrix.python-version }}-${{ github.run_id }}.db
+        
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

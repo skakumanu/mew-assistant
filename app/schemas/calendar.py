@@ -2,14 +2,17 @@
 Calendar Schemas
 Pydantic models for calendar integration
 """
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class CalendarProvider(str, Enum):
     """Supported calendar providers"""
+
     GOOGLE = "google"
     APPLE = "apple"
     MICROSOFT = "microsoft"
@@ -18,17 +21,17 @@ class CalendarProvider(str, Enum):
 
 class CalendarConnectionRequest(BaseModel):
     """Request model for connecting to a calendar provider"""
+
     credentials: Dict[str, Any] = Field(
         ...,
         description="Provider-specific credentials",
-        example={
-            "google": {"token": "oauth2_token"}
-        }
+        example={"google": {"token": "oauth2_token"}},
     )
 
 
 class CalendarConnectionResponse(BaseModel):
     """Response model for calendar connection"""
+
     success: bool
     provider: str
     message: str
@@ -36,6 +39,7 @@ class CalendarConnectionResponse(BaseModel):
 
 class CalendarEventCreate(BaseModel):
     """Request model for creating a calendar event"""
+
     provider: str = Field("google", description="Calendar provider")
     title: str = Field(..., min_length=1, max_length=200, description="Event title")
     start_time: datetime = Field(..., description="Event start time (UTC)")
@@ -43,8 +47,10 @@ class CalendarEventCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=1000, description="Event description")
     location: Optional[str] = Field(None, max_length=200, description="Event location")
     attendees: Optional[List[str]] = Field(None, description="List of attendee email addresses")
-    reminder_minutes: int = Field(30, ge=0, le=10080, description="Reminder time before event (minutes)")
-    
+    reminder_minutes: int = Field(
+        30, ge=0, le=10080, description="Reminder time before event (minutes)"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -55,13 +61,14 @@ class CalendarEventCreate(BaseModel):
                 "description": "Weekly therapy session",
                 "location": "123 Main St, Suite 200",
                 "attendees": ["therapist@example.com", "parent@example.com"],
-                "reminder_minutes": 30
+                "reminder_minutes": 30,
             }
         }
 
 
 class CalendarEventResponse(BaseModel):
     """Response model for calendar event creation"""
+
     event_id: str
     provider: str
     title: str
@@ -73,20 +80,17 @@ class CalendarEventResponse(BaseModel):
 
 class UpcomingEventsRequest(BaseModel):
     """Request model for retrieving upcoming events"""
+
     provider: str = Field("google", description="Calendar provider")
     days_ahead: int = Field(7, ge=1, le=365, description="Number of days to look ahead")
-    
+
     class Config:
-        json_schema_extra = {
-            "example": {
-                "provider": "google",
-                "days_ahead": 7
-            }
-        }
+        json_schema_extra = {"example": {"provider": "google", "days_ahead": 7}}
 
 
 class CalendarEvent(BaseModel):
     """Model for a calendar event"""
+
     id: str
     title: str
     start: Optional[str]
@@ -97,6 +101,7 @@ class CalendarEvent(BaseModel):
 
 class UpcomingEventsResponse(BaseModel):
     """Response model for upcoming events"""
+
     provider: str
     events: List[CalendarEvent]
     count: int

@@ -2,9 +2,9 @@
 AI integration for OpenAI and Anthropic APIs.
 """
 
-from typing import Dict, Any, Optional
-from datetime import datetime
 import json
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 from app.utils.config import settings
 from app.utils.logger import get_logger
@@ -16,13 +16,13 @@ class AIIntegration:
     """AI integration supporting multiple providers."""
 
     def __init__(self):
-        self.openai_api_key = getattr(settings, 'OPENAI_API_KEY', '')
-        self.anthropic_api_key = getattr(settings, 'ANTHROPIC_API_KEY', '')
-        self.default_model = getattr(settings, 'AI_MODEL', 'gpt-4')
-        
+        self.openai_api_key = getattr(settings, "OPENAI_API_KEY", "")
+        self.anthropic_api_key = getattr(settings, "ANTHROPIC_API_KEY", "")
+        self.default_model = getattr(settings, "AI_MODEL", "gpt-4")
+
         self.openai_client = None
         self.anthropic_client = None
-        
+
         self._initialize_clients()
 
     def _initialize_clients(self):
@@ -30,6 +30,7 @@ class AIIntegration:
         if self.openai_api_key:
             try:
                 from openai import AsyncOpenAI
+
                 self.openai_client = AsyncOpenAI(api_key=self.openai_api_key)
                 logger.info("OpenAI client initialized")
             except ImportError:
@@ -40,6 +41,7 @@ class AIIntegration:
         if self.anthropic_api_key:
             try:
                 from anthropic import AsyncAnthropic
+
                 self.anthropic_client = AsyncAnthropic(api_key=self.anthropic_api_key)
                 logger.info("Anthropic client initialized")
             except ImportError:
@@ -57,7 +59,7 @@ class AIIntegration:
     ) -> Dict[str, Any]:
         """Generate text using AI model."""
         model = model or self.default_model
-        
+
         try:
             if model.startswith("gpt") or model.startswith("o1"):
                 return await self._generate_openai(
@@ -134,9 +136,7 @@ class AIIntegration:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    async def generate_summary(
-        self, content: str, summary_type: str = "daily"
-    ) -> Dict[str, Any]:
+    async def generate_summary(self, content: str, summary_type: str = "daily") -> Dict[str, Any]:
         """Generate a summary of content."""
         prompts = {
             "daily": "Summarize the following daily activities clearly and concisely:",
@@ -144,8 +144,8 @@ class AIIntegration:
             "activity": "Summarize this activity log focusing on important events:",
         }
 
-        system_prompt = """You are Mew, a helpful assistant for special needs families. 
-Create clear, compassionate summaries."""
+        system_prompt = """You are Mew, a helpful assistant for special needs families.
+    Create clear, compassionate summaries."""
 
         prompt = f"{prompts.get(summary_type, prompts['daily'])}\n\n{content}"
 
@@ -161,9 +161,7 @@ Create clear, compassionate summaries."""
 
         return result
 
-    async def analyze_message(
-        self, message: str, context: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def analyze_message(self, message: str, context: Optional[str] = None) -> Dict[str, Any]:
         """Analyze a message to determine intent."""
         system_prompt = """Extract intent and key information. Return JSON:
 {

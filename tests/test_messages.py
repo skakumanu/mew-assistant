@@ -9,8 +9,8 @@ def test_ingest_message(client):
             "channel": "email",
             "sender": "parent@example.com",
             "subject": "Question about session",
-            "body": "When is the next tutoring session?"
-        }
+            "body": "When is the next tutoring session?",
+        },
     )
     assert response.status_code == 201
     data = response.json()
@@ -27,12 +27,12 @@ def test_batch_ingest(client):
                 "channel": "email",
                 "sender": f"user{i}@example.com",
                 "subject": f"Subject {i}",
-                "body": f"Message {i}"
+                "body": f"Message {i}",
             }
             for i in range(5)
         ]
     }
-    
+
     response = client.post("/mew/ingest/batch", json=batch_data)
     assert response.status_code == 201
     data = response.json()
@@ -48,10 +48,10 @@ def test_get_unprocessed_messages(client):
             json={
                 "channel": "sms",
                 "sender": f"+1234567890{i}",
-                "body": f"Test message {i}"
-            }
+                "body": f"Test message {i}",
+            },
         )
-    
+
     # Get unprocessed
     response = client.get("/mew/messages/unprocessed")
     assert response.status_code == 200

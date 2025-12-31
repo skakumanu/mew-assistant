@@ -54,11 +54,12 @@ jobs:
         output: 'trivy-results.sarif'
         severity: 'CRITICAL,HIGH'
     
-    - name: Upload Trivy results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
+    - name: Save Trivy repo scan SARIF
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        sarif_file: 'trivy-results.sarif'
+        name: trivy-repo-sarif
+        path: trivy-results.sarif
     
     - name: Build Docker image for scanning
       run: docker build -t mew-assistant:${{ github.sha }} .
@@ -70,11 +71,12 @@ jobs:
         format: 'sarif'
         output: 'trivy-image-results.sarif'
     
-    - name: Upload image scan results
-      uses: github/codeql-action/upload-sarif@v3
+    - name: Save Trivy image scan SARIF
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        sarif_file: 'trivy-image-results.sarif'
+        name: trivy-image-sarif
+        path: trivy-image-results.sarif
 
   snyk:
     name: Snyk Security Scan
@@ -82,7 +84,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Check SNYK token
+      id: check_snyk
+      run: |
+        if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
+          echo "run=true" >> $GITHUB_OUTPUT
+        else
+          echo "run=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Run Snyk to check for vulnerabilities
+      if: ${{ steps.check_snyk.outputs.run == 'true' }}
       uses: snyk/actions/python-3.10@master
       continue-on-error: true
       env:

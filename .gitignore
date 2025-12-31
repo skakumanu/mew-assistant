@@ -55,6 +55,13 @@ htmlcov/
 # Logs
 *.log
 logs/
+logs/**
+
+# Ensure generated test-results/coverage artifacts are not tracked
+htmlcov/**
+
+# CI/test artifacts (generated coverage & logs)
+htmlcov/**
 
 # Docker/Podman
 *.pid

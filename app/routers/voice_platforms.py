@@ -3,24 +3,25 @@ Voice Platform Router
 Handles requests from Siri, Alexa, Google Assistant, Tesla, etc.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header
-from typing import Optional, Dict, Any
 import logging
+from typing import Any, Dict, Optional
 
-from app.schemas.voice_platform import (
-    VoicePlatformResponse,
-    SiriRequest,
-    AlexaRequest,
-    GoogleAssistantRequest,
-    TeslaRequest
-)
+from fastapi import APIRouter, Depends, Header, HTTPException
+
 from app.integrations.voice_platforms import (
-    SiriIntegration,
     AlexaIntegration,
     GoogleAssistantIntegration,
-    TeslaIntegration
+    SiriIntegration,
+    TeslaIntegration,
 )
 from app.middleware.auth import verify_api_key
+from app.schemas.voice_platform import (
+    AlexaRequest,
+    GoogleAssistantRequest,
+    SiriRequest,
+    TeslaRequest,
+    VoicePlatformResponse,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/voice", tags=["Voice Platforms"])
@@ -34,41 +35,33 @@ tesla = TeslaIntegration(config={})
 
 
 @router.post("/siri/webhook", response_model=VoicePlatformResponse)
-async def siri_webhook(
-    request: SiriRequest,
-    authorization: Optional[str] = Header(None)
-):
+async def siri_webhook(request: SiriRequest, authorization: Optional[str] = Header(None)):
     """
     Apple Siri webhook endpoint
     Receives SiriKit intents and iOS Shortcuts
     """
     try:
         # Authenticate request
-        auth_valid = await siri.authenticate({
-            "signature": authorization,
-            "body": request.json()
-        })
-        
+        auth_valid = await siri.authenticate({"signature": authorization, "body": request.json()})
+
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Siri signature")
-        
+
         # Process intent
         result = await siri.handle_intent(
-            intent=request.intent,
-            slots=request.slots,
-            user_id=request.user_id
+            intent=request.intent, slots=request.slots, user_id=request.user_id
         )
-        
+
         # Send response
         await siri.send_response(result)
-        
+
         return VoicePlatformResponse(
             platform="siri",
-            success=result.get('success', False),
-            response=result.get('speech', ''),
-            data=result
+            success=result.get("success", False),
+            response=result.get("speech", ""),
+            data=result,
         )
-        
+
     except Exception as e:
         logger.error(f"Siri webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -82,36 +75,31 @@ async def alexa_webhook(request: AlexaRequest):
     """
     try:
         # Authenticate request
-        auth_valid = await alexa.authenticate({
-            "session": request.session,
-            "request": request.request
-        })
-        
+        auth_valid = await alexa.authenticate(
+            {"session": request.session, "request": request.request}
+        )
+
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Alexa request")
-        
+
         # Extract intent and slots
-        intent_name = request.request.get('intent', {}).get('name', '')
-        slots = request.request.get('intent', {}).get('slots', {})
-        user_id = request.session.get('user', {}).get('userId', '')
-        
+        intent_name = request.request.get("intent", {}).get("name", "")
+        slots = request.request.get("intent", {}).get("slots", {})
+        user_id = request.session.get("user", {}).get("userId", "")
+
         # Process intent
-        result = await alexa.handle_intent(
-            intent=intent_name,
-            slots=slots,
-            user_id=user_id
-        )
-        
+        result = await alexa.handle_intent(intent=intent_name, slots=slots, user_id=user_id)
+
         # Send response
         await alexa.send_response(result)
-        
+
         return VoicePlatformResponse(
             platform="alexa",
-            success=result.get('success', False),
-            response=result.get('speech', ''),
-            data=result
+            success=result.get("success", False),
+            response=result.get("speech", ""),
+            data=result,
         )
-        
+
     except Exception as e:
         logger.error(f"Alexa webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -125,79 +113,67 @@ async def google_assistant_webhook(request: GoogleAssistantRequest):
     """
     try:
         # Authenticate request
-        auth_valid = await google.authenticate({
-            "token": request.user.get('accessToken')
-        })
-        
+        auth_valid = await google.authenticate({"token": request.user.get("accessToken")})
+
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Google request")
-        
+
         # Extract intent and parameters
-        intent_name = request.inputs[0].get('intent', '') if request.inputs else ''
-        parameters = request.inputs[0].get('arguments', []) if request.inputs else []
-        user_id = request.user.get('userId', '')
-        
+        intent_name = request.inputs[0].get("intent", "") if request.inputs else ""
+        parameters = request.inputs[0].get("arguments", []) if request.inputs else []
+        user_id = request.user.get("userId", "")
+
         # Convert parameters to slots
-        slots = {p.get('name'): p.get('value') for p in parameters}
-        
+        slots = {p.get("name"): p.get("value") for p in parameters}
+
         # Process intent
-        result = await google.handle_intent(
-            intent=intent_name,
-            slots=slots,
-            user_id=user_id
-        )
-        
+        result = await google.handle_intent(intent=intent_name, slots=slots, user_id=user_id)
+
         # Send response
         await google.send_response(result)
-        
+
         return VoicePlatformResponse(
             platform="google_assistant",
-            success=result.get('success', False),
-            response=result.get('speech', ''),
-            data=result
+            success=result.get("success", False),
+            response=result.get("speech", ""),
+            data=result,
         )
-        
+
     except Exception as e:
         logger.error(f"Google Assistant webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/tesla/webhook", response_model=VoicePlatformResponse)
-async def tesla_webhook(
-    request: TeslaRequest,
-    x_tesla_signature: Optional[str] = Header(None)
-):
+async def tesla_webhook(request: TeslaRequest, x_tesla_signature: Optional[str] = Header(None)):
     """
     Tesla voice command endpoint
     Receives voice commands from Tesla vehicles
     """
     try:
         # Authenticate request
-        auth_valid = await tesla.authenticate({
-            "vehicle_id": request.vehicle_id,
-            "token": x_tesla_signature
-        })
-        
+        auth_valid = await tesla.authenticate(
+            {"vehicle_id": request.vehicle_id, "token": x_tesla_signature}
+        )
+
         if not auth_valid:
             raise HTTPException(status_code=401, detail="Invalid Tesla request")
-        
+
         # Process command
         result = await tesla.handle_intent(
-            intent=request.command,
-            slots=request.parameters,
-            user_id=request.user_id
+            intent=request.command, slots=request.parameters, user_id=request.user_id
         )
-        
+
         # Send response
         await tesla.send_response(result)
-        
+
         return VoicePlatformResponse(
             platform="tesla",
-            success=result.get('success', False),
-            response=result.get('speech', ''),
-            data=result
+            success=result.get("success", False),
+            response=result.get("speech", ""),
+            data=result,
         )
-        
+
     except Exception as e:
         logger.error(f"Tesla webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -215,38 +191,36 @@ async def list_platforms():
                 "id": "siri",
                 "status": "active",
                 "webhook": "/api/v1/voice/siri/webhook",
-                "features": ["SiriKit", "Shortcuts", "HomePod", "Apple Watch"]
+                "features": ["SiriKit", "Shortcuts", "HomePod", "Apple Watch"],
             },
             {
                 "name": "Amazon Alexa",
                 "id": "alexa",
                 "status": "active",
                 "webhook": "/api/v1/voice/alexa/webhook",
-                "features": ["Custom Skills", "Smart Home", "Flash Briefing"]
+                "features": ["Custom Skills", "Smart Home", "Flash Briefing"],
             },
             {
                 "name": "Google Assistant",
                 "id": "google_assistant",
                 "status": "active",
                 "webhook": "/api/v1/voice/google/webhook",
-                "features": ["Actions", "Smart Home", "Routines"]
+                "features": ["Actions", "Smart Home", "Routines"],
             },
             {
                 "name": "Tesla",
                 "id": "tesla",
                 "status": "active",
                 "webhook": "/api/v1/voice/tesla/webhook",
-                "features": ["Voice Commands", "Navigation", "In-Vehicle"]
-            }
+                "features": ["Voice Commands", "Navigation", "In-Vehicle"],
+            },
         ]
     }
 
 
 @router.post("/register/{platform}")
 async def register_platform(
-    platform: str,
-    config: Dict[str, Any],
-    api_key: str = Depends(verify_api_key)
+    platform: str, config: Dict[str, Any], api_key: str = Depends(verify_api_key)
 ):
     """
     Register or update voice platform integration
@@ -262,12 +236,12 @@ async def register_platform(
             success = await tesla.register_skill(config)
         else:
             raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
-        
+
         if success:
             return {"status": "success", "platform": platform}
         else:
             raise HTTPException(status_code=500, detail="Registration failed")
-            
+
     except Exception as e:
         logger.error(f"Platform registration error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

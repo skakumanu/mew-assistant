@@ -1,11 +1,14 @@
 """Schedule-related Pydantic schemas"""
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+
 from datetime import datetime
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ScheduleCreate(BaseModel):
     """Create a new schedule entry"""
+
     title: str
     start_time: datetime
     end_time: datetime
@@ -17,9 +20,10 @@ class ScheduleCreate(BaseModel):
 
 class ScheduleConflict(BaseModel):
     """Detected schedule conflict"""
+
     type: str = Field(
         ...,
-        description="Type of conflict: time_overlap, insufficient_break, insufficient_travel_time"
+        description="Type of conflict: time_overlap, insufficient_break, insufficient_travel_time",
     )
     schedule1_id: int
     schedule2_id: int
@@ -35,6 +39,7 @@ class ScheduleConflict(BaseModel):
 
 class ScheduleSuggestion(BaseModel):
     """AI-generated schedule suggestion"""
+
     start_time: datetime
     end_time: datetime
     confidence_score: float = Field(..., ge=0, le=1, description="Confidence score 0-1")
@@ -45,6 +50,7 @@ class ScheduleSuggestion(BaseModel):
 
 class OptimizationResult(BaseModel):
     """Schedule optimization result"""
+
     original_schedule: List[Dict]
     optimized_schedule: List[Dict]
     improvements: List[str]
@@ -53,6 +59,7 @@ class OptimizationResult(BaseModel):
 
 class ConflictDetectionRequest(BaseModel):
     """Request for conflict detection"""
+
     start_time: datetime
     end_time: datetime
     title: str
@@ -62,6 +69,7 @@ class ConflictDetectionRequest(BaseModel):
 
 class ScheduleSuggestionRequest(BaseModel):
     """Request for schedule suggestions"""
+
     activity_type: str
     duration_minutes: int
     preferred_date: datetime
@@ -70,7 +78,8 @@ class ScheduleSuggestionRequest(BaseModel):
 
 class ScheduleOptimizationRequest(BaseModel):
     """Request for schedule optimization"""
+
     date: datetime
     optimization_goals: List[str] = Field(
-        default_factory=lambda: ['minimize_transitions', 'respect_energy_levels']
+        default_factory=lambda: ["minimize_transitions", "respect_energy_levels"]
     )
