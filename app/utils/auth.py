@@ -5,6 +5,7 @@ Supports both JWT tokens and API keys for authentication.
 """
 
 import hashlib
+import hmac
 import logging
 import os
 import secrets
@@ -26,6 +27,9 @@ logger = logging.getLogger(__name__)
 # Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
+
+# API Key hashing salt (use separate salt from JWT secret for defense in depth)
+API_KEY_SALT = os.getenv("API_KEY_SALT", SECRET_KEY).encode()
 
 # Token Expiration Configuration
 # NOTE: 30-day (43200 minutes) default is intentional for OAuth-based authentication
@@ -288,7 +292,8 @@ def generate_api_key() -> tuple[str, str, str]:
     """
     key = secrets.token_urlsafe(32)
     full_key = f"mew_{key}"
-    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    # Use HMAC-SHA256 instead of plain SHA256 for secure key hashing
+    key_hash = hmac.new(API_KEY_SALT, full_key.encode(), hashlib.sha256).hexdigest()
     key_prefix = full_key[:12] + "..."
     return full_key, key_hash, key_prefix
 
@@ -305,7 +310,8 @@ async def verify_api_key(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key format"
         )
 
-    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    # Use HMAC-SHA256 instead of plain SHA256 for secure key hashing
+    key_hash = hmac.new(API_KEY_SALT, api_key.encode(), hashlib.sha256).hexdigest()
     api_key_record = (
         db.query(APIKey).filter(APIKey.key_hash == key_hash, APIKey.is_active.is_(True)).first()
     )
