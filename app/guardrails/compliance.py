@@ -3,6 +3,7 @@ Compliance checking for HIPAA, COPPA, GDPR.
 """
 
 from datetime import datetime
+from typing import Dict
 
 
 class ComplianceChecker:
