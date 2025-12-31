@@ -48,8 +48,11 @@ class MessageService:
         self.db.commit()
         self.db.refresh(message)
 
+        # Sanitize user-controlled data to prevent log injection
+        sender = str(message_data.sender).replace('\n', '').replace('\r', '')[:50]
+        channel = str(message_data.channel).replace('\n', '').replace('\r', '')[:20]
         logger.info(
-            f"Ingested message {message.id} from {message_data.sender} via {message_data.channel}"
+            f"Ingested message {message.id} from {sender} via {channel}"
         )
         return message
 

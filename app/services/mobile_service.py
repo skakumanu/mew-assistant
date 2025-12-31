@@ -31,7 +31,9 @@ class MobileService:
     ) -> MobileDeviceResponse:
         """Register a mobile device for push notifications"""
         # In production, store in database
-        logger.info(f"Registered {device_info.platform} device for user {user_id}")
+        # Sanitize platform value to prevent log injection
+        platform = str(device_info.platform).replace('\n', '').replace('\r', '')[:50]
+        logger.info(f"Registered {platform} device for user {user_id}")
 
         return MobileDeviceResponse(
             device_id=device_info.device_id,
@@ -104,7 +106,9 @@ class MobileService:
     ) -> Dict[str, Any]:
         """Send push notification to user's devices"""
         # In production, integrate with FCM/APNS
-        logger.info(f"Push notification sent to user {user_id}: {notification.title}")
+        # Sanitize title to prevent log injection
+        title = str(notification.title).replace('\n', '').replace('\r', '')[:100]
+        logger.info(f"Push notification sent to user {user_id}: {title}")
 
         return {
             "success": True,

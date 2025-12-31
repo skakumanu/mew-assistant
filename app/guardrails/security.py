@@ -3,7 +3,6 @@ Security validation and threat detection.
 """
 
 import re
-from typing import Dict
 
 
 class SecurityValidator:
