@@ -38,6 +38,9 @@ jobs:
           exit 1
         fi
         echo "✅ Security guardrails passed"
+      env:
+        DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-cd-only
     
     - name: 🛡️ Privacy Guardrails (MANDATORY)
       run: |
