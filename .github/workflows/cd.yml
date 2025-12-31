@@ -129,6 +129,7 @@ jobs:
         echo "✅ Parental approval logic verified"
       env:
         DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-cd-only
     
     - name: 📊 Generate Guardrail Report
       if: always()
