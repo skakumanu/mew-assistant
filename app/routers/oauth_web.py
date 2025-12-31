@@ -1,12 +1,38 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
+from urllib.parse import urlparse
 
 from app.database.connection import get_db
 from app.services.oauth_service import OAuthService
 from app.utils.log_sanitizer import sanitize_for_log
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
+
+
+def is_safe_redirect_uri(uri: str) -> bool:
+    """
+    Validate redirect URI to prevent open redirect vulnerabilities.
+    Only allow relative paths or same-origin redirects.
+    """
+    if not uri:
+        return False
+    
+    # Allow relative paths
+    if uri.startswith('/'):
+        return True
+    
+    # For absolute URLs, check if they're from allowed origins
+    try:
+        parsed = urlparse(uri)
+        # Only allow localhost and no scheme (relative)
+        if parsed.netloc in ['localhost', '127.0.0.1', ''] or parsed.netloc.startswith('localhost:'):
+            return True
+    except Exception:
+        return False
+    
+    return False
+
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -263,6 +289,10 @@ async def oauth_login_page(request: Request):
 async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = Depends(get_db)):
     """Initiate OAuth flow for a provider"""
     try:
+        # Validate redirect URI to prevent open redirect attacks
+        if not is_safe_redirect_uri(redirect_uri):
+            raise HTTPException(status_code=400, detail="Invalid redirect URI")
+        
         auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
         return RedirectResponse(url=auth_url)
     except Exception as e:
@@ -283,6 +313,11 @@ async def oauth_callback(
         # Azure load balancer terminates SSL, so check X-Forwarded-Proto header
         scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
         host = request.headers.get("host") or request.url.netloc
+        
+        # Validate scheme to prevent open redirect
+        if scheme not in ["http", "https"]:
+            raise HTTPException(status_code=400, detail="Invalid redirect scheme")
+        
         redirect_uri = f"{scheme}://{host}/auth/oauth/callback/{provider}"
 
         print(
