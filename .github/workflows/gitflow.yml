@@ -14,7 +14,12 @@ jobs:
       
       - name: Validate branch naming
         run: |
-          BRANCH=${GITHUB_REF#refs/heads/}
+          # For pull requests, use GITHUB_HEAD_REF instead of GITHUB_REF
+          if [ -n "$GITHUB_HEAD_REF" ]; then
+            BRANCH=$GITHUB_HEAD_REF
+          else
+            BRANCH=${GITHUB_REF#refs/heads/}
+          fi
           echo "Current branch: $BRANCH"
           
           if [[ "$BRANCH" =~ ^(main|develop|feature/.+|release/.+|hotfix/.+)$ ]]; then
