@@ -73,7 +73,8 @@ async def receive_sms(
 
     except Exception as e:
         logger.error(f"Error processing incoming SMS: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process SMS")
+        # Return generic error message without exposing stack trace to users
+        raise HTTPException(status_code=500, detail="Unable to process message")
 
 
 @router.post("/whatsapp/incoming")
@@ -130,7 +131,8 @@ async def receive_whatsapp(
 
     except Exception as e:
         logger.error(f"Error processing incoming WhatsApp: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process WhatsApp message")
+        # Return generic error message without exposing stack trace to users
+        raise HTTPException(status_code=500, detail="Unable to process message")
 
 
 @router.get("/sms/status")
