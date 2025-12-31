@@ -328,13 +328,48 @@ class InputSanitizer:
         Remove dangerous HTML tags and attributes using bleach library.
         Bleach uses an HTML parser instead of regex, preventing XSS bypasses.
         """
+        from html.parser import HTMLParser
+        import html as html_module
+        
         allowed_tags = ["p", "br", "strong", "em", "u", "ol", "ul", "li"]
         allowed_attributes = {}
+        
+        # Pre-process: Remove script/style tags and their contents using proper HTML parsing
+        class ScriptStripper(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.result = []
+                self.skip_content = False
+                
+            def handle_starttag(self, tag, attrs):
+                if tag.lower() in ['script', 'style']:
+                    self.skip_content = True
+                elif not self.skip_content:
+                    self.result.append(self.get_starttag_text())
+                    
+            def handle_endtag(self, tag):
+                if tag.lower() in ['script', 'style']:
+                    self.skip_content = False
+                elif not self.skip_content:
+                    self.result.append(f'</{tag}>')
+                    
+            def handle_data(self, data):
+                if not self.skip_content:
+                    self.result.append(data)
+                    
+            def get_cleaned(self):
+                return ''.join(self.result)
+        
+        try:
+            stripper = ScriptStripper()
+            stripper.feed(text)
+            text_without_scripts = stripper.get_cleaned()
+        except Exception:
+            # If HTML parsing fails, escape everything
+            return html_module.escape(text)
 
-        # For dangerous tags like <script>, we need to remove them AND their contents
-        # bleach.clean with strip=True only removes tags, not content
-        # So we need strip=False to remove both tags and content for disallowed tags
-        return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=False)
+        # Now use bleach to clean the remaining HTML
+        return bleach.clean(text_without_scripts, tags=allowed_tags, attributes=allowed_attributes, strip=True)
 
     @staticmethod
     def sanitize_sql(text: str) -> str:
