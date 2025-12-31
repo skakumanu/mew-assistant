@@ -166,6 +166,7 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
 
     # Escape user data to prevent XSS
     from html import escape
+    # Escape user-controlled data to prevent XSS attacks
     safe_username = escape(user.username if user and user.username else "User")
     safe_email = escape(user.email if user and user.email else "")
 
