@@ -183,7 +183,9 @@ class NotificationService:
     ) -> bool:
         """Send an urgent alert to a parent (synchronous helper for tests)."""
         try:
-            logger.info(f"Urgent alert to parent {parent_id} about kid {kid_id}: {message}")
+            # Sanitize message to prevent log injection
+            safe_message = str(message).replace('\n', '').replace('\r', '')[:200] if message else 'N/A'
+            logger.info(f"Urgent alert to parent {parent_id} about kid {kid_id}: {safe_message}")
             return True
         except Exception as e:
             logger.error(f"Failed to send urgent alert: {e}")

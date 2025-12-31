@@ -49,7 +49,10 @@ async def receive_sms(
 
         parsed_data = sms_integration.parse_incoming_sms(webhook_data)
 
-        logger.info(f"Received SMS from {From}: {Body[:50]}...")
+        # Sanitize user input for logging (prevent log injection)
+        safe_from = str(From).replace('\n', '').replace('\r', '')[:50]
+        safe_body = str(Body).replace('\n', '').replace('\r', '')[:50]
+        logger.info(f"Received SMS from {safe_from}: {safe_body}...")
 
         # Process the message
         response = await message_service.process_incoming_message(
@@ -102,7 +105,10 @@ async def receive_whatsapp(
 
         parsed_data = whatsapp_integration.parse_incoming_message(webhook_data)
 
-        logger.info(f"Received WhatsApp from {ProfileName or From}: {Body[:50]}...")
+        # Sanitize user input for logging (prevent log injection)
+        safe_sender = str(ProfileName or From).replace('\n', '').replace('\r', '')[:50]
+        safe_body = str(Body).replace('\n', '').replace('\r', '')[:50]
+        logger.info(f"Received WhatsApp from {safe_sender}: {safe_body}...")
 
         # Process the message
         response = await message_service.process_incoming_message(
@@ -137,10 +143,14 @@ async def sms_status(
     Webhook endpoint for SMS delivery status updates from Twilio.
     """
     try:
-        logger.info(f"SMS {MessageSid} status: {MessageStatus}")
+        # Sanitize user input for logging (prevent log injection)
+        safe_sid = str(MessageSid).replace('\n', '').replace('\r', '')[:50]
+        safe_status = str(MessageStatus).replace('\n', '').replace('\r', '')[:20]
+        logger.info(f"SMS {safe_sid} status: {safe_status}")
 
         if ErrorCode:
-            logger.error(f"SMS {MessageSid} error: {ErrorCode}")
+            safe_error = str(ErrorCode).replace('\n', '').replace('\r', '')[:20]
+            logger.error(f"SMS {safe_sid} error: {safe_error}")
 
         return {"status": "received"}
 
