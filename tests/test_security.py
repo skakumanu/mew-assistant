@@ -113,7 +113,8 @@ class TestSecurityMiddleware:
         for query in malicious_queries:
             response = client.get(f"/test{query}")
             assert response.status_code == 403
-            assert "malicious" in response.json()["detail"].lower()
+            # Generic error message to avoid exposing security details
+            assert "forbidden" in response.json()["detail"].lower()
 
     def test_xss_detection(self, client):
         """Test XSS attempts are blocked"""
@@ -136,7 +137,8 @@ class TestSecurityMiddleware:
         """Test CSRF token required for state-changing operations"""
         response = client.post("/test")
         assert response.status_code == 403
-        assert "csrf" in response.json()["detail"].lower()
+        # Generic error message to avoid exposing security details
+        assert "forbidden" in response.json()["detail"].lower()
 
     def test_csrf_with_bearer_token_exempt(self, client):
         """Test API requests with Bearer token exempt from CSRF"""
@@ -157,7 +159,8 @@ class TestSecurityMiddleware:
             },
         )
         assert response.status_code == 403
-        assert "large" in response.json()["detail"].lower()
+        # Generic error message to avoid exposing security details
+        assert "forbidden" in response.json()["detail"].lower()
 
 
 class TestInputSanitizer:

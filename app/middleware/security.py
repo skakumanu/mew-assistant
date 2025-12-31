@@ -41,7 +41,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             r"(\bOR\b\s+['\"][^'\"]+['\"]\s*=\s*['\"][^'\"]+['\"])", re.IGNORECASE
         ),  # tautology SQLi
         re.compile(r"(--|;)", re.IGNORECASE),  # SQL comment/terminator
-        re.compile(r"(<script[^>]*>.*?</script>)", re.IGNORECASE),  # XSS
+        # Note: XSS filtering moved to bleach.clean in sanitize_html
         re.compile(r"(javascript:|data:|vbscript:)", re.IGNORECASE),  # Protocol injection
         re.compile(r"(\.\./|\.\./\.\./)", re.IGNORECASE),  # Path traversal
         re.compile(r"(\bEXEC\b|\bEVAL\b|\bDROP\b)", re.IGNORECASE),  # Command injection
@@ -124,9 +124,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             # 6. Process request
             response = await call_next(request)
         except SecurityViolationError as se:
-            return JSONResponse(status_code=403, content={"detail": str(se)})
+            # Log full details internally, return generic message to client
+            logger.warning(f"Security violation: {str(se)}")
+            return JSONResponse(status_code=403, content={"detail": "Access forbidden"})
         except RateLimitExceeded as rexc:
-            return JSONResponse(status_code=429, content={"detail": str(rexc)})
+            # Log full details internally, return generic message to client
+            logger.warning(f"Rate limit exceeded: {str(rexc)}")
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"})
         except Exception as exc:
             logger.exception("Unexpected error in security middleware: %s", exc)
             return JSONResponse(status_code=500, content={"detail": "Internal security error"})
@@ -321,19 +325,51 @@ class InputSanitizer:
     @staticmethod
     def sanitize_html(text: str) -> str:
         """
-        Remove dangerous HTML tags and attributes
+        Remove dangerous HTML tags and attributes using bleach library.
+        Bleach uses an HTML parser instead of regex, preventing XSS bypasses.
         """
+        from html.parser import HTMLParser
+        import html as html_module
+        
         allowed_tags = ["p", "br", "strong", "em", "u", "ol", "ul", "li"]
         allowed_attributes = {}
-
-        # Remove script tags and their contents completely before cleaning
+        
+        # Pre-process: Remove script/style tags and their contents using proper HTML parsing
+        class ScriptStripper(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.result = []
+                self.skip_content = False
+                
+            def handle_starttag(self, tag, attrs):
+                if tag.lower() in ['script', 'style']:
+                    self.skip_content = True
+                elif not self.skip_content:
+                    self.result.append(self.get_starttag_text())
+                    
+            def handle_endtag(self, tag):
+                if tag.lower() in ['script', 'style']:
+                    self.skip_content = False
+                elif not self.skip_content:
+                    self.result.append(f'</{tag}>')
+                    
+            def handle_data(self, data):
+                if not self.skip_content:
+                    self.result.append(data)
+                    
+            def get_cleaned(self):
+                return ''.join(self.result)
+        
         try:
-            text = re.sub(r"(?is)<script.*?>.*?</script>", "", text)
+            stripper = ScriptStripper()
+            stripper.feed(text)
+            text_without_scripts = stripper.get_cleaned()
         except Exception:
-            pass
+            # If HTML parsing fails, escape everything
+            return html_module.escape(text)
 
-        # Run bleach.clean to strip any remaining disallowed tags/attributes
-        return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+        # Now use bleach to clean the remaining HTML
+        return bleach.clean(text_without_scripts, tags=allowed_tags, attributes=allowed_attributes, strip=True)
 
     @staticmethod
     def sanitize_sql(text: str) -> str:
