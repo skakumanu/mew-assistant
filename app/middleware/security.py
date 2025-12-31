@@ -124,9 +124,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             # 6. Process request
             response = await call_next(request)
         except SecurityViolationError as se:
-            return JSONResponse(status_code=403, content={"detail": str(se)})
+            # Log full details internally, return generic message to client
+            logger.warning(f"Security violation: {str(se)}")
+            return JSONResponse(status_code=403, content={"detail": "Access forbidden"})
         except RateLimitExceeded as rexc:
-            return JSONResponse(status_code=429, content={"detail": str(rexc)})
+            # Log full details internally, return generic message to client
+            logger.warning(f"Rate limit exceeded: {str(rexc)}")
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"})
         except Exception as exc:
             logger.exception("Unexpected error in security middleware: %s", exc)
             return JSONResponse(status_code=500, content={"detail": "Internal security error"})

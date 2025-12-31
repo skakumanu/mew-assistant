@@ -155,7 +155,7 @@ async def google_login():
     }
 
     auth_url = f"{GOOGLE_CONFIG['auth_url']}?{urlencode(params)}"
-    logger.info(f"Redirecting to Google OAuth: {auth_url}")
+    logger.info("Redirecting to Google OAuth")
     return RedirectResponse(url=auth_url)
 
 
@@ -176,7 +176,7 @@ async def google_callback(
             logger.error("No authorization code received")
             raise HTTPException(status_code=400, detail="No authorization code received")
 
-        logger.info(f"Received authorization code: {code[:10]}...")
+        logger.info("Received authorization code from Google")
 
         # Exchange code for token
         base_url = settings.BASE_URL or "http://localhost:8888"
@@ -201,7 +201,7 @@ async def google_callback(
             )
 
             logger.info(f"Token response status: {token_response.status_code}")
-            logger.info(f"Token response: {token_response.text[:200]}")
+            # Token response contains sensitive data - not logged
 
             if token_response.status_code != 200:
                 raise HTTPException(
@@ -335,7 +335,7 @@ async def microsoft_login():
     }
 
     auth_url = f"{MICROSOFT_CONFIG['auth_url']}?{urlencode(params)}"
-    logger.info(f"Redirecting to Microsoft OAuth: {auth_url}")
+    logger.info("Redirecting to Microsoft OAuth")
     return RedirectResponse(url=auth_url)
 
 
@@ -351,7 +351,7 @@ async def microsoft_callback(
         if not code:
             raise HTTPException(status_code=400, detail="No authorization code received")
 
-        logger.info(f"Received authorization code: {code[:10]}...")
+        logger.info("Received authorization code from Microsoft")
 
         # Exchange code for token
         base_url = settings.BASE_URL or "http://localhost:8888"
@@ -376,7 +376,7 @@ async def microsoft_callback(
             )
 
             logger.info(f"Token response status: {token_response.status_code}")
-            logger.info(f"Token response: {token_response.text[:200]}")
+            # Token response contains sensitive data - not logged
 
             if token_response.status_code != 200:
                 raise HTTPException(
