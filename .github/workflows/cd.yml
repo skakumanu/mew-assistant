@@ -32,7 +32,7 @@ jobs:
     - name: 🔒 Security Guardrails (MANDATORY)
       run: |
         echo "🔒 Running security guardrails..."
-        pytest tests/security/ -v --tb=short
+        pytest tests/test_security.py -v --tb=short
         if [ $? -ne 0 ]; then
           echo "❌ SECURITY GUARDRAILS FAILED - DEPLOYMENT BLOCKED"
           exit 1
