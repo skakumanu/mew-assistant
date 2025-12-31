@@ -45,7 +45,7 @@ jobs:
     - name: 🛡️ Privacy Guardrails (MANDATORY)
       run: |
         echo "🛡️  Running privacy guardrails..."
-        pytest tests/test_privacy_guardrails.py -v --tb=short
+        pytest tests/test_privacy.py -v --tb=short
         if [ $? -ne 0 ]; then
           echo "❌ PRIVACY GUARDRAILS FAILED - DEPLOYMENT BLOCKED"
           exit 1
