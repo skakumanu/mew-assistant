@@ -41,7 +41,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             r"(\bOR\b\s+['\"][^'\"]+['\"]\s*=\s*['\"][^'\"]+['\"])", re.IGNORECASE
         ),  # tautology SQLi
         re.compile(r"(--|;)", re.IGNORECASE),  # SQL comment/terminator
-        re.compile(r"(<script[^>]*>.*?</script>)", re.IGNORECASE),  # XSS
+        # Note: XSS filtering moved to bleach.clean in sanitize_html
         re.compile(r"(javascript:|data:|vbscript:)", re.IGNORECASE),  # Protocol injection
         re.compile(r"(\.\./|\.\./\.\./)", re.IGNORECASE),  # Path traversal
         re.compile(r"(\bEXEC\b|\bEVAL\b|\bDROP\b)", re.IGNORECASE),  # Command injection
@@ -325,18 +325,14 @@ class InputSanitizer:
     @staticmethod
     def sanitize_html(text: str) -> str:
         """
-        Remove dangerous HTML tags and attributes
+        Remove dangerous HTML tags and attributes using bleach library.
+        Bleach uses an HTML parser instead of regex, preventing XSS bypasses.
         """
         allowed_tags = ["p", "br", "strong", "em", "u", "ol", "ul", "li"]
         allowed_attributes = {}
 
-        # Remove script tags and their contents completely before cleaning
-        try:
-            text = re.sub(r"(?is)<script.*?>.*?</script>", "", text)
-        except Exception:
-            pass
-
-        # Run bleach.clean to strip any remaining disallowed tags/attributes
+        # Use bleach.clean which properly parses HTML instead of regex matching
+        # This prevents XSS bypasses through malformed HTML
         return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
 
     @staticmethod

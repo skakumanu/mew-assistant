@@ -102,8 +102,8 @@ class TestBotProtection:
         response = client.get("/health")
         assert response.status_code == 200
 
-    def test_bad_bot_user_agent(self):
-        """Test that known bad bots are blocked"""
+    def test_bad_bot_user_agent_sqlmap(self):
+        """Test that known bad bots (sqlmap) are blocked"""
         response = client.get("/api/sessions", headers={"User-Agent": "sqlmap/1.0"})
         assert response.status_code in [403, 401]  # Blocked or unauthorized
 
@@ -217,7 +217,7 @@ class TestIPBlocking:
         if response.status_code == 429:
             assert "retry_after" in response.json()
 
-    def test_block_expires(self):
+    def test_rate_limit_block_expires(self):
         """Test that blocks expire after timeout"""
         # This would require time manipulation or waiting
         # For now, just verify the block response structure
