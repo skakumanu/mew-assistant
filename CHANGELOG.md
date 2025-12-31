@@ -4,6 +4,28 @@ All notable changes to the Mew Assistant project.
 
 ---
 
+## [0.3.0] - December 31, 2025
+
+### 🔒 Security Fixes
+- **CRITICAL**: Fixed 6 error-level CodeQL security vulnerabilities
+  - 4 log injection vulnerabilities (mobile_integration.py, message.py)
+  - 1 clear-text password logging issue (create_superuser.py)
+  - 1 XSS vulnerability (onboarding.py)
+- All user-controlled data now sanitized before logging
+- HTML output properly escaped to prevent XSS attacks
+
+### 🔧 CI/CD Improvements
+- Fixed missing environment variables in CI/CD workflows
+- Added DATABASE_URL and SECRET_KEY to security guardrails
+- Resolved Pydantic Settings validation errors
+
+### 📦 Maintenance
+- Applied code formatting fixes across codebase
+- Cleaned up 510+ generated artifacts (.coverage, __pycache__, DBs)
+- Established git flow workflow (master/develop branches)
+
+---
+
 ## [1.1.0] - December 3, 2025
 
 ### 📚 Documentation
