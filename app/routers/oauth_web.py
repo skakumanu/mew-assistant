@@ -333,9 +333,16 @@ async def oauth_callback(
         # The dashboard will save it to localStorage
         dashboard_url = f"/auth/oauth/dashboard?token={result['access_token']}"
         response = RedirectResponse(url=dashboard_url)
+        
+        # Sanitize cookie value to prevent injection (tokens are already base64-encoded JWT)
+        # Additional validation: ensure token contains only safe characters
+        token_value = result["access_token"]
+        if not all(c.isalnum() or c in '._-' for c in token_value):
+            raise HTTPException(status_code=500, detail="Invalid token format")
+        
         response.set_cookie(
             key="mew_token",
-            value=result["access_token"],
+            value=token_value,
             httponly=True,
             secure=True,
             samesite="lax",
