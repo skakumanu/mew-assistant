@@ -29,8 +29,17 @@ if DATABASE_URL.startswith("sqlite"):
 else:
     # Azure PostgreSQL requires SSL
     connect_args = {}
-    if "azure" in DATABASE_URL or "postgres.database.azure.com" in DATABASE_URL:
-        connect_args = {"sslmode": "require"}
+    # Check for Azure PostgreSQL using proper URL parsing to avoid substring bypass
+    try:
+        from urllib.parse import urlparse
+        parsed_url = urlparse(DATABASE_URL)
+        # Check if hostname ends with Azure PostgreSQL domain
+        if parsed_url.hostname and parsed_url.hostname.endswith(".postgres.database.azure.com"):
+            connect_args = {"sslmode": "require"}
+    except Exception:
+        # Fallback to substring check if URL parsing fails
+        if "postgres.database.azure.com" in DATABASE_URL:
+            connect_args = {"sslmode": "require"}
 
     engine = create_engine(
         DATABASE_URL,

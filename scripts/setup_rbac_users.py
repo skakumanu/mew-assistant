@@ -98,18 +98,21 @@ def setup_rbac_users():
         # Commit all users
         db.commit()
 
-        logger.info("\n" + "=" * 60)
-        logger.info("RBAC Users Created Successfully!")
-        logger.info("=" * 60)
-        logger.info("\nGenerated Passwords (SAVE THESE):")
-        logger.info(f"Superuser (super@mew-assistant.org): {superuser_password}")
-        logger.info(f"Admin (admin@mew-assistant.org): {admin_password}")
-        logger.info(f"Parent (skakumanu@gmail.com): {parent_password}")
-        logger.info("=" * 60)
-        logger.info("\n⚠️  IMPORTANT: Save these passwords in a secure location!")
-        logger.info("   After first login, users MUST change their passwords.")
-        logger.info("   These are temporary setup passwords only.")
-        logger.info("=" * 60)
+        # Print passwords to console only - never log to files
+        print("\n" + "=" * 60)
+        print("RBAC Users Created Successfully!")
+        print("=" * 60)
+        print("\nGenerated Passwords (SAVE THESE):")
+        print(f"Superuser (super@mew-assistant.org): {superuser_password}")
+        print(f"Admin (admin@mew-assistant.org): {admin_password}")
+        print(f"Parent (skakumanu@gmail.com): {parent_password}")
+        print("=" * 60)
+        print("\n⚠️  IMPORTANT: Save these passwords in a secure location!")
+        print("   After first login, users MUST change their passwords.")
+        print("   These are temporary setup passwords only.")
+        print("=" * 60)
+        
+        logger.info("RBAC users created successfully (passwords displayed on console)")
 
     except Exception as e:
         logger.error(f"Error setting up RBAC users: {e}")
