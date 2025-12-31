@@ -331,9 +331,10 @@ class InputSanitizer:
         allowed_tags = ["p", "br", "strong", "em", "u", "ol", "ul", "li"]
         allowed_attributes = {}
 
-        # Use bleach.clean which properly parses HTML instead of regex matching
-        # This prevents XSS bypasses through malformed HTML
-        return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+        # For dangerous tags like <script>, we need to remove them AND their contents
+        # bleach.clean with strip=True only removes tags, not content
+        # So we need strip=False to remove both tags and content for disallowed tags
+        return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=False)
 
     @staticmethod
     def sanitize_sql(text: str) -> str:
