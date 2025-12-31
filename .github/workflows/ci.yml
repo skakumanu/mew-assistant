@@ -143,7 +143,8 @@ jobs:
           --timeout=300
       env:
         DATABASE_URL: sqlite:///./test-${{ matrix.python-version }}-${{ github.run_id }}.db
-        JWT_SECRET_KEY: ${{ env.SECRET_KEY }}
+        SECRET_KEY: test-secret-key-for-ci-only
+        JWT_SECRET_KEY: test-secret-key-for-ci-only
         ENVIRONMENT: test
         
     
