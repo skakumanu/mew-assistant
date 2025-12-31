@@ -294,9 +294,13 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
             raise HTTPException(status_code=400, detail="Invalid redirect URI")
         
         auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
+        # Ensure auth URL is also validated before redirect
+        if not auth_url.startswith(('https://', 'http://localhost', 'http://127.0.0.1')):
+            raise HTTPException(status_code=400, detail="Invalid authorization URL")
         return RedirectResponse(url=auth_url)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth authentication failed: {str(e)}")
+        # Don't expose internal error details
+        raise HTTPException(status_code=400, detail="OAuth authentication failed")
 
 
 @router.get("/callback/{provider}")
@@ -331,7 +335,11 @@ async def oauth_callback(
 
         # Redirect to dashboard with token in URL so JavaScript can access it
         # The dashboard will save it to localStorage
+        # Use relative URL to prevent open redirect attacks
         dashboard_url = f"/auth/oauth/dashboard?token={result['access_token']}"
+        # Ensure the URL is relative (starts with /) to prevent redirect attacks
+        if not dashboard_url.startswith('/'):
+            raise HTTPException(status_code=500, detail="Invalid dashboard URL")
         response = RedirectResponse(url=dashboard_url)
         
         # Sanitize cookie value to prevent injection (tokens are already base64-encoded JWT)

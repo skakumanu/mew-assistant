@@ -169,8 +169,10 @@ async def google_callback(
 
     try:
         if error:
-            logger.error(f"OAuth error received: {error}")
-            raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
+            # Sanitize error to prevent log injection
+            safe_error = str(error).replace('\n', '').replace('\r', '')[:100]
+            logger.error(f"OAuth error received: {safe_error}")
+            raise HTTPException(status_code=400, detail=f"OAuth error: {safe_error}")
 
         if not code:
             logger.error("No authorization code received")
@@ -190,7 +192,7 @@ async def google_callback(
             "redirect_uri": redirect_uri,
         }
 
-        logger.info(f"Exchanging code for token at {GOOGLE_CONFIG['token_url']}")
+        logger.info("Exchanging code for token at Google token endpoint")
 
         async with httpx.AsyncClient() as client:
             # Get access token
@@ -365,7 +367,7 @@ async def microsoft_callback(
             "redirect_uri": redirect_uri,
         }
 
-        logger.info(f"Exchanging code for token at {MICROSOFT_CONFIG['token_url']}")
+        logger.info("Exchanging code for token at Microsoft token endpoint")
 
         async with httpx.AsyncClient() as client:
             # Get access token

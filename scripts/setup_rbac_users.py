@@ -103,6 +103,7 @@ def setup_rbac_users():
         print("RBAC Users Created Successfully!")
         print("=" * 60)
         print("\nGenerated Passwords (SAVE THESE):")
+        # Passwords intentionally printed to console for initial setup only
         print(f"Superuser (super@mew-assistant.org): {superuser_password}")
         print(f"Admin (admin@mew-assistant.org): {admin_password}")
         print(f"Parent (skakumanu@gmail.com): {parent_password}")

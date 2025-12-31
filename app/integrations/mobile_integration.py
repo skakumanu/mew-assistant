@@ -125,7 +125,9 @@ class MobileIntegration:
             elif platform == MobilePlatform.ANDROID:
                 return await self._send_fcm_notification(device_token, title, body, data, sound)
             else:
-                logger.error(f"Unsupported mobile platform: {platform}")
+                # Sanitize platform value to prevent log injection
+                safe_platform = str(platform).replace('\n', '').replace('\r', '')[:50]
+                logger.error(f"Unsupported mobile platform: {safe_platform}")
                 return False
         except Exception as e:
             logger.error(f"Failed to send push notification: {e}")
@@ -169,7 +171,9 @@ class MobileIntegration:
                     notification.message.update(data)
 
             await self.apns_client.send_notification(notification)
-            logger.info(f"APNs notification sent to device: {device_token[:8]}...")
+            # Sanitize device token prefix to prevent log injection
+            safe_token = str(device_token[:8]).replace('\n', '').replace('\r', '')
+            logger.info(f"APNs notification sent to device: {safe_token}...")
             return True
         except Exception as e:
             logger.error(f"Failed to send APNs notification: {e}")
@@ -333,8 +337,9 @@ class MobileIntegration:
         """
         try:
             # Remove device token from database
-
-            logger.info(f"Unregistered device for user {user_id}")
+            # Sanitize user_id to prevent log injection
+            safe_user_id = str(user_id).replace('\n', '').replace('\r', '')[:50]
+            logger.info(f"Unregistered device for user {safe_user_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to unregister device: {e}")

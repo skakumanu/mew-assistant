@@ -87,7 +87,7 @@ def create_admin_users():
             print("IMPORTANT: Save these generated passwords!")
             print("=" * 60)
             for email, password in passwords_to_show:
-                # Print to console only (not logged to files) for initial setup
+                # Passwords intentionally printed to console for initial setup only (not logged to files)
                 print(f"{email}: {password}")
             print("=" * 60)
             print("\n⚠️  IMPORTANT: Save these passwords securely!")
