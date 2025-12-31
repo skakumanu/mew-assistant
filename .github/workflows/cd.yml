@@ -53,6 +53,7 @@ jobs:
         echo "✅ Privacy guardrails passed"
       env:
         DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-cd-only
     
     - name: ⚖️ COPPA Compliance (MANDATORY)
       run: |
@@ -65,6 +66,7 @@ jobs:
         echo "✅ COPPA compliance passed"
       env:
         DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-cd-only
     
     - name: 🏥 HIPAA Compliance (MANDATORY)
       run: |
@@ -77,6 +79,7 @@ jobs:
         echo "✅ HIPAA compliance passed"
       env:
         DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-cd-only
     
     - name: 🌍 GDPR Compliance (MANDATORY)
       run: |
@@ -89,6 +92,7 @@ jobs:
         echo "✅ GDPR compliance passed"
       env:
         DATABASE_URL: sqlite:///./test-${{ github.job }}-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-cd-only
     
     - name: 🔐 Secrets Detection (MANDATORY)
       run: |
