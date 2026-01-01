@@ -318,7 +318,8 @@ class MobileIntegration:
             # Sanitize user-controlled parameters to prevent log injection
             safe_platform = str(platform).replace('\n', '').replace('\r', '')[:20]
             safe_token_preview = str(device_token[:8]).replace('\n', '').replace('\r', '')
-            logger.info(f"Registered {safe_platform} device for user {user_id}: {safe_token_preview}...")
+            safe_user_id = str(user_id).replace('\n', '').replace('\r', '')[:50]
+            logger.info(f"Registered {safe_platform} device for user {safe_user_id}: {safe_token_preview}...")
             return True
         except Exception as e:
             logger.error(f"Failed to register device: {e}")
@@ -374,9 +375,11 @@ class MobileIntegration:
             # This would integrate with a job scheduler (e.g., Celery, APScheduler)
             # For now, we'll log the scheduled reminder
 
-            # Sanitize user-controlled title to prevent log injection
+            # Sanitize user-controlled parameters to prevent log injection
+            safe_user_id = str(user_id).replace('\n', '').replace('\r', '')[:50]
+            safe_time = str(scheduled_time).replace('\n', '').replace('\r', '')[:50]
             safe_title = str(title).replace('\n', '').replace('\r', '')[:200]
-            logger.info(f"Scheduled reminder for user {user_id} at {scheduled_time}: {safe_title}")
+            logger.info(f"Scheduled reminder for user {safe_user_id} at {safe_time}: {safe_title}")
 
             # In production, you would:
             # 1. Store the reminder in the database
