@@ -294,8 +294,11 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
             raise HTTPException(status_code=400, detail="Invalid redirect URI")
         
         auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
-        # Ensure auth URL is also validated before redirect
-        if not auth_url.startswith(('https://', 'http://localhost', 'http://127.0.0.1')):
+        # Validate auth URL against known OAuth provider domains only
+        from urllib.parse import urlparse
+        parsed = urlparse(auth_url)
+        allowed_domains = ['accounts.google.com', 'login.microsoftonline.com', 'localhost', '127.0.0.1']
+        if parsed.hostname not in allowed_domains:
             raise HTTPException(status_code=400, detail="Invalid authorization URL")
         return RedirectResponse(url=auth_url)
     except Exception as e:
@@ -337,8 +340,8 @@ async def oauth_callback(
         # The dashboard will save it to localStorage
         # Use relative URL to prevent open redirect attacks
         dashboard_url = f"/auth/oauth/dashboard?token={result['access_token']}"
-        # Ensure the URL is relative (starts with /) to prevent redirect attacks
-        if not dashboard_url.startswith('/'):
+        # Ensure the URL is relative (starts with /) and doesn't contain schemes
+        if not dashboard_url.startswith('/') or '://' in dashboard_url:
             raise HTTPException(status_code=500, detail="Invalid dashboard URL")
         response = RedirectResponse(url=dashboard_url)
         
