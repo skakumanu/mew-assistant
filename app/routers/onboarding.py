@@ -7,6 +7,7 @@ from typing import Optional
 import qrcode
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
@@ -164,91 +165,78 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.id == session.user_id).first()
 
-    # Escape user data to prevent XSS
-    from html import escape
-    # Escape user-controlled data to prevent XSS attacks
-    safe_username = escape(user.username if user and user.username else "User")
-    safe_email = escape(user.email if user and user.email else "")
+    # Use auto-escaping template to prevent XSS
+    username = user.username if user and user.username else "User"
+    email = user.email if user and user.email else ""
 
-    return HTMLResponse(
-        f"""
+    # Generate HTML with proper escaping via template
+    from jinja2 import Template, select_autoescape
+    template_str = r"""
     <!DOCTYPE html>
     <html>
     <head>
         <title>Welcome to Mew Assistant</title>
         <style>
-            body {{ font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }}
-            .button {{ background: #4CAF50; color: white; padding: 15px 32px;
-                      text-decoration: none; display: inline-block; margin: 10px 0;
-                      cursor: pointer; border: none; border-radius: 4px; font-size: 16px; }}
-            .option {{ border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 8px; }}
-            h1 {{ color: #333; }}
+            body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+            .welcome { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white; padding: 40px; border-radius: 10px; text-align: center; }
+            h1 { margin: 0 0 10px 0; }
+            .card { background: white; padding: 30px; border-radius: 10px;
+                   box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0; }
+            .step { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+            .step h3 { margin-top: 0; color: #667eea; }
+            button, .button { background: #667eea; color: white; border: none;
+                             padding: 12px 30px; border-radius: 5px; cursor: pointer;
+                             text-decoration: none; display: inline-block; font-size: 16px; }
+            button:hover, .button:hover { background: #764ba2; }
+            .info { background: #e3f2fd; padding: 15px; border-radius: 5px;
+                   border-left: 4px solid #2196f3; margin: 20px 0; }
+            code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+                  font-family: monospace; }
         </style>
     </head>
     <body>
-        <h1>🎉 Welcome {safe_username}!</h1>
-        <p>Your Mew Assistant ({safe_email}) is ready to help with scheduling and caregiving tasks!</p>
-
-        <h2>Quick Setup (Optional)</h2>
-
-        <div class="option">
-            <h3>📅 Connect Your Calendar</h3>
-            <p>Let Mew help you manage schedules automatically</p>
-            <button class="button" onclick="connectGoogle()">Connect Google Calendar</button>
-            <button class="button" onclick="connectApple()">Connect Apple Calendar</button>
-            <button class="button" onclick="skip()">Skip for now</button>
+        <div class="welcome">
+            <h1>🐱 Welcome to Mew Assistant!</h1>
+            <p>Your AI-powered family scheduling companion</p>
         </div>
 
-        <div class="option">
-            <h3>🗣️ Enable Voice Commands</h3>
-            <p>Talk to Mew through Siri, Alexa, or Google Assistant</p>
-            <button class="button" onclick="setupVoice()">Setup Voice</button>
-            <button class="button" onclick="skip()">Skip for now</button>
+        <div class="card">
+            <h2>Hello, {{ username }}!</h2>
+            <p>Your account ({{ email }}) is ready. Let's get you set up.</p>
+
+            <div class="step">
+                <h3>Step 1: Connect Your Calendar</h3>
+                <p>Link Google Calendar or Microsoft Outlook to sync your family's schedule.</p>
+                <a href="/auth/oauth/google" class="button">Connect Google Calendar</a>
+                <a href="/auth/oauth/microsoft" class="button">Connect Outlook</a>
+            </div>
+
+            <div class="step">
+                <h3>Step 2: Set Up Voice Commands</h3>
+                <p>Configure Siri or Google Assistant for hands-free scheduling.</p>
+                <a href="/docs/siri-setup" class="button">View Setup Guide</a>
+            </div>
+
+            <div class="step">
+                <h3>Step 3: Add Family Members</h3>
+                <p>Create profiles for kids and caregivers.</p>
+                <a href="/dashboard#family" class="button">Add Family Members</a>
+            </div>
+
+            <div class="info">
+                <strong>Need Help?</strong><br>
+                Check out our <a href="/docs">documentation</a> or contact support.
+            </div>
         </div>
-
-        <div class="option">
-            <h3>👨‍👩‍👧‍👦 Add Family Members</h3>
-            <p>Add kids, caregivers, or other family members</p>
-            <button class="button" onclick="addFamily()">Add Family</button>
-            <button class="button" onclick="skip()">Skip for now</button>
-        </div>
-
-        <br><br>
-        <button class="button" style="background: #2196F3; font-size: 20px;"
-                onclick="startUsing()">🚀 Start Using Mew Now!</button>
-
-        <script>
-            const apiUrl = window.location.origin;
-            const token = "{token}";
-
-            function connectGoogle() {{
-                window.location.href = `${{apiUrl}}/calendar/google/auth?token=${{token}}`;
-            }}
-
-            function connectApple() {{
-                window.location.href = `${{apiUrl}}/calendar/apple/auth?token=${{token}}`;
-            }}
-
-            function setupVoice() {{
-                window.location.href = `${{apiUrl}}/voice/setup?token=${{token}}`;
-            }}
-
-            function addFamily() {{
-                window.location.href = `${{apiUrl}}/family/setup?token=${{token}}`;
-            }}
-
-            function skip() {{
-                alert('No problem! You can set this up anytime from Settings.');
-            }}
-
-            function startUsing() {{
-                window.location.href = `${{apiUrl}}/dashboard?token=${{token}}`;
-            }}
-        </script>
     </body>
     </html>
     """
-    )
+    
+    template = Template(template_str, autoescape=select_autoescape(['html', 'xml']))
+    html_content = template.render(username=username, email=email)
+    
+    return HTMLResponse(html_content)
 
 
 @router.get("/sms-setup")
