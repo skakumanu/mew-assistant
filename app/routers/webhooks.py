@@ -74,8 +74,12 @@ async def receive_sms(
     except Exception:
         # Don't capture exception details to prevent information disclosure
         logger.error("Error processing incoming SMS")
-        # Return generic error message without exposing stack trace to users
-        raise HTTPException(status_code=500, detail="Unable to process message")
+        # Return TwiML error response to prevent exception information leakage
+        error_twiml = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<Response><Message>Unable to process message</Message></Response>"
+        )
+        return error_twiml
 
 
 @router.post("/whatsapp/incoming")
@@ -133,8 +137,12 @@ async def receive_whatsapp(
     except Exception:
         # Don't capture exception details to prevent information disclosure
         logger.error("Error processing incoming WhatsApp")
-        # Return generic error message without exposing stack trace to users
-        raise HTTPException(status_code=500, detail="Unable to process message")
+        # Return TwiML error response to prevent exception information leakage
+        error_twiml = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<Response><Message>Unable to process message</Message></Response>"
+        )
+        return error_twiml
 
 
 @router.get("/sms/status")
