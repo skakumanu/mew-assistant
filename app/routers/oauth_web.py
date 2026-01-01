@@ -304,6 +304,11 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
                 raise HTTPException(status_code=400, detail="OAuth URL must use HTTPS")
         elif parsed.hostname not in ['localhost', '127.0.0.1']:
             raise HTTPException(status_code=400, detail="Invalid authorization URL")
+        
+        # Additional safety check: only redirect if domain is explicitly allowed
+        if parsed.hostname not in allowed_domains + ['localhost', '127.0.0.1']:
+            raise HTTPException(status_code=400, detail="Unauthorized redirect destination")
+        
         return RedirectResponse(url=auth_url)
     except Exception as e:
         # Don't expose internal error details
