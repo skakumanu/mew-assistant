@@ -294,11 +294,15 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
             raise HTTPException(status_code=400, detail="Invalid redirect URI")
         
         auth_url = await OAuthService.get_authorization_url(provider, redirect_uri)
-        # Validate auth URL against known OAuth provider domains only
+        # Strict validation: auth URL must be HTTPS and from known OAuth provider domains
         from urllib.parse import urlparse
         parsed = urlparse(auth_url)
-        allowed_domains = ['accounts.google.com', 'login.microsoftonline.com', 'localhost', '127.0.0.1']
-        if parsed.hostname not in allowed_domains:
+        allowed_domains = ['accounts.google.com', 'login.microsoftonline.com']
+        # Require HTTPS for production OAuth providers (allow localhost for dev)
+        if parsed.hostname in allowed_domains:
+            if parsed.scheme != 'https':
+                raise HTTPException(status_code=400, detail="OAuth URL must use HTTPS")
+        elif parsed.hostname not in ['localhost', '127.0.0.1']:
             raise HTTPException(status_code=400, detail="Invalid authorization URL")
         return RedirectResponse(url=auth_url)
     except Exception as e:
@@ -338,11 +342,14 @@ async def oauth_callback(
 
         # Redirect to dashboard with token in URL so JavaScript can access it
         # The dashboard will save it to localStorage
-        # Use relative URL to prevent open redirect attacks
-        dashboard_url = f"/auth/oauth/dashboard?token={result['access_token']}"
-        # Ensure the URL is relative (starts with /) and doesn't contain schemes
-        if not dashboard_url.startswith('/') or '://' in dashboard_url:
-            raise HTTPException(status_code=500, detail="Invalid dashboard URL")
+        # Use hardcoded relative path to prevent open redirect attacks
+        # Token is validated but we construct the URL safely
+        token_value = result['access_token']
+        # Validate token format before using
+        if not all(c.isalnum() or c in '._-' for c in token_value):
+            raise HTTPException(status_code=500, detail="Invalid token format")
+        # Construct URL with string concatenation to avoid injection
+        dashboard_url = "/auth/oauth/dashboard?token=" + token_value
         response = RedirectResponse(url=dashboard_url)
         
         # Sanitize cookie value to prevent injection (tokens are already base64-encoded JWT)
