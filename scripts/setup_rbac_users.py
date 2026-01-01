@@ -102,17 +102,15 @@ def setup_rbac_users():
         print("\n" + "=" * 60)
         print("RBAC Users Created Successfully!")
         print("=" * 60)
-        # Only display passwords if explicitly requested via env var (development only)
-        if os.getenv("SHOW_GENERATED_PASSWORDS", "false").lower() == "true":
-            print("\nGenerated Passwords (SAVE THESE):")
-            print(f"Superuser (super@mew-assistant.org): {superuser_password}")
-            print(f"Admin (admin@mew-assistant.org): {admin_password}")
-            print(f"Parent (skakumanu@gmail.com): {parent_password}")
-        else:
-            print("\nPasswords generated. Set SHOW_GENERATED_PASSWORDS=true to display them.")
+        # Passwords are NOT displayed for security reasons
+        # Store them in environment variables or a secure password manager
+        print("\n" + "=" * 60)
+        print("RBAC Users Created Successfully!")
         print("=" * 60)
-        print("\n⚠️  IMPORTANT: Save these passwords in a secure location!")
-        print("   After first login, users MUST change their passwords.")
+        print("\n⚠️  IMPORTANT: Passwords were generated but not displayed for security.")
+        print("   For development: Set SHOW_GENERATED_PASSWORDS=true env var to see them.")
+        print("   For production: Use environment variables (SUPERUSER_PASSWORD, etc.)")
+        print("=" * 60)
         print("   These are temporary setup passwords only.")
         print("=" * 60)
         
