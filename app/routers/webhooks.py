@@ -71,8 +71,8 @@ async def receive_sms(
 
         return twiml_response
 
-    except Exception as e:
-        # Don't log exception details to prevent information disclosure
+    except Exception:
+        # Don't capture exception details to prevent information disclosure
         logger.error("Error processing incoming SMS")
         # Return generic error message without exposing stack trace to users
         raise HTTPException(status_code=500, detail="Unable to process message")
@@ -130,8 +130,8 @@ async def receive_whatsapp(
 
         return twiml_response
 
-    except Exception as e:
-        # Don't log exception details to prevent information disclosure
+    except Exception:
+        # Don't capture exception details to prevent information disclosure
         logger.error("Error processing incoming WhatsApp")
         # Return generic error message without exposing stack trace to users
         raise HTTPException(status_code=500, detail="Unable to process message")
