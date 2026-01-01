@@ -102,11 +102,14 @@ def setup_rbac_users():
         print("\n" + "=" * 60)
         print("RBAC Users Created Successfully!")
         print("=" * 60)
-        print("\nGenerated Passwords (SAVE THESE):")
-        # Passwords intentionally printed to console for initial setup only
-        print(f"Superuser (super@mew-assistant.org): {superuser_password}")
-        print(f"Admin (admin@mew-assistant.org): {admin_password}")
-        print(f"Parent (skakumanu@gmail.com): {parent_password}")
+        # Only display passwords if explicitly requested via env var (development only)
+        if os.getenv("SHOW_GENERATED_PASSWORDS", "false").lower() == "true":
+            print("\nGenerated Passwords (SAVE THESE):")
+            print(f"Superuser (super@mew-assistant.org): {superuser_password}")
+            print(f"Admin (admin@mew-assistant.org): {admin_password}")
+            print(f"Parent (skakumanu@gmail.com): {parent_password}")
+        else:
+            print("\nPasswords generated. Set SHOW_GENERATED_PASSWORDS=true to display them.")
         print("=" * 60)
         print("\n⚠️  IMPORTANT: Save these passwords in a secure location!")
         print("   After first login, users MUST change their passwords.")
