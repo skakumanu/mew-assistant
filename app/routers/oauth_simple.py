@@ -165,7 +165,8 @@ async def google_callback(
 ):
     """Handle Google OAuth callback"""
     logger.info("=== GOOGLE CALLBACK STARTED ===")
-    logger.info(f"Code present: {code is not None}, Error: {error}")
+    # Don't log raw error parameter to prevent log injection
+    logger.info(f"Code present: {code is not None}")
 
     try:
         if error:
