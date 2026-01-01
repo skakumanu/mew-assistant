@@ -86,12 +86,9 @@ def create_admin_users():
             print("\n" + "=" * 60)
             print("IMPORTANT: Save these generated passwords!")
             print("=" * 60)
-            # Only display passwords if explicitly requested via env var (development only)
-            if os.getenv("SHOW_GENERATED_PASSWORDS", "false").lower() == "true":
-                for email, password in passwords_to_show:
-                    print(f"{email}: {password}")
-            else:
-                print("Passwords generated. Set SHOW_GENERATED_PASSWORDS=true to display them.")
+            print("IMPORTANT: Passwords generated but not displayed for security!")
+            print("For development: Set SHOW_GENERATED_PASSWORDS=true env var")
+            print("For production: Use environment variables like SUPERUSER_PASSWORD")
             print("=" * 60)
             print("\n⚠️  IMPORTANT: Save these passwords securely!")
             print("For production, set environment variables:")
