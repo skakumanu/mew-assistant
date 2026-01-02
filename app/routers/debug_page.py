@@ -84,12 +84,15 @@ async def debug_calendar_page():
                 if (type === 'error') color = 'error';
                 if (type === 'warning') color = 'warning';
 
-                output.innerHTML += `<span class="${color}">[${timestamp}] ${msg}</span>\n`;
+                const span = document.createElement('span');
+                span.className = color;
+                span.textContent = `[${timestamp}] ${msg}\n`;
+                output.appendChild(span);
                 output.scrollTop = output.scrollHeight;
             }
 
             function clearOutput() {
-                output.innerHTML = 'Output cleared.\n\n';
+                output.textContent = 'Output cleared.\n\n';
             }
 
             function checkToken() {

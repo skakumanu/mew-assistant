@@ -110,7 +110,7 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
 
                 if (seconds <= 0) {{
                     clearInterval(timer);
-                    document.getElementById('countdown').innerHTML = '⬇️ Downloading now...';
+                    document.getElementById('countdown').textContent = '⬇️ Downloading now...';
 
                     // Trigger download
                     const link = document.createElement('a');
@@ -120,9 +120,13 @@ def get_success_page(user_name: str, user_email: str, jwt_token: str) -> str:
                     link.click();
 
                     setTimeout(() => {{
-                        const msg = '✅ Download started!<br><small style="color:#666;">' +
-                            'Open the file from your Downloads folder</small>';
-                        document.getElementById('countdown').innerHTML = msg;
+                        const msgContainer = document.getElementById('countdown');
+                        msgContainer.textContent = '✅ Download started!';
+                        const smallEl = document.createElement('small');
+                        smallEl.style.color = '#666';
+                        smallEl.textContent = 'Open the file from your Downloads folder';
+                        msgContainer.appendChild(document.createElement('br'));
+                        msgContainer.appendChild(smallEl);
                     }}, 1000);
                 }}
             }}, 1000);
