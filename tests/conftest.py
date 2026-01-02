@@ -2,6 +2,14 @@
 Pytest configuration and shared fixtures for Mew Assistant tests.
 """
 
+import os
+
+# Set required environment variables BEFORE importing app
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-min-32-chars")
+os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("TESTING", "true")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

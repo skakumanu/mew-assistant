@@ -32,7 +32,12 @@ try:
     cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (DB_NAME,))
     if not cursor.fetchone():
         print(f"Creating database {DB_NAME}...")
-        cursor.execute(f"CREATE DATABASE {DB_NAME}")
+        # Note: CREATE DATABASE doesn't support parameterized statements
+        # Validate DB_NAME to prevent SQL injection
+        if not all(c.isalnum() or c in '_' for c in DB_NAME):
+            raise ValueError("Invalid database name - only alphanumeric and underscore allowed")
+        from psycopg2 import sql
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(DB_NAME)))
         print("✅ Database created")
     else:
         print(f"✅ Database {DB_NAME} already exists")
