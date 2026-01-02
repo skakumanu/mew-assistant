@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from app.database.connection import get_db
 from app.services.oauth_service import OAuthService
 from app.utils.log_sanitizer import sanitize_for_log
+from app.utils.config import settings
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 def is_safe_redirect_uri(uri: str) -> bool:
     """
     Validate redirect URI to prevent open redirect vulnerabilities.
-    Only allow relative paths or same-origin redirects.
+    Only allow relative paths or same-origin redirects using BASE_URL.
     """
     if not uri:
         return False
@@ -25,8 +26,20 @@ def is_safe_redirect_uri(uri: str) -> bool:
     # For absolute URLs, check if they're from allowed origins
     try:
         parsed = urlparse(uri)
-        # Only allow localhost and no scheme (relative)
-        if parsed.netloc in ['localhost', '127.0.0.1', ''] or parsed.netloc.startswith('localhost:'):
+        base_parsed = urlparse(settings.BASE_URL)
+        
+        # Allow localhost for development
+        allowed_hosts = [
+            'localhost', '127.0.0.1', 
+            'localhost:3000', 'localhost:8000', 'localhost:8080', 'localhost:8888',
+            '127.0.0.1:3000', '127.0.0.1:8000', '127.0.0.1:8080', '127.0.0.1:8888',
+        ]
+        
+        # Allow configured BASE_URL domain
+        if base_parsed.netloc:
+            allowed_hosts.append(base_parsed.netloc)
+        
+        if parsed.netloc in allowed_hosts or parsed.netloc == '':
             return True
     except Exception:
         return False

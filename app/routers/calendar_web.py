@@ -189,7 +189,7 @@ async def calendar_page(request: Request):
             function showMessage(text, type) {
                 const msg = document.getElementById('message');
                 msg.className = 'message ' + type;
-                msg.innerHTML = text;
+                msg.textContent = text;
             }
 
             function loadCalendar() {
@@ -201,8 +201,8 @@ async def calendar_page(request: Request):
                 }
 
                 document.getElementById('loading').style.display = 'block';
-                document.getElementById('events').innerHTML = '';
-                document.getElementById('message').innerHTML = '';
+                document.getElementById('events').textContent = '';
+                document.getElementById('message').textContent = '';
 
                 fetch('/simple-calendar/events?max_results=25', {
                     headers: { 'Authorization': 'Bearer ' + token }
