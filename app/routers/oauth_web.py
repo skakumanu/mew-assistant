@@ -310,7 +310,7 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
             raise HTTPException(status_code=400, detail="Unauthorized redirect destination")
         
         return RedirectResponse(url=auth_url)
-    except Exception as e:
+    except Exception:
         # Don't expose internal error details
         raise HTTPException(status_code=400, detail="OAuth authentication failed")
 
