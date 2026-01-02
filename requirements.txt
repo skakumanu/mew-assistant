@@ -12,6 +12,7 @@ alembic==1.12.0
 # Authentication & OAuth
 python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
+argon2-cffi==23.1.0
 python-multipart==0.0.18
 Authlib==1.6.5
 httpx==0.28.1
