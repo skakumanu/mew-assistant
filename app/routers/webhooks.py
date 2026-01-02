@@ -72,9 +72,7 @@ async def receive_sms(
         return twiml_response
 
     except Exception:
-        # Don't capture exception details to prevent information disclosure
-        logger.error("Error processing incoming SMS")
-        # Return TwiML error response to prevent exception information leakage
+        # Return TwiML error response (no logging to prevent any information leakage)
         error_twiml = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<Response><Message>Unable to process message</Message></Response>"
@@ -135,9 +133,7 @@ async def receive_whatsapp(
         return twiml_response
 
     except Exception:
-        # Don't capture exception details to prevent information disclosure
-        logger.error("Error processing incoming WhatsApp")
-        # Return TwiML error response to prevent exception information leakage
+        # Return TwiML error response (no logging to prevent any information leakage)
         error_twiml = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<Response><Message>Unable to process message</Message></Response>"
