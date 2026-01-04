@@ -1,9 +1,8 @@
 # Load the current config
 $config = Get-Content c:\Users\skaku\Projects\mew-assistant\ca-config.json | ConvertFrom-Json
 
-# Update DATABASE_URL to PostgreSQL
-$dbUrlIndex = $config.properties.template.containers[0].env | ForEach-Object -Begin { $i=0 } { if ($_.name -eq "DATABASE_URL") { $i } else { $i++ } }
-$config.properties.template.containers[0].env[$dbUrlIndex].value = "postgresql://mewadmin:mew_password_2026_secure@mew-assistant-db.postgres.database.azure.com:5432/mew_assistant"
+# IMPORTANT: Do NOT modify DATABASE_URL - it's already configured correctly in Azure
+# The script only adds health probes
 
 # Add probes to the container
 $config.properties.template.containers[0] | Add-Member -NotePropertyName "probes" -NotePropertyValue @(
@@ -39,8 +38,8 @@ $config.properties.template.containers[0] | Add-Member -NotePropertyName "probes
 $config | ConvertTo-Json -Depth 100 | Set-Content c:\Users\skaku\Projects\mew-assistant\ca-config-updated.json
 
 Write-Host "✅ Configuration updated:"
-Write-Host "  - DATABASE_URL changed to PostgreSQL"
 Write-Host "  - Liveness probe added (30s delay, 10s period)"
 Write-Host "  - Readiness probe added (10s delay, 5s period)"
+Write-Host "  - DATABASE_URL preserved from existing configuration"
 Write-Host ""
 Write-Host "Saved to: ca-config-updated.json"
