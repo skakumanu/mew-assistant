@@ -183,6 +183,38 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
+    - name: 🔐 Verify Key Vault Credentials (Pre-deployment Check)
+      run: |
+        echo "🔐 Verifying all required credentials are configured in Key Vault..."
+        VAULT_NAME="mew-assistant-9240-kv"
+        REQUIRED_SECRETS=(
+          "database-url"
+          "jwt-secret"
+          "secret-key"
+          "google-client-id"
+          "google-client-secret"
+          "microsoft-client-id"
+          "microsoft-client-secret"
+        )
+        
+        MISSING=0
+        for secret in "${REQUIRED_SECRETS[@]}"; do
+          if az keyvault secret show --vault-name "$VAULT_NAME" --name "$secret" &>/dev/null; then
+            echo "  ✓ $secret"
+          else
+            echo "  ✗ MISSING: $secret"
+            MISSING=$((MISSING + 1))
+          fi
+        done
+        
+        if [ $MISSING -gt 0 ]; then
+          echo ""
+          echo "❌ CREDENTIAL VALIDATION FAILED: $MISSING secrets missing"
+          echo "Add them with: az keyvault secret set --vault-name $VAULT_NAME --name SECRET_NAME --value SECRET_VALUE"
+          exit 1
+        fi
+        echo "✅ All credentials verified in Key Vault"
+    
     - name: Build and push to Azure Container Registry
       run: |
         az acr build \
@@ -238,6 +270,38 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: 🔐 Verify Key Vault Credentials (Pre-deployment Check)
+      run: |
+        echo "🔐 Verifying all required credentials are configured in Key Vault..."
+        VAULT_NAME="mew-assistant-9240-kv"
+        REQUIRED_SECRETS=(
+          "database-url"
+          "jwt-secret"
+          "secret-key"
+          "google-client-id"
+          "google-client-secret"
+          "microsoft-client-id"
+          "microsoft-client-secret"
+        )
+        
+        MISSING=0
+        for secret in "${REQUIRED_SECRETS[@]}"; do
+          if az keyvault secret show --vault-name "$VAULT_NAME" --name "$secret" &>/dev/null; then
+            echo "  ✓ $secret"
+          else
+            echo "  ✗ MISSING: $secret"
+            MISSING=$((MISSING + 1))
+          fi
+        done
+        
+        if [ $MISSING -gt 0 ]; then
+          echo ""
+          echo "❌ CREDENTIAL VALIDATION FAILED: $MISSING secrets missing"
+          echo "Add them with: az keyvault secret set --vault-name $VAULT_NAME --name SECRET_NAME --value SECRET_VALUE"
+          exit 1
+        fi
+        echo "✅ All credentials verified in Key Vault"
     
     - name: Build and push to Azure Container Registry
       run: |
