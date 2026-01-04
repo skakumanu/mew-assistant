@@ -17,6 +17,11 @@ def run_migration():
         print("ERROR: DATABASE_URL not set")
         sys.exit(1)
 
+    # Skip migration for SQLite (development databases)
+    if db_url.startswith("sqlite"):
+        print("✅ SQLite database detected, skipping OAuth token migration")
+        return
+
     print("🔧 Running OAuth token migration...")
 
     try:
@@ -59,7 +64,14 @@ def run_migration():
         cursor.close()
         conn.close()
 
+    except psycopg2.OperationalError as e:
+        # Connection error - database might not be ready yet, but app will continue
+        print(f"⚠️  Could not connect to database for migration: {e}")
+        print("ℹ️  Database will be initialized when it becomes available")
+        # Exit with 0 so container startup doesn't fail
+        return
     except Exception as e:
+        # Other errors still fail (SQL syntax, etc.)
         print(f"❌ Migration failed: {e}")
         sys.exit(1)
 
