@@ -108,16 +108,16 @@ Secrets:
     → fastapi-secret-for-sessions
   
   google-client-id
-    → 321461422476-sgt4knrr7movtjk2djdpt5bom4q90qfk.apps.googleusercontent.com
+    → YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
   
   google-client-secret
-    → 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
+    → YOUR_GOOGLE_CLIENT_SECRET
   
   microsoft-client-id
-    → 7f4d5a8b-cab9-4229-89f0-4fb2be08a99b
+    → YOUR_MICROSOFT_CLIENT_ID
   
   microsoft-client-secret
-    → 9-r8Q~Qdvo3YBSWYyd2bx70qwcIUqg_U~CEIjaT_
+    → YOUR_MICROSOFT_CLIENT_SECRET
 ```
 
 **Accessed by:** Container App Managed Identity (automatic)
@@ -129,10 +129,10 @@ Environment variables (fully resolved):
   DATABASE_URL = postgresql://user:pass@host/db?sslmode=require
   JWT_SECRET_KEY = long-secure-key-for-jwt-signing
   SECRET_KEY = fastapi-secret-for-sessions
-  GOOGLE_CLIENT_ID = 321461422476-sgt4knrr7movtjk2djdpt5bom4q90qfk.apps.googleusercontent.com
-  GOOGLE_CLIENT_SECRET = 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
-  MICROSOFT_CLIENT_ID = 7f4d5a8b-cab9-4229-89f0-4fb2be08a99b
-  MICROSOFT_CLIENT_SECRET = 9-r8Q~Qdvo3YBSWYyd2bx70qwcIUqg_U~CEIjaT_
+  GOOGLE_CLIENT_ID = YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com
+  GOOGLE_CLIENT_SECRET = YOUR_GOOGLE_CLIENT_SECRET
+  MICROSOFT_CLIENT_ID = YOUR_MICROSOFT_CLIENT_ID
+  MICROSOFT_CLIENT_SECRET = YOUR_MICROSOFT_CLIENT_SECRET
 ```
 
 **Accessed by:** Python application via `os.environ` and Pydantic Settings

@@ -140,7 +140,7 @@
                                                                            },
                                                                            {
                                                                                "name":  "JWT_SECRET_KEY",
-                                                                               "value":  "mew-production-secret-key-2026-1666640273"
+                                                                           "value":  "YOUR_JWT_SECRET_KEY"
                                                                            },
                                                                            {
                                                                                "name":  "GOOGLE_CLIENT_ID",
