@@ -29,7 +29,6 @@ COPY --from=builder /root/.local /root/.local
 
 # Copy application code (includes templates and static)
 COPY ./app ./app
-COPY .env.example .env
 COPY init-oauth-db.py .
 
 # Make sure scripts in .local are usable

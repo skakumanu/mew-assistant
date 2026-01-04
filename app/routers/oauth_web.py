@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlparse
+import logging
 
 from app.database.connection import get_db
 from app.services.oauth_service import OAuthService
 from app.utils.log_sanitizer import sanitize_for_log
 from app.utils.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 
@@ -219,6 +222,28 @@ async def oauth_login_page(request: Request):
     <script>
         const API_URL = window.location.origin;
 
+        function showDashboardStatus(msg) {
+            let el = document.getElementById('dashboardStatus');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'dashboardStatus';
+                el.style.marginTop = '12px';
+                el.style.padding = '12px';
+                el.style.borderRadius = '8px';
+                el.style.background = '#f7f9fc';
+                el.style.border = '1px solid #e0e0e0';
+                document.querySelector('.container').prepend(el);
+            }
+            el.textContent = msg;
+        }
+
+        function hideDashboardStatus(delayMs = 2000) {
+            const el = document.getElementById('dashboardStatus');
+            if (el) {
+                setTimeout(() => { el.remove(); }, delayMs);
+            }
+        }
+
         function showStatus(message, isError = false) {
             const status = document.getElementById('status');
             status.textContent = message;
@@ -332,12 +357,24 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
 async def oauth_callback(
     request: Request,
     provider: str,
-    code: str,
+    code: str = None,
     state: str = None,
+    error: str = None,
+    error_description: str = None,
     db: Session = Depends(get_db),
 ):
     """Handle OAuth callback from provider"""
     try:
+        # Check if OAuth provider returned an error
+        if error:
+            error_msg = error_description or error
+            logger.error(f"OAuth error from {provider}: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"OAuth failed: {error_msg}")
+        
+        # Check if code is missing
+        if not code:
+            logger.error(f"OAuth callback missing authorization code for {provider}")
+            raise HTTPException(status_code=400, detail="Authorization code not received from OAuth provider")
         # Reconstruct the redirect_uri that was used in the authorization request
         # Azure load balancer terminates SSL, so check X-Forwarded-Proto header
         scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
@@ -356,7 +393,7 @@ async def oauth_callback(
         scheme_s = sanitize_for_log(request.url.scheme)
         print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {xfwd}, scheme: {scheme_s}")
 
-        result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
+        result = await OAuthService.handle_callback(provider, code, redirect_uri, db, state=state)
 
         # Redirect to dashboard with token in URL so JavaScript can access it
         # The dashboard will save it to localStorage
@@ -376,11 +413,12 @@ async def oauth_callback(
         if not all(c.isalnum() or c in '._-' for c in token_value):
             raise HTTPException(status_code=500, detail="Invalid token format")
         
+        secure_flag = scheme == "https"
         response.set_cookie(
             key="mew_token",
             value=token_value,
             httponly=True,
-            secure=True,
+            secure=secure_flag,
             samesite="lax",
         )
         return response
@@ -452,11 +490,33 @@ async def dashboard(request: Request):
     <script>
         const API_URL = window.location.origin;
 
+        function showDashboardStatus(msg) {
+            let el = document.getElementById('dashboardStatus');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'dashboardStatus';
+                el.style.marginTop = '12px';
+                el.style.padding = '12px';
+                el.style.borderRadius = '8px';
+                el.style.background = '#f7f9fc';
+                el.style.border = '1px solid #e0e0e0';
+                document.querySelector('.container').prepend(el);
+            }
+            el.textContent = msg;
+        }
+
+        function hideDashboardStatus(delayMs = 2000) {
+            const el = document.getElementById('dashboardStatus');
+            if (el) {
+                setTimeout(() => { el.remove(); }, delayMs);
+            }
+        }
+
         async function loadUserInfo() {
             const token = localStorage.getItem('mew_token') || getTokenFromURL();
 
             if (!token) {
-                window.location.href = '/auth/oauth/login';
+                showDashboardStatus('Missing token; please sign in again.');
                 return;
             }
 
@@ -469,13 +529,21 @@ async def dashboard(request: Request):
                     const user = await response.json();
                     localStorage.setItem('mew_token', token);
                     localStorage.setItem('mew_user', JSON.stringify(user));
+                    // Remove token from URL after storing
+                    if (window.history && window.history.replaceState) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('token');
+                        window.history.replaceState({}, document.title, url.toString());
+                    }
                     displayUserInfo(user);
+                    showDashboardStatus('Signed in.');
+                    hideDashboardStatus();
                 } else {
-                    window.location.href = '/auth/oauth/login';
+                    showDashboardStatus(`Session check failed (${response.status}). Please sign in again.`);
                 }
             } catch (error) {
                 console.error('Error loading user:', error);
-                window.location.href = '/auth/oauth/login';
+                showDashboardStatus('Error loading user; please sign in again.');
             }
         }
 
@@ -485,32 +553,44 @@ async def dashboard(request: Request):
         }
 
         function displayUserInfo(user) {
-            // Use textContent to prevent XSS attacks from user-supplied data
             const userInfoDiv = document.getElementById('userInfo');
             userInfoDiv.innerHTML = '';
 
-            // Create and safely append name
             const nameEl = document.createElement('h3');
-            nameEl.textContent = '👤 ' + (user.full_name || 'User');
+            const nameLabel = document.createElement('strong');
+            nameLabel.textContent = 'Name: ';
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = user.full_name || user.name || 'User';
+            nameEl.appendChild(nameLabel);
+            nameEl.appendChild(nameSpan);
             userInfoDiv.appendChild(nameEl);
 
-            // Create and safely append email
             const emailP = document.createElement('p');
-            emailP.innerHTML = '<strong>Email:</strong> <span id="emailValue"></span>';
-            document.getElementById('emailValue').textContent = user.email || 'N/A';
+            const emailLabel = document.createElement('strong');
+            emailLabel.textContent = 'Email: ';
+            const emailSpan = document.createElement('span');
+            emailSpan.textContent = user.email || 'N/A';
+            emailP.appendChild(emailLabel);
+            emailP.appendChild(emailSpan);
             userInfoDiv.appendChild(emailP);
 
-            // Create and safely append role
             const roleP = document.createElement('p');
-            roleP.innerHTML = '<strong>Role:</strong> <span id="roleValue"></span>';
-            document.getElementById('roleValue').textContent = user.role || 'N/A';
+            const roleLabel = document.createElement('strong');
+            roleLabel.textContent = 'Role: ';
+            const roleSpan = document.createElement('span');
+            roleSpan.textContent = user.role || 'N/A';
+            roleP.appendChild(roleLabel);
+            roleP.appendChild(roleSpan);
             userInfoDiv.appendChild(roleP);
 
-            // Add provider if present
             if (user.federated_provider) {
                 const providerP = document.createElement('p');
-                providerP.innerHTML = '<strong>Provider:</strong> <span id="providerValue"></span>';
-                document.getElementById('providerValue').textContent = user.federated_provider;
+                const providerLabel = document.createElement('strong');
+                providerLabel.textContent = 'Provider: ';
+                const providerSpan = document.createElement('span');
+                providerSpan.textContent = user.federated_provider;
+                providerP.appendChild(providerLabel);
+                providerP.appendChild(providerSpan);
                 userInfoDiv.appendChild(providerP);
             }
         }
@@ -528,6 +608,9 @@ async def dashboard(request: Request):
             localStorage.removeItem('mew_user');
             window.location.href = '/auth/oauth/login';
         }
+
+        // Auto-load user info on page load to persist token and avoid bounce-back
+        window.addEventListener('load', loadUserInfo);
 
         loadUserInfo();
     </script>
