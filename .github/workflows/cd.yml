@@ -183,6 +183,38 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
+    - name: 🔐 Verify Key Vault Credentials (Pre-deployment Check)
+      run: |
+        echo "🔐 Verifying all required credentials are configured in Key Vault..."
+        VAULT_NAME="mew-assistant-9240-kv"
+        REQUIRED_SECRETS=(
+          "database-url"
+          "jwt-secret"
+          "secret-key"
+          "google-client-id"
+          "google-client-secret"
+          "microsoft-client-id"
+          "microsoft-client-secret"
+        )
+        
+        MISSING=0
+        for secret in "${REQUIRED_SECRETS[@]}"; do
+          if az keyvault secret show --vault-name "$VAULT_NAME" --name "$secret" &>/dev/null; then
+            echo "  ✓ $secret"
+          else
+            echo "  ✗ MISSING: $secret"
+            MISSING=$((MISSING + 1))
+          fi
+        done
+        
+        if [ $MISSING -gt 0 ]; then
+          echo ""
+          echo "❌ CREDENTIAL VALIDATION FAILED: $MISSING secrets missing"
+          echo "Add them with: az keyvault secret set --vault-name $VAULT_NAME --name SECRET_NAME --value SECRET_VALUE"
+          exit 1
+        fi
+        echo "✅ All credentials verified in Key Vault"
+    
     - name: Build and push to Azure Container Registry
       run: |
         az acr build \
@@ -201,7 +233,12 @@ jobs:
           --set-env-vars \
             ENVIRONMENT=staging \
             DATABASE_URL=secretref:database-url \
-            JWT_SECRET_KEY=secretref:jwt-secret
+            JWT_SECRET_KEY=secretref:jwt-secret \
+            GOOGLE_CLIENT_ID=secretref:google-client-id \
+            GOOGLE_CLIENT_SECRET=secretref:google-client-secret \
+            MICROSOFT_CLIENT_ID=secretref:microsoft-client-id \
+            MICROSOFT_CLIENT_SECRET=secretref:microsoft-client-secret \
+            SECRET_KEY=secretref:secret-key
     
     - name: Run smoke tests
       run: |
@@ -234,6 +271,38 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
+    - name: 🔐 Verify Key Vault Credentials (Pre-deployment Check)
+      run: |
+        echo "🔐 Verifying all required credentials are configured in Key Vault..."
+        VAULT_NAME="mew-assistant-9240-kv"
+        REQUIRED_SECRETS=(
+          "database-url"
+          "jwt-secret"
+          "secret-key"
+          "google-client-id"
+          "google-client-secret"
+          "microsoft-client-id"
+          "microsoft-client-secret"
+        )
+        
+        MISSING=0
+        for secret in "${REQUIRED_SECRETS[@]}"; do
+          if az keyvault secret show --vault-name "$VAULT_NAME" --name "$secret" &>/dev/null; then
+            echo "  ✓ $secret"
+          else
+            echo "  ✗ MISSING: $secret"
+            MISSING=$((MISSING + 1))
+          fi
+        done
+        
+        if [ $MISSING -gt 0 ]; then
+          echo ""
+          echo "❌ CREDENTIAL VALIDATION FAILED: $MISSING secrets missing"
+          echo "Add them with: az keyvault secret set --vault-name $VAULT_NAME --name SECRET_NAME --value SECRET_VALUE"
+          exit 1
+        fi
+        echo "✅ All credentials verified in Key Vault"
+    
     - name: Build and push to Azure Container Registry
       run: |
         az acr build \
@@ -259,7 +328,12 @@ jobs:
           --set-env-vars \
             ENVIRONMENT=production \
             DATABASE_URL=secretref:database-url \
-            JWT_SECRET_KEY=secretref:jwt-secret
+            JWT_SECRET_KEY=secretref:jwt-secret \
+            GOOGLE_CLIENT_ID=secretref:google-client-id \
+            GOOGLE_CLIENT_SECRET=secretref:google-client-secret \
+            MICROSOFT_CLIENT_ID=secretref:microsoft-client-id \
+            MICROSOFT_CLIENT_SECRET=secretref:microsoft-client-secret \
+            SECRET_KEY=secretref:secret-key
     
     - name: Run health checks
       run: |
