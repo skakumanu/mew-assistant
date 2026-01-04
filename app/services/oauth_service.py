@@ -1,6 +1,9 @@
 """OAuth2/OIDC Federated Authentication Service"""
 
 import time
+import secrets
+import hashlib
+import base64
 from datetime import datetime
 from typing import Dict
 
@@ -79,6 +82,17 @@ oauth.register(
 )
 
 
+def generate_pkce_verifier() -> str:
+    """Generate PKCE code verifier (random string)"""
+    return base64.urlsafe_b64encode(secrets.token_bytes(32)).decode('utf-8').rstrip('=')
+
+
+def generate_pkce_challenge(verifier: str) -> str:
+    """Generate PKCE code challenge from verifier (SHA256 hash)"""
+    digest = hashlib.sha256(verifier.encode('utf-8')).digest()
+    return base64.urlsafe_b64encode(digest).decode('utf-8').rstrip('=')
+
+
 class OAuthService:
     """Service for handling OAuth authentication"""
 
@@ -98,13 +112,23 @@ class OAuthService:
             "scope": " ".join(client.client_kwargs.get("scope", "").split()),
         }
 
+        # Add PKCE for Microsoft (required for cross-origin flows)
+        code_verifier = None
+        if provider == "microsoft":
+            code_verifier = generate_pkce_verifier()
+            code_challenge = generate_pkce_challenge(code_verifier)
+            params["code_challenge"] = code_challenge
+            params["code_challenge_method"] = "S256"
+            # Store verifier in state parameter (base64 encoded)
+            params["state"] = base64.urlsafe_b64encode(code_verifier.encode()).decode()
+
         # Build authorization URL with proper URL encoding
         auth_url = metadata["authorization_endpoint"]
         query_string = urlencode(params)
         return f"{auth_url}?{query_string}"
 
     @staticmethod
-    async def handle_callback(provider: str, code: str, redirect_uri: str, db: Session) -> Dict:
+    async def handle_callback(provider: str, code: str, redirect_uri: str, db: Session, state: str = None) -> Dict:
         """
         Handle OAuth callback and create/login user
         Returns user info and JWT token
@@ -114,15 +138,29 @@ class OAuthService:
         # Exchange code for token
         metadata = await client.load_server_metadata()
         async with httpx.AsyncClient() as http_client:
+            token_data = {
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "client_id": client.client_id,
+            }
+
+            # Microsoft confidential client (Web) requires client_secret even with PKCE
+            if provider == "microsoft":
+                token_data["client_secret"] = client.client_secret
+                if state:
+                    try:
+                        code_verifier = base64.urlsafe_b64decode(state).decode('utf-8')
+                        token_data["code_verifier"] = code_verifier
+                    except Exception as e:
+                        print(f"Failed to decode PKCE verifier from state: {e}")
+            else:
+                # Other providers keep existing client_secret usage
+                token_data["client_secret"] = client.client_secret
+
             token_response = await http_client.post(
                 metadata["token_endpoint"],
-                data={
-                    "grant_type": "authorization_code",
-                    "code": code,
-                    "redirect_uri": redirect_uri,
-                    "client_id": client.client_id,
-                    "client_secret": client.client_secret,
-                },
+                data=token_data,
             )
 
             # Check for errors
@@ -182,9 +220,10 @@ class OAuthService:
 
         # Extract standard fields
         email = user_info.get("email")
+        # Handle both formats: 'name' or 'given_name'/'family_name' or 'givenname'/'familyname'
         full_name = (
             user_info.get("name")
-            or f"{user_info.get('given_name', '')} {user_info.get('family_name', '')}".strip()
+            or f"{user_info.get('given_name') or user_info.get('givenname', '')} {user_info.get('family_name') or user_info.get('familyname', '')}".strip()
         )
         provider_user_id = user_info.get("sub") or user_info.get("id")
 
@@ -206,6 +245,10 @@ class OAuthService:
             )
             db.add(user)
             db.flush()  # Get user.id
+        else:
+            # Always update existing user's name from OAuth if we have one
+            if full_name:
+                user.full_name = full_name
 
         # Link OAuth provider to user
         oauth_link = (
