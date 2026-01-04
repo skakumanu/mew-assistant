@@ -52,23 +52,23 @@ az keyvault secret set \
 az keyvault secret set \
   --vault-name "$VAULT_NAME" \
   --name "google-client-id" \
-  --value "321461422476-sgt4knrr7movtjk2djdpt5bom4q90qfk.apps.googleusercontent.com"
+  --value "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 
 az keyvault secret set \
   --vault-name "$VAULT_NAME" \
   --name "google-client-secret" \
-  --value "REDACTED-GOOGLE-CLIENT-SECRET"
+  --value "YOUR_GOOGLE_CLIENT_SECRET"
 
 # Microsoft OAuth
 az keyvault secret set \
   --vault-name "$VAULT_NAME" \
   --name "microsoft-client-id" \
-  --value "7f4d5a8b-cab9-4229-89f0-4fb2be08a99b"
+  --value "YOUR_MICROSOFT_CLIENT_ID"
 
 az keyvault secret set \
   --vault-name "$VAULT_NAME" \
   --name "microsoft-client-secret" \
-  --value "REDACTED-MICROSOFT-CLIENT-SECRET"
+  --value "YOUR_MICROSOFT_CLIENT_SECRET"
 
 # Verify all secrets created
 echo "Verifying secrets in Key Vault..."
