@@ -4,6 +4,17 @@ All notable changes to the Mew Assistant project.
 
 ---
 
+## [1.0.1] - January 3, 2026
+
+### 🔧 Infrastructure
+- **Health Probes**: Added Container App health probe configuration
+  - Liveness probe: `/health` endpoint, 30s initial delay, 10s period, 3 failure threshold
+  - Readiness probe: `/health` endpoint, 10s initial delay, 5s period, 2 failure threshold
+  - Created PowerShell script for automated health probe configuration
+- **Database Configuration**: Updated PostgreSQL connection string for production environment
+
+---
+
 ## [1.0.0] - January 4, 2026
 
 ### ✨ OAuth Authentication 
