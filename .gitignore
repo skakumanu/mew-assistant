@@ -109,3 +109,6 @@ deployment-credentials.txt
 .env.local
 .env.*.local
 CUSTOMER_ZERO_SETUP.md
+
+ca-config.json
+ca-config-updated.json
