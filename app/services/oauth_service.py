@@ -220,9 +220,10 @@ class OAuthService:
 
         # Extract standard fields
         email = user_info.get("email")
+        # Handle both formats: 'name' or 'given_name'/'family_name' or 'givenname'/'familyname'
         full_name = (
             user_info.get("name")
-            or f"{user_info.get('given_name', '')} {user_info.get('family_name', '')}".strip()
+            or f"{user_info.get('given_name') or user_info.get('givenname', '')} {user_info.get('family_name') or user_info.get('familyname', '')}".strip()
         )
         provider_user_id = user_info.get("sub") or user_info.get("id")
 
@@ -244,6 +245,10 @@ class OAuthService:
             )
             db.add(user)
             db.flush()  # Get user.id
+        else:
+            # Always update existing user's name from OAuth if we have one
+            if full_name:
+                user.full_name = full_name
 
         # Link OAuth provider to user
         oauth_link = (

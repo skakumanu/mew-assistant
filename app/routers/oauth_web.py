@@ -237,6 +237,13 @@ async def oauth_login_page(request: Request):
             el.textContent = msg;
         }
 
+        function hideDashboardStatus(delayMs = 2000) {
+            const el = document.getElementById('dashboardStatus');
+            if (el) {
+                setTimeout(() => { el.remove(); }, delayMs);
+            }
+        }
+
         function showStatus(message, isError = false) {
             const status = document.getElementById('status');
             status.textContent = message;
@@ -406,11 +413,12 @@ async def oauth_callback(
         if not all(c.isalnum() or c in '._-' for c in token_value):
             raise HTTPException(status_code=500, detail="Invalid token format")
         
+        secure_flag = scheme == "https"
         response.set_cookie(
             key="mew_token",
             value=token_value,
             httponly=True,
-            secure=True,
+            secure=secure_flag,
             samesite="lax",
         )
         return response
@@ -482,6 +490,28 @@ async def dashboard(request: Request):
     <script>
         const API_URL = window.location.origin;
 
+        function showDashboardStatus(msg) {
+            let el = document.getElementById('dashboardStatus');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'dashboardStatus';
+                el.style.marginTop = '12px';
+                el.style.padding = '12px';
+                el.style.borderRadius = '8px';
+                el.style.background = '#f7f9fc';
+                el.style.border = '1px solid #e0e0e0';
+                document.querySelector('.container').prepend(el);
+            }
+            el.textContent = msg;
+        }
+
+        function hideDashboardStatus(delayMs = 2000) {
+            const el = document.getElementById('dashboardStatus');
+            if (el) {
+                setTimeout(() => { el.remove(); }, delayMs);
+            }
+        }
+
         async function loadUserInfo() {
             const token = localStorage.getItem('mew_token') || getTokenFromURL();
 
@@ -507,6 +537,7 @@ async def dashboard(request: Request):
                     }
                     displayUserInfo(user);
                     showDashboardStatus('Signed in.');
+                    hideDashboardStatus();
                 } else {
                     showDashboardStatus(`Session check failed (${response.status}). Please sign in again.`);
                 }
@@ -522,35 +553,44 @@ async def dashboard(request: Request):
         }
 
         function displayUserInfo(user) {
-            // Use textContent to prevent XSS attacks from user-supplied data
             const userInfoDiv = document.getElementById('userInfo');
             userInfoDiv.innerHTML = '';
 
-            // Create and safely append name
             const nameEl = document.createElement('h3');
-            nameEl.textContent = '👤 ' + (user.full_name || 'User');
+            const nameLabel = document.createElement('strong');
+            nameLabel.textContent = 'Name: ';
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = user.full_name || user.name || 'User';
+            nameEl.appendChild(nameLabel);
+            nameEl.appendChild(nameSpan);
             userInfoDiv.appendChild(nameEl);
 
-            // Create and safely append email
             const emailP = document.createElement('p');
-            emailP.innerHTML = '<strong>Email:</strong> <span id="emailValue"></span>';
-            document.getElementById('emailValue').textContent = user.email || 'N/A';
+            const emailLabel = document.createElement('strong');
+            emailLabel.textContent = 'Email: ';
+            const emailSpan = document.createElement('span');
+            emailSpan.textContent = user.email || 'N/A';
+            emailP.appendChild(emailLabel);
+            emailP.appendChild(emailSpan);
             userInfoDiv.appendChild(emailP);
 
-            // Create and safely append role
             const roleP = document.createElement('p');
-            roleP.innerHTML = '<strong>Role:</strong> <span id="roleValue"></span>';
-            document.getElementById('roleValue').textContent = user.role || 'N/A';
+            const roleLabel = document.createElement('strong');
+            roleLabel.textContent = 'Role: ';
+            const roleSpan = document.createElement('span');
+            roleSpan.textContent = user.role || 'N/A';
+            roleP.appendChild(roleLabel);
+            roleP.appendChild(roleSpan);
             userInfoDiv.appendChild(roleP);
 
-
-        // Auto-load user info on page load to persist token and avoid bounce-back
-        window.addEventListener('load', loadUserInfo);
-            // Add provider if present
             if (user.federated_provider) {
                 const providerP = document.createElement('p');
-                providerP.innerHTML = '<strong>Provider:</strong> <span id="providerValue"></span>';
-                document.getElementById('providerValue').textContent = user.federated_provider;
+                const providerLabel = document.createElement('strong');
+                providerLabel.textContent = 'Provider: ';
+                const providerSpan = document.createElement('span');
+                providerSpan.textContent = user.federated_provider;
+                providerP.appendChild(providerLabel);
+                providerP.appendChild(providerSpan);
                 userInfoDiv.appendChild(providerP);
             }
         }
@@ -568,6 +608,9 @@ async def dashboard(request: Request):
             localStorage.removeItem('mew_user');
             window.location.href = '/auth/oauth/login';
         }
+
+        // Auto-load user info on page load to persist token and avoid bounce-back
+        window.addEventListener('load', loadUserInfo);
 
         loadUserInfo();
     </script>
