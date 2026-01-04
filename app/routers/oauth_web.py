@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from urllib.parse import urlparse
+import logging
 
 from app.database.connection import get_db
 from app.services.oauth_service import OAuthService
 from app.utils.log_sanitizer import sanitize_for_log
 from app.utils.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth Web"])
 
@@ -219,6 +222,21 @@ async def oauth_login_page(request: Request):
     <script>
         const API_URL = window.location.origin;
 
+        function showDashboardStatus(msg) {
+            let el = document.getElementById('dashboardStatus');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'dashboardStatus';
+                el.style.marginTop = '12px';
+                el.style.padding = '12px';
+                el.style.borderRadius = '8px';
+                el.style.background = '#f7f9fc';
+                el.style.border = '1px solid #e0e0e0';
+                document.querySelector('.container').prepend(el);
+            }
+            el.textContent = msg;
+        }
+
         function showStatus(message, isError = false) {
             const status = document.getElementById('status');
             status.textContent = message;
@@ -332,12 +350,24 @@ async def oauth_provider_login(provider: str, redirect_uri: str, db: Session = D
 async def oauth_callback(
     request: Request,
     provider: str,
-    code: str,
+    code: str = None,
     state: str = None,
+    error: str = None,
+    error_description: str = None,
     db: Session = Depends(get_db),
 ):
     """Handle OAuth callback from provider"""
     try:
+        # Check if OAuth provider returned an error
+        if error:
+            error_msg = error_description or error
+            logger.error(f"OAuth error from {provider}: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"OAuth failed: {error_msg}")
+        
+        # Check if code is missing
+        if not code:
+            logger.error(f"OAuth callback missing authorization code for {provider}")
+            raise HTTPException(status_code=400, detail="Authorization code not received from OAuth provider")
         # Reconstruct the redirect_uri that was used in the authorization request
         # Azure load balancer terminates SSL, so check X-Forwarded-Proto header
         scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
@@ -356,7 +386,7 @@ async def oauth_callback(
         scheme_s = sanitize_for_log(request.url.scheme)
         print(f"[OAuth Callback] Headers - X-Forwarded-Proto: {xfwd}, scheme: {scheme_s}")
 
-        result = await OAuthService.handle_callback(provider, code, redirect_uri, db)
+        result = await OAuthService.handle_callback(provider, code, redirect_uri, db, state=state)
 
         # Redirect to dashboard with token in URL so JavaScript can access it
         # The dashboard will save it to localStorage
@@ -456,7 +486,7 @@ async def dashboard(request: Request):
             const token = localStorage.getItem('mew_token') || getTokenFromURL();
 
             if (!token) {
-                window.location.href = '/auth/oauth/login';
+                showDashboardStatus('Missing token; please sign in again.');
                 return;
             }
 
@@ -469,13 +499,20 @@ async def dashboard(request: Request):
                     const user = await response.json();
                     localStorage.setItem('mew_token', token);
                     localStorage.setItem('mew_user', JSON.stringify(user));
+                    // Remove token from URL after storing
+                    if (window.history && window.history.replaceState) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('token');
+                        window.history.replaceState({}, document.title, url.toString());
+                    }
                     displayUserInfo(user);
+                    showDashboardStatus('Signed in.');
                 } else {
-                    window.location.href = '/auth/oauth/login';
+                    showDashboardStatus(`Session check failed (${response.status}). Please sign in again.`);
                 }
             } catch (error) {
                 console.error('Error loading user:', error);
-                window.location.href = '/auth/oauth/login';
+                showDashboardStatus('Error loading user; please sign in again.');
             }
         }
 
@@ -506,6 +543,9 @@ async def dashboard(request: Request):
             document.getElementById('roleValue').textContent = user.role || 'N/A';
             userInfoDiv.appendChild(roleP);
 
+
+        // Auto-load user info on page load to persist token and avoid bounce-back
+        window.addEventListener('load', loadUserInfo);
             // Add provider if present
             if (user.federated_provider) {
                 const providerP = document.createElement('p');
