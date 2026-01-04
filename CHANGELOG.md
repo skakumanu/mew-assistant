@@ -4,6 +4,42 @@ All notable changes to the Mew Assistant project.
 
 ---
 
+## [1.0.0] - January 4, 2026
+
+### ✨ OAuth Authentication 
+- **Microsoft OAuth**: Implemented PKCE (Proof Key for Code Exchange) flow for enhanced security
+  - Handles both standard and Microsoft-specific field formats (givenname/familyname)
+  - Fixed name extraction to support both OpenID Connect and Microsoft AD formats
+  - Client registered as Web (confidential) client with proper PKCE integration
+- **Google OAuth**: Verified working with full integration
+- **Dashboard**: User information display fixed (name, email, role visible after sign-in)
+- **Token Management**: Persistent token storage via localStorage with auto-refresh
+
+### 🔧 Azure Container App Deployment
+- **Fixed Container Initialization**: Resolved "invalid dsn" error in init-oauth-db.py
+  - Script now gracefully skips migration for SQLite (development) databases
+  - Added proper error handling for psycopg2 connection failures
+  - Removed hardcoded .env.example from Dockerfile (uses Azure environment variables)
+- **Database Configuration**: Updated production environment to use PostgreSQL Flexible Server
+  - Proper connection pooling and SSL configuration for Azure PostgreSQL
+  - Advisory locking to prevent schema creation race conditions
+- **Docker Image**: Built and pushed to Azure Container Registry (mewassistantacr)
+  - Multi-stage build for optimized image size
+  - Proper dependency caching and layer optimization
+
+### 🧪 Testing & Validation
+- All 261 tests passing
+- OAuth flows tested (Google and Microsoft sign-in)
+- Production endpoints responding (/health, /auth/oauth/login)
+- Local development verified working with uvicorn
+
+### 🔒 Security & Code Quality
+- Removed hardcoded secrets from repository
+- GitHub push protection validated (no secrets in commits)
+- All environment variables properly externalized for Container Apps
+
+---
+
 ## [0.3.0] - December 31, 2025
 
 ### 🔒 Security Fixes
