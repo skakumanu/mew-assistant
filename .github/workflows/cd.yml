@@ -312,14 +312,14 @@ jobs:
           --file Dockerfile \
           .
     
-    - name: Create database backup (if configured)
-      if: ${{ secrets.POSTGRES_SERVER != '' }}
-      run: |
-        az postgres flexible-server backup create \
-          --resource-group ${{ secrets.RESOURCE_GROUP }} \
-          --server-name ${{ secrets.POSTGRES_SERVER }} \
-          --backup-name pre-deploy-$(date +%Y%m%d-%H%M%S)
-      continue-on-error: true
+    # Backup step disabled - POSTGRES_SERVER secret not configured
+    # To enable: add POSTGRES_SERVER secret to GitHub repo settings with PostgreSQL server name
+    # - name: Create database backup
+    #   run: |
+    #     az postgres flexible-server backup create \
+    #       --resource-group ${{ secrets.RESOURCE_GROUP }} \
+    #       --server-name ${{ secrets.POSTGRES_SERVER }} \
+    #       --backup-name pre-deploy-$(date +%Y%m%d-%H%M%S)
     
     - name: Deploy to Azure Container Apps (Production)
       run: |
