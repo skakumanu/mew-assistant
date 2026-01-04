@@ -4,6 +4,71 @@ All notable changes to the Mew Assistant project.
 
 ---
 
+## [1.0.3] - January 3, 2026
+
+### 🔐 Security & Infrastructure
+- **BREAKING CHANGE**: CD workflow now requires credentials in Azure Key Vault
+  - Implemented secure credential management for GitHub Actions continuous deployment
+  - All application secrets (database, JWT, OAuth) now managed via Azure Key Vault
+  - Container App uses Managed Identity for automatic vault authentication
+  - Pre-deployment credential verification ensures all required secrets exist
+  - Credentials never exposed in GitHub Actions logs or Container App configuration
+
+### ✨ Features
+- **Automated Deployment**: GitHub Actions automatically deploys on version tags
+  - Staging deployment triggered by pushes to `develop` branch
+  - Production deployment triggered by version tags (e.g., `v1.0.3`)
+  - Security guardrails (tests, compliance checks) must pass before deployment
+  - Pre-deployment validation checks all Key Vault secrets exist
+  - Automatic database backups before production deployments
+  - Health check verification with auto-rollback on failure
+
+### 📚 Documentation
+- **CD Setup Guide**: Comprehensive Azure Key Vault setup instructions ([docs/AZURE_KEYVAULT_CD_SETUP.md](docs/AZURE_KEYVAULT_CD_SETUP.md))
+- **Architecture Guide**: Detailed credential flow documentation ([docs/CONTINUOUS_DEPLOYMENT_CREDENTIALS.md](docs/CONTINUOUS_DEPLOYMENT_CREDENTIALS.md))
+- **Quick Reference**: Daily reference guide for credential management ([docs/CD_CREDENTIAL_QUICK_REFERENCE.md](docs/CD_CREDENTIAL_QUICK_REFERENCE.md))
+- **Implementation Summary**: Complete git flow implementation documentation ([CD_CREDENTIAL_MANAGEMENT_IMPLEMENTATION.md](CD_CREDENTIAL_MANAGEMENT_IMPLEMENTATION.md))
+
+### 🛠️ DevOps
+- **Setup Automation**: One-command setup script ([scripts/setup-cd-environment.sh](scripts/setup-cd-environment.sh))
+  - Validates all Key Vault secrets
+  - Configures Container App Managed Identity
+  - Grants proper RBAC roles
+  - Reports configuration issues with solutions
+
+### 🔒 Security Enhancements
+- Credentials encrypted at rest in Azure Key Vault
+- TLS encryption in transit for all secret access
+- RBAC-based access control via Managed Identity (no shared passwords)
+- Automatic audit logging of all vault access
+- Credential rotation without code changes or redeployment
+- Pre-deployment validation prevents deployments with missing secrets
+
+### 📋 Requirements
+To deploy using this release:
+1. Azure Key Vault must contain all required secrets (see setup guide)
+2. Container App Managed Identity must have "Key Vault Secrets User" role
+3. GitHub Actions secrets must be configured (AZURE_CREDENTIALS, etc.)
+
+---
+
+## [1.0.2] - January 3, 2026
+
+### 🔧 Hotfix
+- **Database Connection**: Fixed production database connection issue
+  - Removed hardcoded DATABASE_URL from `update-container-probes.ps1`
+  - Added `SECRET_KEY` environment variable (required by Pydantic Settings)
+  - Recreated Container App with correct PostgreSQL SSL configuration
+  - All OAuth credentials properly configured from local .env
+
+### 📚 Documentation
+- **Production Recovery**: Added incident documentation ([PRODUCTION_RECOVERY.md](PRODUCTION_RECOVERY.md))
+  - Root cause analysis
+  - Recovery procedures
+  - Prevention measures
+
+---
+
 ## [1.0.1] - January 3, 2026
 
 ### 🔧 Infrastructure
