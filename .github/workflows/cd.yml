@@ -316,7 +316,7 @@ jobs:
       run: |
         az postgres flexible-server backup create \
           --resource-group ${{ secrets.RESOURCE_GROUP }} \
-          --name ${{ secrets.POSTGRES_SERVER }} \
+          --server-name ${{ secrets.POSTGRES_SERVER }} \
           --backup-name pre-deploy-$(date +%Y%m%d-%H%M%S)
     
     - name: Deploy to Azure Container Apps (Production)
