@@ -313,7 +313,7 @@ jobs:
           .
     
     - name: Create database backup (if configured)
-      if: secrets.POSTGRES_SERVER != ''
+      if: ${{ secrets.POSTGRES_SERVER != '' }}
       run: |
         az postgres flexible-server backup create \
           --resource-group ${{ secrets.RESOURCE_GROUP }} \
