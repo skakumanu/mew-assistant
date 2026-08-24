@@ -21,6 +21,7 @@ from .requests import router as change_requests_router
 from .rules import router as rules_router
 from .session import router as session_router
 from .simple_calendar import router as simple_calendar_router
+from .smart_approval import router as smart_approval_router
 from .summary import router as summary_router
 from .voice import router as voice_router
 from .voice_requests import router as voice_requests_router
@@ -40,6 +41,7 @@ __all__ = [
     "change_requests_router",
     "provider_router",
     "calendar_sync_router",
+    "smart_approval_router",
     "mew_ui_router",
     "voice_requests_router",
     "voice_router",
