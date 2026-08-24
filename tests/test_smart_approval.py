@@ -31,13 +31,22 @@ def advisor(db_session):
 
 
 def _decided(db_session, family, status, activity="aba", days_ago=1):
-    """A request the caregiver actually decided, not one auto-applied."""
+    """A request the caregiver actually decided, not one auto-applied.
+
+    Pinned to a fixed morning hour so this session never lands inside the
+    buffer window of a session_row move under test (which happens in the
+    afternoon) - using "now"'s wall-clock hour here made this collide, and
+    therefore fail, only at certain times of day.
+    """
+    start = (datetime.utcnow() + timedelta(days=3)).replace(
+        hour=9, minute=0, second=0, microsecond=0
+    )
     session = ScheduledSession(
         child_id=family["kid"].id,
         provider_org_id=family["org"].id,
         title="ABA session",
         activity_type=activity,
-        start_utc=datetime.utcnow() + timedelta(days=3),
+        start_utc=start,
         duration_minutes=90,
     )
     db_session.add(session)
