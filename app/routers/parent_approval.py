@@ -11,8 +11,17 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..database.models import ApprovalRequest, ApprovalStatus, User
+from ..schemas.change_request import (
+    AlternativeOut,
+    ChooseAlternativeIn,
+    LogEntryOut,
+    PendingRequestOut,
+)
 from ..services.approval_service import ApprovalService
+from ..services.change_request_service import ChangeRequestService
+from ..services.presenter import Presenter
 from ..utils.auth import get_current_user, verify_parent_account
+from ..utils.locale_context import translator_for
 
 router = APIRouter(prefix="/parent/approvals", tags=["Parent Approvals"])
 
@@ -42,13 +51,22 @@ class ApprovalRequestDetail(BaseModel):
     expires_at: Optional[str]
     original_activity_name: Optional[str]
 
+    # Why the rule engine parked this request, and the compliant slots that
+    # would clear it. Codes are stored; the sentences are rendered per reader.
+    requested_by: Optional[str] = None
+    change_kind: Optional[str] = None
+    reason_codes: List[str] = Field(default_factory=list)
+    alternatives: List[AlternativeOut] = Field(default_factory=list)
+
     class Config:
         from_attributes = True
 
 
 @router.get("/pending", response_model=List[ApprovalRequestDetail])
 async def get_pending_approvals(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Get all pending approval requests waiting for parent review.
@@ -59,6 +77,9 @@ async def get_pending_approvals(
     approval_service = ApprovalService(db)
     pending_requests = approval_service.get_pending_requests(current_user.id)
 
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    presenter = Presenter(translator, db)
+
     # Enrich with kid and activity details
     result = []
     for request in pending_requests:
@@ -67,7 +88,7 @@ async def get_pending_approvals(
         result.append(
             ApprovalRequestDetail(
                 id=request.id,
-                kid_name=kid.display_name or kid.username,
+                kid_name=(kid.display_name or kid.username or kid.email) if kid else "",
                 kid_emoji=request.kid_emoji,
                 request_type=request.request_type.value,
                 requested_activity=request.requested_activity,
@@ -77,6 +98,10 @@ async def get_pending_approvals(
                 created_at=request.created_at.isoformat(),
                 expires_at=(request.expires_at.isoformat() if request.expires_at else None),
                 original_activity_name=None,  # TODO: Fetch from calendar
+                requested_by=request.requested_by,
+                change_kind=request.change_kind,
+                reason_codes=list(request.reason_codes or []),
+                alternatives=presenter.alternatives(request.alternatives),
             )
         )
 
@@ -121,6 +146,11 @@ async def approve_request(
         ip_address=ip_address,
         user_agent=user_agent,
     )
+
+    # "Allow their time anyway": the parent overrode a rule, so the schedule
+    # moves to exactly what was asked for and the log records who decided.
+    if approved_request.scheduled_session_id:
+        await ChangeRequestService(db).apply_approved(approved_request, current_user)
 
     return {
         "success": True,
@@ -175,6 +205,11 @@ async def deny_request(
         ip_address=ip_address,
         user_agent=user_agent,
     )
+
+    # The schedule is untouched, but the parent's log still records the
+    # decision so "Handled for you" tells the whole story.
+    if denied_request.scheduled_session_id:
+        ChangeRequestService(db).record_denied(denied_request, current_user)
 
     return {
         "success": True,
@@ -283,3 +318,172 @@ async def get_approval_stats(
         "approval_rate": round(approval_rate, 1),
         "message": "Always consider your kid's perspective! 💙",
     }
+
+
+@router.get("/inbox", response_model=List[PendingRequestOut])
+async def get_inbox(
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    The "Needs you" tab: one card per parked request.
+
+    Each card carries the headline, the detail line, the rule that was not
+    satisfied and the three compliant alternatives - everything the parent
+    needs to decide in one tap, rendered in their own language.
+    """
+    verify_parent_account(current_user)
+
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    presenter = Presenter(translator, db)
+
+    pending = ApprovalService(db).get_pending_requests(current_user.id)
+    return [presenter.pending_request(request) for request in pending]
+
+
+@router.post("/{request_id}/choose")
+async def choose_alternative(
+    request_id: int,
+    choice: ChooseAlternativeIn,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Approve one of the three compliant alternatives.
+
+    This is the primary path in the design: the parent taps a time that
+    already fits their rules, and the requester is told the new time rather
+    than being told no.
+    """
+    verify_parent_account(current_user)
+
+    approval_request = db.query(ApprovalRequest).filter(ApprovalRequest.id == request_id).first()
+    if approval_request is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Approval request not found"
+        )
+    if approval_request.parent_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to process this request",
+        )
+    if not approval_request.can_approve():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Request cannot be approved (expired or already processed)",
+        )
+
+    service = ChangeRequestService(db)
+    session = await service.choose_alternative(
+        approval_request, current_user, choice.alternative_index
+    )
+
+    translator = translator_for(request.headers.get("accept-language"), current_user, db)
+    return {
+        "success": True,
+        "request_id": approval_request.id,
+        "session_id": session.id,
+        "start_utc": session.start_utc.isoformat(),
+        "when": translator.when(session.start_utc),
+    }
+
+
+# The quiet log lives outside the approvals prefix: it is not a decision
+# surface, it is the record of everything that did not need one.
+parent_router = APIRouter(prefix="/parent", tags=["Parent Approvals"])
+
+
+@parent_router.get("/log", response_model=List[LogEntryOut])
+async def get_change_log(
+    http_request: Request,
+    limit: int = 8,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    "Handled for you": what changed without the parent having to decide.
+
+    Rows are stored as locale keys plus parameters, so this reads correctly
+    in whatever language the parent is using right now.
+    """
+    verify_parent_account(current_user)
+
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    presenter = Presenter(translator, db)
+
+    entries = ChangeRequestService(db).log_for_parent(current_user.id, limit=max(1, min(limit, 50)))
+    return [presenter.log_entry(entry) for entry in entries]
+
+
+@parent_router.get("/week")
+async def get_week(
+    http_request: Request,
+    child_id: Optional[int] = None,
+    days: int = 7,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    The Week tab: one heading per day, sessions underneath, empty days named.
+
+    A day with nothing on it says so rather than disappearing, and a session
+    that moved carries an "updated" pill so the parent can see at a glance
+    what the rules handled for them.
+    """
+    verify_parent_account(current_user)
+
+    from datetime import datetime, timedelta
+
+    from ..database.models import ScheduledSession
+
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    presenter = Presenter(translator, db)
+
+    children = (
+        [child_id]
+        if child_id
+        else [kid.id for kid in db.query(User).filter(User.parent_id == current_user.id).all()]
+    )
+
+    start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    span = max(1, min(days, 31))
+    end = start + timedelta(days=span)
+
+    rows = (
+        db.query(ScheduledSession)
+        .filter(
+            ScheduledSession.child_id.in_(children or [-1]),
+            ScheduledSession.is_cancelled.is_(False),
+            ScheduledSession.start_utc >= start,
+            ScheduledSession.start_utc < end,
+        )
+        .order_by(ScheduledSession.start_utc.asc())
+        .all()
+    )
+
+    by_day = {}
+    for row in rows:
+        by_day.setdefault(row.start_utc.date(), []).append(row)
+
+    out = []
+    for offset in range(span):
+        day = (start + timedelta(days=offset)).date()
+        sessions = by_day.get(day, [])
+        out.append(
+            {
+                "date": day.isoformat(),
+                "name": translator.days[day.weekday()],
+                "label": translator.date_label(start + timedelta(days=offset)),
+                "empty": not sessions,
+                "sessions": [
+                    {
+                        **presenter.session(row).model_dump(mode="json"),
+                        "time_label": translator.time(row.start_utc),
+                    }
+                    for row in sessions
+                ],
+            }
+        )
+    return out

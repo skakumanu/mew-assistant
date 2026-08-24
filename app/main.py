@@ -1,9 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .database.connection import init_db
 from .middleware import CORSSecurityMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
@@ -44,6 +46,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Stylesheet and client runtime for the three persona screens.
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+if _STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+
 # Include landing page router first
 app.include_router(landing.router, tags=["landing"])
 
@@ -54,16 +61,22 @@ from .routers import calendar_router  # noqa: E402
 from .routers import (
     ai_scheduler_router,
     calendar_web_router,
+    change_requests_router,
     debug_router,
     kid_router,
     message_router,
+    mew_ui_router,
     mobile_router,
     oauth_web,
     parent_approval_router,
+    parent_log_router,
+    provider_router,
+    rules_router,
     session_router,
     simple_calendar_router,
     simple_oauth_router,
     summary_router,
+    voice_requests_router,
     voice_router,
 )
 
@@ -82,6 +95,17 @@ app.include_router(voice_router, tags=["voice"])
 app.include_router(kid_router, tags=["kid"])
 app.include_router(ai_scheduler_router, tags=["ai-scheduler"])
 app.include_router(parent_approval_router, tags=["approvals"])
+
+# Three-persona scheduling: rules in, requests through one write path, and
+# the provider's own view of the sessions they already run.
+app.include_router(rules_router, tags=["rules"])
+app.include_router(change_requests_router, tags=["change-requests"])
+app.include_router(parent_log_router, tags=["approvals"])
+app.include_router(provider_router, tags=["provider"])
+app.include_router(mew_ui_router, tags=["mew-ui"])
+
+# Voice may REQUEST anything and approve nothing.
+app.include_router(voice_requests_router, tags=["voice"])
 
 
 @app.get("/health")

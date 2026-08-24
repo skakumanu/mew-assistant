@@ -3,11 +3,22 @@ Kid-Friendly Router
 Provides simplified, age-appropriate endpoints for children to interact with Mew
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timedelta
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..database.models import RequestType, User
+from ..database.models import (
+    ApprovalRequest,
+    ChangeKind,
+    RequestType,
+    ScheduledSession,
+    User,
+)
+from ..schemas.change_request import ChangeRequestOut, KidCardOut, KidTodayOut
 from ..schemas.kid_friendly import (
     EmojiReaction,
     KidActivitySuggestion,
@@ -16,12 +27,22 @@ from ..schemas.kid_friendly import (
     SimplifiedResponse,
 )
 from ..services.approval_service import ApprovalService
+from ..services.change_request_service import ChangeRequestService
 from ..services.kid_service import KidService
 from ..services.notification_service import NotificationService
+from ..services.presenter import Presenter
 from ..utils.auth import get_current_user, verify_kid_account
 from ..utils.content_filter import ContentFilter
+from ..utils.locale_context import translator_for
 
 router = APIRouter(prefix="/kid", tags=["Kid-Friendly"])
+
+# "Later, please" is one fixed step, so the button means the same thing
+# every time it is pressed. Two taps per request, never a time picker.
+LATER_STEP_MINUTES = 90
+
+# How far back the "calm days in a row" streak is allowed to count.
+MAX_STREAK_DAYS = 60
 
 
 @router.post("/suggest-activity", response_model=SimplifiedResponse)
@@ -164,20 +185,37 @@ async def react_to_schedule(
 @router.post("/change-request", response_model=SimplifiedResponse)
 async def request_schedule_change(
     request: KidScheduleRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Kid requests to change or skip an activity
-    - Simple reason selection (tired, don't feel good, want different activity)
-    - Sends request to parent for approval
-    - IMPORTANT: Changes are NOT made until parent approves
-    - Uses encouraging, supportive language
+    Kid requests to change or skip an activity.
+
+    When the activity is a scheduled session, the request goes through the
+    rule engine: anything that fits the parent's rules is applied right away
+    and the kid is told it is done. A cancellation still reaches the parent
+    whenever they asked for that (``cancellation_needs_approval``).
+
+    Free-form suggestions that are not tied to a session keep the older
+    always-ask behaviour, because there is nothing to evaluate.
     """
     verify_kid_account(current_user)
 
     kid_service = KidService(db)
     approval_service = ApprovalService(db)
+
+    scheduled = (
+        db.query(ScheduledSession)
+        .filter(
+            ScheduledSession.id == request.activity_id,
+            ScheduledSession.child_id == current_user.id,
+            ScheduledSession.is_cancelled.is_(False),
+        )
+        .first()
+    )
+    if scheduled is not None:
+        return await _change_scheduled_session(scheduled, request, http_request, current_user, db)
 
     # Get parent
     parent = kid_service.get_parent(current_user.id)
@@ -213,6 +251,235 @@ async def request_schedule_change(
             "note": "Your schedule won't change until your parent approves!",
         },
     )
+
+
+async def _change_scheduled_session(
+    scheduled: ScheduledSession,
+    request: KidScheduleRequest,
+    http_request: Request,
+    current_user: User,
+    db: Session,
+) -> SimplifiedResponse:
+    """Run a kid's change request through the rule engine."""
+    wants_to_skip = request.alternative is None
+    kind = ChangeKind.CANCEL if wants_to_skip else ChangeKind.MOVE
+    new_start = (
+        None if wants_to_skip else scheduled.start_utc + timedelta(minutes=LATER_STEP_MINUTES)
+    )
+
+    outcome = await ChangeRequestService(db).submit(
+        actor=current_user,
+        session_id=scheduled.id,
+        kind=kind,
+        new_start=new_start,
+    )
+
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+
+    if outcome.auto_applied:
+        message = (
+            translator.t("kid.parent_yes_skip", title=outcome.session.title)
+            if kind is ChangeKind.CANCEL
+            else translator.t(
+                "kid.done",
+                title=outcome.session.title,
+                time=translator.time(outcome.session.start_utc),
+            )
+        )
+        return SimplifiedResponse(
+            success=True,
+            message=message,
+            emoji="",
+            data={
+                "request_id": outcome.request.id if outcome.request else None,
+                "status": "done",
+                "session_id": outcome.session.id,
+                "start_utc": outcome.session.start_utc.isoformat(),
+            },
+        )
+
+    return SimplifiedResponse(
+        success=True,
+        message=translator.t("kid.asked_skip" if wants_to_skip else "kid.asked"),
+        emoji="",
+        data={
+            "request_id": outcome.request.id if outcome.request else None,
+            "status": "waiting_for_parent",
+            "session_id": outcome.session.id,
+        },
+    )
+
+
+class KidAsk(BaseModel):
+    """
+    The kid's two buttons.
+
+    The same two, every time, in the same place: "Later, please" and
+    "Not today". No free text, no time picker, no third option.
+    """
+
+    session_id: int
+    ask: str = Field(..., description="later | skip")
+
+
+@router.post("/ask", response_model=ChangeRequestOut)
+async def ask_about_a_session(
+    ask: KidAsk,
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Ask for a later time, or to skip today.
+
+    Asking is always okay. If the request fits the parent's rules it simply
+    happens and the kid is told so; if it does not, the parent gets a card
+    and the kid is told an answer is coming. The kid never sees a rule.
+    """
+    verify_kid_account(current_user)
+
+    if ask.ask not in ("later", "skip"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ask must be 'later' or 'skip'",
+        )
+
+    service = ChangeRequestService(db)
+    session = db.query(ScheduledSession).filter(ScheduledSession.id == ask.session_id).first()
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+    if ask.ask == "later":
+        kind = ChangeKind.MOVE
+        new_start = session.start_utc + timedelta(minutes=LATER_STEP_MINUTES)
+    else:
+        kind = ChangeKind.CANCEL
+        new_start = None
+
+    outcome = await service.submit(
+        actor=current_user,
+        session_id=ask.session_id,
+        kind=kind,
+        new_start=new_start,
+    )
+
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    presenter = Presenter(translator, db)
+
+    if outcome.auto_applied:
+        message = (
+            translator.t("kid.parent_yes_skip", title=outcome.session.title)
+            if kind is ChangeKind.CANCEL
+            else translator.t(
+                "kid.done",
+                title=outcome.session.title,
+                time=translator.time(outcome.session.start_utc),
+            )
+        )
+        return ChangeRequestOut(
+            auto_applied=True,
+            session=presenter.session(outcome.session),
+            request_id=outcome.request.id if outcome.request else None,
+            message=message,
+        )
+
+    # Reason codes are deliberately NOT rendered for the kid: they are
+    # returned so the parent's card can show them, never the kid's screen.
+    return ChangeRequestOut(
+        auto_applied=False,
+        session=presenter.session(outcome.session),
+        request_id=outcome.request.id if outcome.request else None,
+        reason_codes=outcome.reason_codes,
+        alternatives=[],
+        message=translator.t("kid.asked_skip" if kind is ChangeKind.CANCEL else "kid.asked"),
+    )
+
+
+@router.get("/today", response_model=KidTodayOut)
+async def get_today(
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Today's cards, in one column, in plain sentences.
+
+    One reading order, no emoji, and the two ask buttons on every card that
+    can still be changed. A card whose request is still open shows a status
+    strip in place of the buttons rather than moving anything.
+    """
+    verify_kid_account(current_user)
+
+    translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    presenter = Presenter(translator, db)
+    service = ChangeRequestService(db)
+
+    now = datetime.utcnow()
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = day_start + timedelta(days=1)
+    sessions = service.sessions_for_child(current_user.id, day_start, day_end)
+
+    cards: List[KidCardOut] = []
+    for session in sessions:
+        pending = service.pending_for_session(session.id)
+        status_text = None
+        if pending is not None:
+            status_text = translator.t(
+                "kid.asked_skip" if pending.change_kind == ChangeKind.CANCEL.value else "kid.asked"
+            )
+        cards.append(
+            KidCardOut(
+                session_id=session.id,
+                title=session.title,
+                time_label=translator.time(session.start_utc),
+                person=session.person.display_name if session.person else "",
+                initial=(session.title or "?")[:1].upper(),
+                tile_index=presenter.tile_index(session),
+                can_ask=pending is None and session.start_utc > now,
+                status_text=status_text,
+                symbols=presenter.kid_card_symbols(session),
+            )
+        )
+
+    count = len(cards)
+    return KidTodayOut(
+        greeting=translator.t("kid.my_day"),
+        day_label=f"{translator.day_name(now)}, {translator.date_label(now)}",
+        count_label=translator.t("kid.things_today", count=count),
+        streak_label=translator.t("kid.calm_days", count=_calm_streak(db, current_user.id)),
+        cards=cards,
+        note=translator.t("kid.note"),
+        locale=translator.code,
+        dir=translator.dir,
+    )
+
+
+def _calm_streak(db: Session, kid_id: int) -> int:
+    """
+    Consecutive days back from today with nothing parked for a parent.
+
+    The design maps the old sticker collection onto this: a calm day is a
+    day where every request cleared the rules on its own.
+    """
+    parked_days = {
+        row.created_at.date()
+        for row in db.query(ApprovalRequest)
+        .filter(
+            ApprovalRequest.kid_id == kid_id,
+            ApprovalRequest.auto_applied.is_(False),
+            ApprovalRequest.created_at >= datetime.utcnow() - timedelta(days=MAX_STREAK_DAYS),
+        )
+        .all()
+        if row.created_at is not None
+    }
+
+    today = datetime.utcnow().date()
+    streak = 0
+    while streak < MAX_STREAK_DAYS:
+        if (today - timedelta(days=streak)) in parked_days:
+            break
+        streak += 1
+    return streak
 
 
 @router.get("/stickers", response_model=dict)
