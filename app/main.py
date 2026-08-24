@@ -68,6 +68,7 @@ from .routers import (
     message_router,
     mew_ui_router,
     mobile_router,
+    notifications_router,
     oauth_web,
     parent_approval_router,
     parent_log_router,
@@ -112,6 +113,9 @@ app.include_router(calendar_sync_router, tags=["calendar-sync"])
 
 # Attention, not authority: batching and history, never a decision.
 app.include_router(smart_approval_router, tags=["smart-approval"])
+
+# Stored, so an outcome survives the session moving off today.
+app.include_router(notifications_router, tags=["notifications"])
 app.include_router(mew_ui_router, tags=["mew-ui"])
 
 # Voice may REQUEST anything and approve nothing.
