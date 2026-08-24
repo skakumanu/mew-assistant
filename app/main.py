@@ -70,6 +70,7 @@ from .routers import (
     mobile_router,
     notifications_router,
     oauth_web,
+    onboarding_setup_router,
     parent_approval_router,
     parent_log_router,
     provider_router,
@@ -116,6 +117,9 @@ app.include_router(smart_approval_router, tags=["smart-approval"])
 
 # Stored, so an outcome survives the session moving off today.
 app.include_router(notifications_router, tags=["notifications"])
+
+# One person sets it up, once.
+app.include_router(onboarding_setup_router, tags=["onboarding"])
 app.include_router(mew_ui_router, tags=["mew-ui"])
 
 # Voice may REQUEST anything and approve nothing.
