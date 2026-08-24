@@ -608,29 +608,23 @@ class ChangeRequestService:
         """
         Push the change back out as a calendar update.
 
-        Best effort: the schedule in Mew is already authoritative, so a
-        calendar hiccup must never undo a change the rules allowed.
+        Best effort by design: the schedule in Mew is already authoritative,
+        so a calendar that is unreachable, read-only or simply not connected
+        must never undo a change the rules allowed.
         """
-        if not session.external_event_id:
-            return
-        try:
-            from .calendar_service import CalendarService
+        from .calendar_sync_service import CalendarSyncService
 
-            calendar = CalendarService(self.db)
-            if kind is ChangeKind.CANCEL:
-                await calendar.delete_calendar_event(session.external_event_id)
-                return
-            end = session.start_utc + timedelta(minutes=session.duration_minutes)
-            await calendar.update_calendar_event(
-                event_id=session.external_event_id,
-                updates={
-                    "start_time": session.start_utc.isoformat(),
-                    "end_time": end.isoformat(),
-                    "location": session.location,
-                },
-            )
-        except Exception as exc:
+        try:
+            pushed = await CalendarSyncService(self.db).push(session, kind)
+        except Exception as exc:  # a calendar never breaks the loop
             logger.warning("Calendar write-back failed for session %s: %s", session.id, exc)
+            return
+
+        if not pushed:
+            logger.info(
+                "Session %s changed in Mew but not written back (no writable calendar)",
+                session.id,
+            )
 
     def _notify_requester(self, request: ApprovalRequest, session: ScheduledSession) -> None:
         """Push the outcome to whoever asked, in a sentence they can read."""
