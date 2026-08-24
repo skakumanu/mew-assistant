@@ -960,3 +960,50 @@ class UserLocale(Base):
     clock = Column(String(3), default="12h", nullable=False)
     source = Column(String(10), default="device", nullable=False)  # device | explicit
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class NotificationKind(str, enum.Enum):
+    """Why a notification exists. Never a bare ping - each carries a sentence."""
+
+    AUTO_APPLIED = "auto_applied"  # a change cleared the rules on its own
+    NEEDS_YOU = "needs_you"  # a request is waiting on the caregiver
+    OUTCOME = "outcome"  # the answer, back to whoever asked
+
+
+class Notification(Base):
+    """
+    A durable, readable notification.
+
+    Stored rather than fired-and-forgotten, for two reasons the design is
+    explicit about:
+
+      * "Kid outcome messaging must survive the session moving off today" -
+        a child who was not looking at the screen when the answer arrived
+        must still find it, phrased the same way, whenever they next look.
+      * Nothing is announced in a single channel. The row holds a locale KEY
+        plus parameters, so the push, the email and the screen all say the
+        same sentence, and a chime is never the only signal.
+    """
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    approval_request_id = Column(Integer, ForeignKey("approval_requests.id"), nullable=True)
+    scheduled_session_id = Column(Integer, ForeignKey("scheduled_sessions.id"), nullable=True)
+
+    kind = Column(String(20), nullable=False)
+    text_key = Column(String(100), nullable=False)
+    params = Column(JSON, nullable=True)
+
+    # Which channels actually accepted it, e.g. ["in_app", "email"]. In-app
+    # is always present: the row itself is the in-app delivery.
+    delivered_channels = Column(JSON, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    read_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("idx_notification_recipient_created", "recipient_id", "created_at"),
+        {"extend_existing": True},
+    )
