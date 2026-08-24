@@ -14,7 +14,7 @@ python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
 argon2-cffi==23.1.0
 python-multipart==0.0.32
-Authlib==1.6.6
+Authlib==1.7.2
 httpx==0.28.1
 cryptography==50.0.0
 
