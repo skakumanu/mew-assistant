@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "name": "English",
+    "dir": "ltr",
+    "clock": "12h"
+  },
+  "days": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun"
+  ],
+  "persona": {
+    "parent": "Parent",
+    "kid": "Kid",
+    "provider": "Service provider"
+  },
+  "parent": {
+    "tab_inbox": "Needs you",
+    "tab_week": "Week",
+    "tab_rules": "Rules",
+    "all_clear": "all clear",
+    "waiting": "{count} waiting",
+    "nothing_waiting": "Nothing waiting on you. Everything so far fit your rules.",
+    "not_fit": "Does not fit your rules:",
+    "pick_fit": "Pick a time that does fit:",
+    "closest": "closest",
+    "also_fits": "also fits",
+    "allow_anyway": "Allow their time anyway",
+    "skip_it": "Skip it",
+    "say_no": "Say no",
+    "handled": "Handled for you",
+    "no_changes": "No changes yet.",
+    "free": "Free",
+    "updated": "updated",
+    "rules_intro": "Set once. Every request is checked against these before it reaches you.",
+    "headline_move": "{title} to {when}",
+    "headline_skip": "Skip {title}?",
+    "detail_now": "Now {when} with {person}",
+    "detail_swap": "Now {when} with {person} instead of {original}",
+    "detail_skip": "{when} with {person}",
+    "option_at": "{day}, {date} at {time}",
+    "log_moved": "{title} moved to {when}",
+    "log_cancelled": "{title} on {day} cancelled",
+    "log_stays": "{title} stays {when}",
+    "meta_auto": "{who} asked, the rules cleared it",
+    "meta_approved": "you approved the request from {who}",
+    "meta_declined": "you declined the request from {who}",
+    "meta_picked": "you picked this time",
+    "rules": {
+      "min_notice": {
+        "label": "At least {hours} hours notice",
+        "detail": "Same-day changes always come to me."
+      },
+      "latest_end": {
+        "label": "Nothing past {time}",
+        "detail": "Evenings stay for dinner and wind-down."
+      },
+      "protected_block": {
+        "label": "Protect {start} to {end}",
+        "detail": "Lunch and meds, every day."
+      },
+      "same_provider": {
+        "label": "Same therapist only",
+        "detail": "A new face needs my okay first."
+      },
+      "buffer": {
+        "label": "{minutes} minutes between sessions",
+        "detail": "Travel and reset time."
+      },
+      "cancel_needs_approval": {
+        "label": "Cancelling needs my okay",
+        "detail": "Moving is fine. Skipping I decide."
+      },
+      "on": "on",
+      "off": "off"
+    }
+  },
+  "kid": {
+    "my_day": "My day",
+    "things_today": {
+      "one": "1 thing today",
+      "other": "{count} things today"
+    },
+    "calm_days": "{count} calm days in a row",
+    "words": "Words",
+    "symbols": "Symbols",
+    "read_aloud": "Read aloud",
+    "ask_later": "Later, please",
+    "ask_skip": "Not today",
+    "with": "with",
+    "asked": "I asked. You will get an answer soon.",
+    "asked_skip": "I asked about skipping. An answer is coming.",
+    "done": "Done. {title} is now at {time}.",
+    "changed_to": "Changed. New time: {time}.",
+    "parent_yes": "Yes. {title} is {day} at {time}.",
+    "parent_yes_skip": "Yes. No {title} today.",
+    "parent_no": "Not this time. {title} stays {day} at {time}.",
+    "parent_moved": "{title} moved to {day} at {time}.",
+    "note": "Asking is always okay. If it fits the rules, it just happens. If not, a note goes out."
+  },
+  "provider": {
+    "sessions_from": "Sessions from your calendar",
+    "synced_with": "Synced with",
+    "change_this": "change this",
+    "close": "close",
+    "waiting_on_parent": "waiting on approval",
+    "move_to": "Move to",
+    "start_at": "Start at",
+    "person": "Therapist:",
+    "tap_to_swap": "tap to swap",
+    "send": "Send request",
+    "confirmed": "Confirmed for {when}. Both calendars updated, no approval needed.",
+    "sent": "Sent for approval: {reasons}.",
+    "note": "The answer comes back into your own calendar. Most changes clear themselves."
+  },
+  "reasons": {
+    "min_notice": "less than 24 hours notice",
+    "latest_end": "outside the allowed hours",
+    "protected_block": "overlaps a protected block",
+    "same_provider": "a different therapist",
+    "buffer": "too close to another session",
+    "max_per_week": "over the weekly limit",
+    "cancel_needs_approval": "cancelling needs your okay",
+    "outside_allowed_days": "not an allowed day"
+  },
+  "blocks": {
+    "block.midday": "the protected midday block",
+    "block.custom": "a protected block"
+  },
+  "ui": {
+    "sign_in": "Sign in to continue",
+    "token": "Access token",
+    "continue": "Continue",
+    "loading": "Loading…",
+    "error": "Something went wrong. Try again.",
+    "sign_out": "Sign out"
+  }
+}
