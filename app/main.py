@@ -60,6 +60,7 @@ from .routers import auth_router  # noqa: E402
 from .routers import calendar_router  # noqa: E402
 from .routers import (
     ai_scheduler_router,
+    calendar_sync_router,
     calendar_web_router,
     change_requests_router,
     debug_router,
@@ -67,7 +68,9 @@ from .routers import (
     message_router,
     mew_ui_router,
     mobile_router,
+    notifications_router,
     oauth_web,
+    onboarding_setup_router,
     parent_approval_router,
     parent_log_router,
     provider_router,
@@ -75,6 +78,7 @@ from .routers import (
     session_router,
     simple_calendar_router,
     simple_oauth_router,
+    smart_approval_router,
     summary_router,
     voice_requests_router,
     voice_router,
@@ -106,6 +110,16 @@ app.include_router(change_requests_router, tags=["change-requests"])
 for _caregiver_prefix in ("/parent", "/guardian"):
     app.include_router(parent_log_router, prefix=_caregiver_prefix, tags=["approvals"])
 app.include_router(provider_router, tags=["provider"])
+app.include_router(calendar_sync_router, tags=["calendar-sync"])
+
+# Attention, not authority: batching and history, never a decision.
+app.include_router(smart_approval_router, tags=["smart-approval"])
+
+# Stored, so an outcome survives the session moving off today.
+app.include_router(notifications_router, tags=["notifications"])
+
+# One person sets it up, once.
+app.include_router(onboarding_setup_router, tags=["onboarding"])
 app.include_router(mew_ui_router, tags=["mew-ui"])
 
 # Voice may REQUEST anything and approve nothing.

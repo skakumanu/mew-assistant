@@ -8,16 +8,23 @@ the client never assembles a sentence by concatenation.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
 from ..database.models import DEFAULT_CAREGIVER_TERM
+from ..utils.auth import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    SESSION_COOKIE,
+    authenticate_user,
+    create_access_token,
+)
 from ..utils.locale import Translator
 from ..utils.locale_context import translator_for
 
@@ -95,3 +102,84 @@ async def provider_screen(
             calendar_name=calendar,
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# Signing in
+#
+# The screens used to want a bearer token pasted into a box. They now take an
+# email and a password like anything else, and keep the session in an
+# HttpOnly cookie that page script cannot read.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/sign-in", response_class=HTMLResponse)
+async def sign_in_screen(
+    request: Request,
+    next: str = "/app/parent",
+    error: Optional[str] = None,
+    db: DbSession = Depends(get_db),
+):
+    """The sign-in form."""
+    translator = translator_for(request.headers.get("accept-language"), None, db)
+    return templates.TemplateResponse(
+        "mew/sign_in.html",
+        _context(request, translator, next_path=_safe_next(next), error=error),
+    )
+
+
+@router.post("/sign-in")
+async def sign_in(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    next: str = Form("/app/parent"),
+    db: DbSession = Depends(get_db),
+):
+    """
+    Authenticate and set the session cookie.
+
+    A failure says only that the pair did not match: which half was wrong is
+    not the signer-in's business to learn, and telling them enumerates
+    accounts for everybody else.
+    """
+    destination = _safe_next(next)
+    user = authenticate_user(db, email, password)
+    if user is None or not user.is_active:
+        return RedirectResponse(
+            url=f"/app/sign-in?next={destination}&error=1",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    token = create_access_token({"sub": user.email, "user_id": user.id})
+    response = RedirectResponse(url=destination, status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        httponly=True,
+        samesite="lax",
+        secure=os.getenv("ENVIRONMENT", "development") == "production",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    return response
+
+
+@router.post("/sign-out")
+async def sign_out():
+    """Drop the session cookie."""
+    response = RedirectResponse(url="/app/sign-in", status_code=status.HTTP_303_SEE_OTHER)
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return response
+
+
+def _safe_next(destination: Optional[str]) -> str:
+    """
+    Only ever redirect within this app.
+
+    A ``next`` parameter is attacker-controlled, so anything that is not a
+    plain local path is discarded rather than sanitised.
+    """
+    if not destination or not destination.startswith("/") or destination.startswith("//"):
+        return "/app/parent"
+    return destination

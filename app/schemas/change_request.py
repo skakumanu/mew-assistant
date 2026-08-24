@@ -170,6 +170,10 @@ class PendingRequestOut(BaseModel):
     kind: str
     session_id: Optional[int] = None
     created_at: datetime
+    # What history says about a request the engine already parked. Advice
+    # only: it never decides, and it is absent when history cannot say
+    # anything honest.
+    advisory: Optional[Dict[str, Any]] = None
 
 
 class ChooseAlternativeIn(BaseModel):
