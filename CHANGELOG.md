@@ -6,6 +6,8 @@ All notable changes to the Mew Assistant project.
 
 ## [Unreleased]
 
+## [1.1.0] - August 24, 2026
+
 ### ✨ Features
 - **Three-persona scheduling**: one schedule shared by a caregiver, a kid and a service provider
   - Deterministic rule engine ([app/services/rule_engine.py](app/services/rule_engine.py)) evaluates every change request before it can reach a caregiver — a request that fits the declared rules is applied immediately, never queued behind a confidence score
@@ -55,6 +57,14 @@ All notable changes to the Mew Assistant project.
 
 ### 🧪 Tests
 - 178 new tests across the rule engine (100% covered), the loop end to end, the locale contract, rule-set backfill, caregiver-term interchangeability, calendar ingest and write-back, notification delivery, the smart-approval boundary, onboarding and sign-in
+
+### 🔒 Security
+- **Inbound SMS/WhatsApp webhooks now verify the Twilio signature** before touching anything, using Twilio's own SDK; fails closed if the auth token isn't configured. Previously unmounted and, even mounted as-is, would have silently swallowed every real webhook call — its two payload parsers didn't exist
+- **Fixed a `BotProtectionMiddleware` false positive**: the SQL-injection heuristic matched a bare `--` or `;` anywhere in a POST body, which collided with base64url JWTs (refresh tokens use `-`) at a measurable rate. Scoped the patterns to how `--`/`;` are actually used in SQL; verified 0/20,000 false positives on random tokens with the classic injection shapes still caught
+
+### 🧹 Dead code
+- Fixed `VoiceService.process_voice_command` constructing `VoiceCommand` with four columns that don't exist (`audio_duration`, `transcript`, `entities`, `timestamp`), which raised on every call
+- Removed five duplicate/broken/unauthenticated routers that were never registered: `auth_router.py`, `mobile_api.py`, `oauth.py`, `onboarding.py`, `password_reset.py` (the last had no auth check on its own reset endpoint)
 
 ---
 
