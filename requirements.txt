@@ -22,7 +22,7 @@ cryptography==46.0.5
 google-auth==2.40.0
 google-auth-oauthlib==1.2.3
 google-auth-httplib2==0.2.0
-google-api-python-client==2.166.0
+google-api-python-client==2.199.0
 
 # Azure
 azure-identity==1.25.1
