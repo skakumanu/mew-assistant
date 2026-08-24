@@ -1,0 +1,29 @@
+{% extends "mew/base.html" %}
+{% block title %}{{ t.provider.sessions_from }} · Mew Assistant{% endblock %}
+
+{% block content %}
+<div class="panels">
+  <section class="panel panel--provider panel--solo" id="provider-panel" aria-label="{{ t.persona.provider }}">
+    <div class="panel__accent" aria-hidden="true"></div>
+
+    <header class="panel__header">
+      <div class="panel__persona">
+        <span class="panel__dot" aria-hidden="true"></span>
+        <span class="panel__persona-label">{{ t.persona.provider }}</span>
+      </div>
+      <h1 class="panel__name" id="provider-org">{{ org_name }}</h1>
+      <p class="panel__sub" id="provider-sync">{{ t.provider.synced_with }} {{ calendar_name }}</p>
+    </header>
+
+    <div class="panel__scroll">
+      <div id="provider-banner"></div>
+      <h2 class="log-heading" style="margin-top:0">{{ t.provider.sessions_from }}</h2>
+      <div id="provider-sessions"></div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>Mew.provider.start();</script>
+{% endblock %}

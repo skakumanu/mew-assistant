@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mew Assistant{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/mew/mew.css">
+</head>
+<body>
+  <!-- Locale strings are resolved server-side from Accept-Language (or the
+       reader's explicit choice) and handed to the client as data, so no
+       sentence is ever assembled by concatenation in JavaScript. -->
+  <script id="mew-locale" type="application/json">{{ strings_json | safe }}</script>
+  <script>
+    window.MEW = {
+      locale: {{ locale | tojson }},
+      dir: {{ dir | tojson }},
+      clock: {{ clock | tojson }},
+      strings: JSON.parse(document.getElementById('mew-locale').textContent)
+    };
+  </script>
+
+  <div class="page">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Live region: every spoken or animated outcome also lands here as the
+       same sentence, so nothing is announced in a single channel. -->
+  <div id="mew-live" class="visually-hidden" role="status" aria-live="polite"></div>
+
+  <script src="/static/mew/mew.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

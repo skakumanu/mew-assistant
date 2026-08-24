@@ -1,0 +1,50 @@
+{% extends "mew/base.html" %}
+{% block title %}{{ t.parent.tab_inbox }} · Mew Assistant{% endblock %}
+
+{% block content %}
+<div class="panels">
+  <section class="panel panel--parent panel--solo" id="parent-panel"
+           data-caregiver-term="{{ caregiver_term }}" aria-label="{{ caregiver_label }}">
+    <div class="panel__accent" aria-hidden="true"></div>
+
+    <header class="panel__header">
+      <div class="panel__persona">
+        <span class="panel__dot" aria-hidden="true"></span>
+        <span class="panel__persona-label" id="parent-persona">{{ caregiver_label }}</span>
+      </div>
+      <div class="panel__title-row">
+        <h1 class="panel__name" id="parent-name">{{ display_name }}</h1>
+        <p class="panel__count" id="parent-count">{{ t.parent.all_clear }}</p>
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-inbox" aria-selected="true"
+              aria-controls="pane-inbox" data-pane="inbox">{{ t.parent.tab_inbox }}</button>
+      <button class="tab" role="tab" id="tab-week" aria-selected="false"
+              aria-controls="pane-week" data-pane="week">{{ t.parent.tab_week }}</button>
+      <button class="tab" role="tab" id="tab-rules" aria-selected="false"
+              aria-controls="pane-rules" data-pane="rules">{{ t.parent.tab_rules }}</button>
+    </div>
+
+    <div class="panel__scroll">
+      <div id="pane-inbox" role="tabpanel" aria-labelledby="tab-inbox">
+        <div id="parent-inbox"></div>
+        <h2 class="log-heading">{{ t.parent.handled }}</h2>
+        <div id="parent-log"></div>
+      </div>
+
+      <div id="pane-week" role="tabpanel" aria-labelledby="tab-week" hidden></div>
+
+      <div id="pane-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
+        <p class="lede" style="font-size:14px">{{ t.parent.rules_intro }}</p>
+        <div id="parent-rules"></div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>Mew.parent.start();</script>
+{% endblock %}

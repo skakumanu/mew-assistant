@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "name": "العربية",
+    "dir": "rtl",
+    "clock": "24h"
+  },
+  "days": [
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+    "الأحد"
+  ],
+  "persona": {
+    "parent": "ولي الأمر",
+    "guardian": "ولي الأمر",
+    "kid": "الطفل",
+    "provider": "مقدم الخدمة"
+  },
+  "parent": {
+    "tab_inbox": "يحتاج موافقتك",
+    "tab_week": "الأسبوع",
+    "tab_rules": "القواعد",
+    "all_clear": "لا شيء معلق",
+    "waiting": "{count} معلق",
+    "nothing_waiting": "لا شيء ينتظرك. كل الطلبات وافقت قواعدك.",
+    "not_fit": "خارج قواعدك:",
+    "pick_fit": "اختر وقتًا مناسبًا:",
+    "closest": "الأقرب",
+    "also_fits": "مناسب أيضًا",
+    "allow_anyway": "الموافقة على وقتهم",
+    "skip_it": "إلغاء",
+    "say_no": "لا",
+    "handled": "تمت معالجته",
+    "no_changes": "لا تغييرات بعد.",
+    "free": "فارغ",
+    "updated": "تم التحديث",
+    "rules_intro": "يُضبط مرة واحدة. كل طلب يُراجع على أساسها قبل أن يصلك.",
+    "headline_move": "{title} إلى {when}",
+    "headline_skip": "إلغاء {title}؟",
+    "detail_now": "الآن {when} مع {person}",
+    "detail_swap": "الآن {when} مع {person} بدلاً من {original}",
+    "detail_skip": "{when} مع {person}",
+    "option_at": "{day}، {date} الساعة {time}",
+    "log_moved": "نُقل {title} إلى {when}",
+    "log_cancelled": "أُلغي {title} يوم {day}",
+    "log_stays": "يبقى {title} يوم {when}",
+    "meta_auto": "طلب {who} والقواعد وافقت",
+    "meta_approved": "وافقت على طلب {who}",
+    "meta_declined": "رفضت طلب {who}",
+    "meta_picked": "اخترت هذا الوقت",
+    "rules": {
+      "min_notice": {
+        "label": "إشعار قبل {hours} ساعة على الأقل",
+        "detail": "تغييرات اليوم نفسه تصل إليّ دائمًا."
+      },
+      "latest_end": {
+        "label": "لا شيء بعد {time}",
+        "detail": "المساء للعشاء والهدوء."
+      },
+      "protected_block": {
+        "label": "حماية من {start} إلى {end}",
+        "detail": "الطعام والدواء، كل يوم."
+      },
+      "same_provider": {
+        "label": "نفس المعالج فقط",
+        "detail": "وجه جديد يحتاج موافقتي أولاً."
+      },
+      "buffer": {
+        "label": "{minutes} دقيقة بين الجلسات",
+        "detail": "وقت التنقل والراحة."
+      },
+      "cancel_needs_approval": {
+        "label": "الإلغاء يحتاج موافقتي",
+        "detail": "النقل مقبول. الإلغاء أقرره أنا."
+      },
+      "on": "مُفعّل",
+      "off": "مُعطّل"
+    }
+  },
+  "kid": {
+    "my_day": "يومي",
+    "things_today": {
+      "one": "أمر واحد اليوم",
+      "other": "{count} أمور اليوم"
+    },
+    "calm_days": "{count} أيام هادئة متتالية",
+    "words": "كلمات",
+    "symbols": "رموز",
+    "read_aloud": "قراءة بصوت",
+    "ask_later": "لاحقًا لو سمحت",
+    "ask_skip": "ليس اليوم",
+    "with": "مع",
+    "asked": "سألت نيابة عنك. الرد قريبًا.",
+    "asked_skip": "سألت عن الإلغاء. الرد قريبًا.",
+    "done": "تم. {title} الآن الساعة {time}.",
+    "changed_to": "تم التغيير. الوقت الجديد: {time}.",
+    "parent_yes": "نعم. {title} يوم {day} الساعة {time}.",
+    "parent_yes_skip": "نعم. لا {title} اليوم.",
+    "parent_no": "ليس هذه المرة. يبقى {title} يوم {day} الساعة {time}.",
+    "parent_moved": "نُقل {title} إلى {day} الساعة {time}.",
+    "note": "السؤال مقبول دائمًا. إن وافق القواعد يتم فورًا."
+  },
+  "provider": {
+    "sessions_from": "جلسات من تقويمك",
+    "synced_with": "متزامن مع",
+    "change_this": "تعديل",
+    "close": "إغلاق",
+    "waiting_on_parent": "بانتظار الموافقة",
+    "move_to": "نقل إلى",
+    "start_at": "يبدأ الساعة",
+    "person": "المعالج:",
+    "tap_to_swap": "انقر للتغيير",
+    "send": "إرسال الطلب",
+    "confirmed": "تم التأكيد لـ {when}. تم تحديث التقويمين دون موافقة.",
+    "sent": "أُرسل للموافقة: {reasons}.",
+    "note": "يعود الرد إلى تقويمك نفسه."
+  },
+  "reasons": {
+    "min_notice": "إشعار أقل من 24 ساعة",
+    "latest_end": "خارج الساعات المسموح بها",
+    "protected_block": "يتعارض مع فترة محمية",
+    "same_provider": "معالج مختلف",
+    "buffer": "قريب جدًا من جلسة أخرى",
+    "max_per_week": "يتجاوز الحد الأسبوعي",
+    "cancel_needs_approval": "الإلغاء يحتاج موافقتك",
+    "outside_allowed_days": "يوم غير مسموح به"
+  },
+  "blocks": {
+    "block.midday": "فترة الظهر المحمية",
+    "block.custom": "فترة محمية"
+  },
+  "ui": {
+    "sign_in": "سجّل الدخول للمتابعة",
+    "token": "رمز الوصول",
+    "continue": "متابعة",
+    "loading": "جارٍ التحميل…",
+    "error": "حدث خطأ ما. حاول مرة أخرى.",
+    "sign_out": "تسجيل الخروج"
+  }
+}

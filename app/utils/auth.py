@@ -86,8 +86,11 @@ def verify_kid_account(user: User) -> None:
 
 def verify_parent_account(user: User) -> None:
     """
-    Verify that the user is a parent account (not a kid account).
-    Raises HTTPException if user is a kid account.
+    Verify that the user is a parent or guardian account (not a kid account).
+
+    "Parent" and "guardian" are interchangeable: a grandparent, a foster carer
+    or a legal guardian holds exactly the same place, with the same
+    permissions. Only the word a family reads differs.
 
     Args:
         user: User object to verify
@@ -98,8 +101,13 @@ def verify_parent_account(user: User) -> None:
     if user.is_kid_account:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is only available for parent/caregiver accounts",
+            detail="This endpoint is only available for parent or guardian accounts",
         )
+
+
+# The same check under the other name, so calling code can read whichever
+# word fits it. There is only one rule, in one place.
+verify_guardian_account = verify_parent_account
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
