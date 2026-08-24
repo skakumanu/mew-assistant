@@ -9,6 +9,7 @@ is looking.
 
 from __future__ import annotations
 
+import logging
 import zlib
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -32,6 +33,8 @@ from ..schemas.change_request import (
 )
 from ..utils.locale import Translator
 
+logger = logging.getLogger(__name__)
+
 # The four tinted pairs the kid's activity tiles cycle through, in the order
 # the design lists them: green, amber, indigo, rust.
 TILE_COUNT = 4
@@ -41,9 +44,18 @@ ACTIVITY_TILES = {"aba": 0, "speech": 1, "ot": 2, "school": 3}
 class Presenter:
     """One reader, one language, one set of rendered strings."""
 
-    def __init__(self, translator: Translator, db, caregiver_term: str = DEFAULT_CAREGIVER_TERM):
+    def __init__(
+        self,
+        translator: Translator,
+        db,
+        caregiver_term: str = DEFAULT_CAREGIVER_TERM,
+        advisor=None,
+    ):
         self.t = translator
         self.db = db
+        # Optional SmartApprovalService. The engine has already decided by
+        # the time this is consulted; it only annotates the card.
+        self.advisor = advisor
         # Whether this family reads "parent" or "guardian". Same persona,
         # same permissions - only the word on screen differs.
         self.caregiver_term = caregiver_term
@@ -122,7 +134,24 @@ class Presenter:
             kind=kind,
             session_id=request.scheduled_session_id,
             created_at=request.created_at,
+            advisory=self._advisory(request),
         )
+
+    def _advisory(self, request: ApprovalRequest) -> Optional[Dict[str, Any]]:
+        """
+        History's read on a parked request, if there is enough of it.
+
+        Never affects whether the request was parked - that was settled by
+        the rule engine before this card existed.
+        """
+        if self.advisor is None:
+            return None
+        try:
+            advisory = self.advisor.advise(request)
+        except Exception:  # advice is a nicety; a card must still render
+            logger.warning("Could not build advisory for request %s", request.id)
+            return None
+        return advisory.as_dict() if advisory else None
 
     def _detail(
         self,

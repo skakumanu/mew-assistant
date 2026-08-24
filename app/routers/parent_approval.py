@@ -21,6 +21,7 @@ from ..services.approval_service import ApprovalService
 from ..services.change_request_service import ChangeRequestService
 from ..services.presenter import Presenter
 from ..services.ruleset_service import RuleSetService
+from ..services.smart_approval_service import SmartApprovalService
 from ..utils.auth import get_current_user, verify_parent_account
 from ..utils.locale_context import translator_for
 
@@ -341,6 +342,10 @@ async def get_inbox(
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
     presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
+
+    # The engine has already decided what is here. SmartApprovalService is
+    # consulted only to annotate each card with what history says.
+    presenter.advisor = SmartApprovalService(db)
 
     pending = ApprovalService(db).get_pending_requests(current_user.id)
     return [presenter.pending_request(request) for request in pending]
