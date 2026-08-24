@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Mew Assistant API",
     description="AI-powered scheduling assistant for special needs families",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
