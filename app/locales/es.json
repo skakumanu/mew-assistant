@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "name": "Español",
+    "dir": "ltr",
+    "clock": "24h"
+  },
+  "days": [
+    "lun",
+    "mar",
+    "mié",
+    "jue",
+    "vie",
+    "sáb",
+    "dom"
+  ],
+  "persona": {
+    "parent": "Madre o padre",
+    "guardian": "Tutor o tutora",
+    "kid": "Niña",
+    "provider": "Proveedor"
+  },
+  "parent": {
+    "tab_inbox": "Pendientes",
+    "tab_week": "Semana",
+    "tab_rules": "Reglas",
+    "all_clear": "todo al día",
+    "waiting": "{count} en espera",
+    "nothing_waiting": "Nada pendiente. Todo cumplió tus reglas.",
+    "not_fit": "No cumple tus reglas:",
+    "pick_fit": "Elige una hora que sí cumpla:",
+    "closest": "la más cercana",
+    "also_fits": "también sirve",
+    "allow_anyway": "Permitir su hora",
+    "skip_it": "Cancelar",
+    "say_no": "No",
+    "handled": "Resuelto por ti",
+    "no_changes": "Sin cambios todavía.",
+    "free": "Libre",
+    "updated": "actualizado",
+    "rules_intro": "Se configura una vez. Cada solicitud se revisa con estas reglas antes de llegar a ti.",
+    "headline_move": "{title} al {when}",
+    "headline_skip": "¿Cancelar {title}?",
+    "detail_now": "Ahora {when} con {person}",
+    "detail_swap": "Ahora {when} con {person}, en lugar de {original}",
+    "detail_skip": "{when} con {person}",
+    "option_at": "{day}, {date} a las {time}",
+    "log_moved": "{title} movido al {when}",
+    "log_cancelled": "{title} del {day} cancelado",
+    "log_stays": "{title} se queda el {when}",
+    "meta_auto": "{who} lo pidió, las reglas lo aprobaron",
+    "meta_approved": "aprobaste la solicitud de {who}",
+    "meta_declined": "rechazaste la solicitud de {who}",
+    "meta_picked": "elegiste esta hora",
+    "rules": {
+      "min_notice": {
+        "label": "Al menos {hours} horas de aviso",
+        "detail": "Los cambios del mismo día siempre pasan por mí."
+      },
+      "latest_end": {
+        "label": "Nada después de las {time}",
+        "detail": "Las tardes son para la cena y la calma."
+      },
+      "protected_block": {
+        "label": "Proteger de {start} a {end}",
+        "detail": "Comida y medicamentos, todos los días."
+      },
+      "same_provider": {
+        "label": "Solo el mismo terapeuta",
+        "detail": "Una cara nueva necesita mi permiso."
+      },
+      "buffer": {
+        "label": "{minutes} minutos entre sesiones",
+        "detail": "Tiempo de viaje y de descanso."
+      },
+      "cancel_needs_approval": {
+        "label": "Cancelar necesita mi permiso",
+        "detail": "Mover está bien. Cancelar lo decido yo."
+      },
+      "on": "activado",
+      "off": "desactivado"
+    }
+  },
+  "kid": {
+    "my_day": "Mi día",
+    "things_today": {
+      "one": "1 cosa hoy",
+      "other": "{count} cosas hoy"
+    },
+    "calm_days": "{count} días tranquilos seguidos",
+    "words": "Palabras",
+    "symbols": "Símbolos",
+    "read_aloud": "Leer en voz alta",
+    "ask_later": "Más tarde, por favor",
+    "ask_skip": "Hoy no",
+    "with": "con",
+    "asked": "Ya pregunté. Pronto habrá respuesta.",
+    "asked_skip": "Pregunté si se puede cancelar. Pronto habrá respuesta.",
+    "done": "Hecho. {title} ahora es a las {time}.",
+    "changed_to": "Cambiado. Nueva hora: {time}.",
+    "parent_yes": "Sí. {title} es el {day} a las {time}.",
+    "parent_yes_skip": "Sí. Hoy no hay {title}.",
+    "parent_no": "No esta vez. {title} se queda el {day} a las {time}.",
+    "parent_moved": "{title} se movió al {day} a las {time}.",
+    "note": "Preguntar siempre está bien. Si cumple las reglas, pasa solo. Si no, se envía un aviso."
+  },
+  "provider": {
+    "sessions_from": "Sesiones de tu calendario",
+    "synced_with": "Sincronizado con",
+    "change_this": "cambiar",
+    "close": "cerrar",
+    "waiting_on_parent": "esperando aprobación",
+    "move_to": "Mover a",
+    "start_at": "Empezar a las",
+    "person": "Terapeuta:",
+    "tap_to_swap": "toca para cambiar",
+    "send": "Enviar solicitud",
+    "confirmed": "Confirmado para {when}. Ambos calendarios actualizados, sin aprobación.",
+    "sent": "Enviado para aprobación: {reasons}.",
+    "note": "La respuesta llega a tu propio calendario. La mayoría de los cambios se aprueban solos."
+  },
+  "reasons": {
+    "min_notice": "menos de 24 horas de aviso",
+    "latest_end": "fuera del horario permitido",
+    "protected_block": "choca con un bloque protegido",
+    "same_provider": "otro terapeuta",
+    "buffer": "demasiado cerca de otra sesión",
+    "max_per_week": "supera el límite semanal",
+    "cancel_needs_approval": "cancelar necesita tu permiso",
+    "outside_allowed_days": "no es un día permitido"
+  },
+  "blocks": {
+    "block.midday": "el bloque protegido del mediodía",
+    "block.custom": "un bloque protegido"
+  },
+  "ui": {
+    "sign_in": "Inicia sesión para continuar",
+    "token": "Token de acceso",
+    "continue": "Continuar",
+    "loading": "Cargando…",
+    "error": "Algo salió mal. Inténtalo de nuevo.",
+    "sign_out": "Cerrar sesión"
+  }
+}
