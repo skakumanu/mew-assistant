@@ -5,7 +5,6 @@ Supporting 100+ languages from around the world
 """
 
 import logging
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -197,13 +196,10 @@ class VoiceService:
             voice_command = VoiceCommand(
                 user_id=user_id,
                 session_id=session_id,
-                audio_duration=transcription.duration,
                 detected_language=detected_language,
                 confidence_score=confidence,
-                transcript=transcription.text,
+                transcribed_text=transcription.text,
                 intent=transcription.intent,
-                entities=transcription.entities,
-                timestamp=datetime.utcnow(),
             )
             self.db.add(voice_command)
             self.db.commit()
