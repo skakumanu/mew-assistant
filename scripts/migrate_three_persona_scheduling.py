@@ -29,6 +29,7 @@ from app.database.connection import SessionLocal, engine  # noqa: E402
 from app.database.models import (  # noqa: E402
     Base,
     ChangeLogEntry,
+    Notification,
     ProtectedBlock,
     ProviderOrg,
     ProviderPerson,
@@ -44,6 +45,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("migrate")
 
 NEW_TABLES = [
+    Notification,
     ProviderOrg,
     ProviderPerson,
     ScheduledSession,

@@ -12,7 +12,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
@@ -174,12 +174,23 @@ def decode_token(token: str) -> dict:
         )
 
 
+# The screens sign in with a cookie rather than a pasted token. HttpOnly, so
+# script on the page cannot read it, which is a meaningful step up from
+# keeping a bearer token in localStorage.
+SESSION_COOKIE = "mew_session"
+
+
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """
     Dependency to get current authenticated user from JWT token.
+
+    Accepts either an ``Authorization: Bearer`` header (API clients) or the
+    ``mew_session`` cookie the screens set at sign-in. The header wins when
+    both are present, so an explicit credential is never silently ignored.
 
     Use this in endpoint dependencies to require authentication:
     ```python
@@ -189,14 +200,16 @@ async def get_current_user(
     ```
     """
 
-    if credentials is None:
+    token = credentials.credentials if credentials is not None else None
+    if not token:
+        token = request.cookies.get(SESSION_COOKIE)
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    token = credentials.credentials
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

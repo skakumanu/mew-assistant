@@ -29,6 +29,7 @@ from ..database.models import (
     ChangeKind,
     ChangeLogEntry,
     LogTone,
+    NotificationKind,
     ProviderPerson,
     RequestedBy,
     RequestType,
@@ -257,6 +258,10 @@ class ChangeRequestService:
         self.db.add(entry)
         self.db.commit()
         self.db.refresh(entry)
+
+        if session is not None:
+            self._notify_requester(request, session, approved=False)
+
         return entry
 
     # ------------------------------------------------------------------
@@ -423,17 +428,20 @@ class ChangeRequestService:
             approval_request_id=request.id,
         )
 
-        # Telling the parent about an auto-applied change is a preference,
-        # not part of the loop: the point is that it did not need them.
+        # Telling the caregiver about an auto-applied change is a preference,
+        # not part of the loop: the point is that it did not need them. The
+        # quiet log has it either way.
         if ruleset.notify_on_auto_approve:
-            try:
-                self.notifications.send_approval_result(
-                    kid_id=parent.id,
-                    approved=True,
-                    parent_note="Applied automatically: it fit your rules.",
-                )
-            except Exception as exc:  # notification failures never block a change
-                logger.warning("Auto-approve notification failed: %s", exc)
+            self._notify(
+                recipient=parent,
+                kind=NotificationKind.AUTO_APPLIED,
+                text_key=(
+                    "parent.log_cancelled" if kind is ChangeKind.CANCEL else "parent.log_moved"
+                ),
+                params=self._session_params(session, kind),
+                request=request,
+                session=session,
+            )
 
         return ChangeOutcome(auto_applied=True, session=session, request=request)
 
@@ -469,14 +477,19 @@ class ChangeRequestService:
             auto_applied=False,
         )
 
-        try:
-            self.notifications.notify_parent_approval_needed(
-                parent=parent,
-                kid_name=self._display_name(child),
-                request=request,
-            )
-        except Exception as exc:
-            logger.warning("Approval notification failed: %s", exc)
+        self._notify(
+            recipient=parent,
+            kind=NotificationKind.NEEDS_YOU,
+            text_key=(
+                "parent.headline_skip" if kind is ChangeKind.CANCEL else "parent.headline_move"
+            ),
+            params={
+                "title": session.title,
+                "when": (new_start or session.start_utc).isoformat(),
+            },
+            request=request,
+            session=session,
+        )
 
         return ChangeOutcome(
             auto_applied=False,
@@ -608,40 +621,98 @@ class ChangeRequestService:
         """
         Push the change back out as a calendar update.
 
-        Best effort: the schedule in Mew is already authoritative, so a
-        calendar hiccup must never undo a change the rules allowed.
+        Best effort by design: the schedule in Mew is already authoritative,
+        so a calendar that is unreachable, read-only or simply not connected
+        must never undo a change the rules allowed.
         """
-        if not session.external_event_id:
-            return
-        try:
-            from .calendar_service import CalendarService
+        from .calendar_sync_service import CalendarSyncService
 
-            calendar = CalendarService(self.db)
-            if kind is ChangeKind.CANCEL:
-                await calendar.delete_calendar_event(session.external_event_id)
-                return
-            end = session.start_utc + timedelta(minutes=session.duration_minutes)
-            await calendar.update_calendar_event(
-                event_id=session.external_event_id,
-                updates={
-                    "start_time": session.start_utc.isoformat(),
-                    "end_time": end.isoformat(),
-                    "location": session.location,
-                },
-            )
-        except Exception as exc:
+        try:
+            pushed = await CalendarSyncService(self.db).push(session, kind)
+        except Exception as exc:  # a calendar never breaks the loop
             logger.warning("Calendar write-back failed for session %s: %s", session.id, exc)
+            return
 
-    def _notify_requester(self, request: ApprovalRequest, session: ScheduledSession) -> None:
-        """Push the outcome to whoever asked, in a sentence they can read."""
+        if not pushed:
+            logger.info(
+                "Session %s changed in Mew but not written back (no writable calendar)",
+                session.id,
+            )
+
+    def _notify_requester(
+        self,
+        request: ApprovalRequest,
+        session: ScheduledSession,
+        approved: bool = True,
+    ) -> None:
+        """
+        Push the outcome to whoever asked, as a sentence they can read.
+
+        Stored, not merely fired: the design requires this to survive the
+        session moving off today, so a child who was not looking still finds
+        the answer whenever they next look.
+        """
+        requester = self.db.query(User).filter(User.id == request.kid_id).first()
+        if requester is None:
+            return
+
+        cancelled = request.change_kind == ChangeKind.CANCEL.value
+        if approved and cancelled:
+            text_key, params = "kid.parent_yes_skip", {"title": session.title}
+        elif approved:
+            text_key = "kid.parent_yes"
+            params = {
+                "title": session.title,
+                "day": session.start_utc.isoformat(),
+                "time": session.start_utc.isoformat(),
+            }
+        else:
+            text_key = "kid.parent_no"
+            params = {
+                "title": session.title,
+                "day": session.start_utc.isoformat(),
+                "time": session.start_utc.isoformat(),
+            }
+
+        self._notify(
+            recipient=requester,
+            kind=NotificationKind.OUTCOME,
+            text_key=text_key,
+            params=params,
+            request=request,
+            session=session,
+        )
+
+    def _notify(
+        self,
+        *,
+        recipient: User,
+        kind: NotificationKind,
+        text_key: str,
+        params: Dict[str, Any],
+        request: Optional[ApprovalRequest] = None,
+        session: Optional[ScheduledSession] = None,
+    ) -> None:
+        """Record and deliver. A notification never breaks the loop."""
         try:
-            self.notifications.send_approval_result(
-                kid_id=request.kid_id,
-                approved=True,
-                parent_note=session.start_utc.isoformat(),
+            from .notification_delivery import NotificationDelivery
+
+            NotificationDelivery(self.db).notify(
+                recipient=recipient,
+                kind=kind,
+                text_key=text_key,
+                params=params,
+                approval_request_id=request.id if request else None,
+                scheduled_session_id=session.id if session else None,
             )
         except Exception as exc:
-            logger.warning("Requester notification failed: %s", exc)
+            logger.warning("Notification not delivered: %s", exc)
+
+    @staticmethod
+    def _session_params(session: ScheduledSession, kind: ChangeKind) -> Dict[str, Any]:
+        if kind is ChangeKind.CANCEL:
+            return {"title": session.title, "day": session.start_utc.isoformat()}
+        return {"title": session.title, "when": session.start_utc.isoformat()}
 
     def _audit(
         self,

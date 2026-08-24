@@ -49,6 +49,11 @@ decides whether something is allowed.
 | Schemas | `app/schemas/change_request.py` |
 | Routers | `app/routers/rules.py`, `requests.py`, `provider.py`, `parent_approval.py`, `kid_friendly.py` |
 | Screens | `app/routers/mew_ui.py`, `app/templates/mew/`, `app/static/mew/` |
+| Calendar adapters (Google, ICS) | `app/integrations/calendar_sync/` |
+| Calendar ingest and write-back | `app/services/calendar_sync_service.py` |
+| Notifications (stored, then delivered) | `app/services/notification_delivery.py` |
+| Advice and batching, behind the engine | `app/services/smart_approval_service.py` |
+| Setup in one call | `app/routers/onboarding_setup.py` |
 | Migration | `scripts/migrate_three_persona_scheduling.py` |
 
 ## API
@@ -70,6 +75,16 @@ decides whether something is allowed.
 | `GET` | `/provider/sessions` | That organisation's sessions for this child |
 
 Every `/parent/...` row above is also reachable at `/guardian/...`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/onboarding/setup` | Child, rules, providers and the first calendar pull, in one idempotent call |
+| `POST` | `/calendar-sync/pull` | Mirror connected calendars into a child's schedule |
+| `PUT` | `/calendar-sync/orgs/{id}/calendar` | Connect a calendar, then pull straight away |
+| `GET` | `/notifications` | What you were told, rendered in your language |
+| `POST` | `/notifications/{id}/read` | Mark one read |
+| `GET` | `/api/v1/smart-approval/batches` | Group what is waiting — attention, never authority |
+| `GET`/`POST` | `/app/sign-in` | Sign-in screen; sets an HttpOnly session cookie |
 
 `POST /requests` answers with one of two shapes and the same status code:
 
@@ -168,6 +183,48 @@ their rules.
 | Calendar integration | **Reused.** Applied changes write back as calendar updates, best effort: a calendar hiccup never undoes a change the rules allowed. |
 | Voice | **Reused, constrained.** Voice may REQUEST anything and approve nothing — it calls `POST /requests` like every other caller. |
 | `app/utils/language_detector.py` | **Not used for UI.** UI locale comes from `Accept-Language` / the device, never from sniffing message text. |
+
+## Calendars
+
+Sessions exist because a calendar says so. `CalendarSyncService.pull_org`
+mirrors a window into `ScheduledSession`, matching on `external_event_id` so
+it is idempotent, and `push` writes an applied change back out.
+
+| Provider | Read | Write |
+| --- | --- | --- |
+| `google` | yes, through the person's own OAuth token | yes, with `sendUpdates=all` |
+| `ics` | yes — also how Apple, Calendly and most clinic and school booking tools publish | no, read-only by nature |
+
+Mew stays authoritative. A calendar that is unreachable, read-only or simply
+not connected returns `False` and is logged; it never undoes a change the
+rules allowed. The pull deliberately does **not** set `last_changed_at` — the
+`updated` pill means "your rules handled a request", not "the provider edited
+their own calendar".
+
+## Notifications
+
+Stored as a locale key plus parameters, then delivered. Two design rules
+decide the shape:
+
+* **Nothing is announced in a single channel.** The push, the email and the
+  screen render the same sentence; a chime is never the only signal.
+* **An outcome survives the session moving off today.** A child who was not
+  looking when the answer arrived finds it, phrased the same way, whenever
+  they next look.
+
+The row is written first and unconditionally, so if every outbound channel
+fails the sentence is still readable in the app. Sentences render at read
+time, so changing language re-renders your whole history.
+
+## Smart approval: the second opinion, never the decision
+
+The engine decides. `SmartApprovalService` is consulted only *after* a
+request is already parked, and only to annotate the card — "you approved 8 of
+9 like this" — plus batching what is waiting. A caregiver who wrote "nothing
+past 6pm" meant it, and no confidence score overrides that. Both directions
+are tested: a compliant request is applied without the advisor being
+consulted at all, and a perfect approval record cannot rescue a request that
+breaks a declared rule.
 
 ## Screens
 
