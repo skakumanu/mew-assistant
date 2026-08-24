@@ -55,7 +55,7 @@ decides whether something is allowed.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/rules` | The parent's rule set, protected blocks and weekly caps |
+| `GET` | `/rules` | The caregiver's rule set, protected blocks and weekly caps |
 | `PUT` | `/rules` | Upsert; only fields present in the body are touched |
 | `POST` | `/requests` | The one write path — `{session_id, kind, new_start?, new_provider_person_id?}` |
 | `GET` | `/parent/approvals/pending` | Existing list, now carrying `reason_codes` and `alternatives` |
@@ -68,6 +68,8 @@ decides whether something is allowed.
 | `GET` | `/kid/today` | Today's cards and pending flags |
 | `POST` | `/kid/ask` | The kid's two buttons — `{session_id, ask: "later"\|"skip"}` |
 | `GET` | `/provider/sessions` | That organisation's sessions for this child |
+
+Every `/parent/...` row above is also reachable at `/guardian/...`.
 
 `POST /requests` answers with one of two shapes and the same status code:
 
@@ -82,6 +84,33 @@ decides whether something is allowed.
   "alternatives": [ { "index": 0, "start": "...", "label": "Thu, Sep 10 at 4:30pm",
                       "note": "closest" }, ... ] }
 ```
+
+## "Parent" and "guardian"
+
+The two words name one persona. A grandparent, a foster carer or a legal
+guardian holds exactly the same place in the loop, with exactly the same
+permissions, so nothing in the system makes a family pick a side:
+
+* **Routes.** Every `/parent/...` path answers on `/guardian/...` too — the
+  same handlers, mounted twice. `/app/parent` and `/app/guardian` serve the
+  same screen.
+* **Values.** `RequestedBy("guardian")` is `RequestedBy.PARENT`. One value is
+  stored (`"parent"`), so nothing downstream has to know which word was used.
+* **Permissions.** `verify_guardian_account` *is* `verify_parent_account` —
+  one rule, in one place, under two names.
+* **The label.** `RuleSet.caregiver_term` (`"parent"` | `"guardian"`) is the
+  word a family reads, set through `PUT /rules` and returned by `GET /rules`
+  as both the raw term and `caregiver_label` in the reader's language. It
+  changes the label and nothing else.
+
+Column and attribute names stay `parent_id`, `RequestedBy.PARENT` and so on.
+Renaming them would be a large migration that changes no behaviour, and the
+alias above already makes the two words equivalent everywhere they are typed
+or read.
+
+Whichever word a family picks, `parent.rules.*` copy stays first person
+("Same-day changes always come to me"), so no screen has to name the role at
+all.
 
 ## Reason codes
 
@@ -191,3 +220,6 @@ pytest tests/test_rule_engine.py tests/test_ruleset_service.py \
 * `test_ruleset_service.py` — defaults, engine translation, `ApprovalRule` backfill.
 * `test_change_requests.py` — the loop end to end, both outcomes, authorisation.
 * `test_locales.py` — the locale contract and device-based resolution.
+* `test_caregiver_terms.py` — "parent" and "guardian" as one persona: both
+  route prefixes, both accepted values, one permission check, and the
+  per-family label.

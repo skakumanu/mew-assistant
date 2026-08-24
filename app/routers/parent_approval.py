@@ -20,10 +20,14 @@ from ..schemas.change_request import (
 from ..services.approval_service import ApprovalService
 from ..services.change_request_service import ChangeRequestService
 from ..services.presenter import Presenter
+from ..services.ruleset_service import RuleSetService
 from ..utils.auth import get_current_user, verify_parent_account
 from ..utils.locale_context import translator_for
 
-router = APIRouter(prefix="/parent/approvals", tags=["Parent Approvals"])
+# "Parent" and "guardian" are the same persona under two names, so these
+# handlers carry no persona prefix of their own: app/main.py mounts them at
+# BOTH /parent and /guardian, and either path reaches the same code.
+router = APIRouter(prefix="/approvals", tags=["Parent Approvals"])
 
 
 class ApprovalResponse(BaseModel):
@@ -78,7 +82,7 @@ async def get_pending_approvals(
     pending_requests = approval_service.get_pending_requests(current_user.id)
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db)
+    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
 
     # Enrich with kid and activity details
     result = []
@@ -336,7 +340,7 @@ async def get_inbox(
     verify_parent_account(current_user)
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db)
+    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
 
     pending = ApprovalService(db).get_pending_requests(current_user.id)
     return [presenter.pending_request(request) for request in pending]
@@ -391,8 +395,9 @@ async def choose_alternative(
 
 
 # The quiet log lives outside the approvals prefix: it is not a decision
-# surface, it is the record of everything that did not need one.
-parent_router = APIRouter(prefix="/parent", tags=["Parent Approvals"])
+# surface, it is the record of everything that did not need one. Mounted at
+# /parent and /guardian alike.
+parent_router = APIRouter(tags=["Parent Approvals"])
 
 
 @parent_router.get("/log", response_model=List[LogEntryOut])
@@ -411,7 +416,7 @@ async def get_change_log(
     verify_parent_account(current_user)
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db)
+    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
 
     entries = ChangeRequestService(db).log_for_parent(current_user.id, limit=max(1, min(limit, 50)))
     return [presenter.log_entry(entry) for entry in entries]
@@ -439,7 +444,7 @@ async def get_week(
     from ..database.models import ScheduledSession
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db)
+    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
 
     children = (
         [child_id]

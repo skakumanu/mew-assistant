@@ -694,6 +694,13 @@ class OAuthProvider(Base):
 # ---------------------------------------------------------------------------
 
 
+# "Parent" and "guardian" are interchangeable throughout: same person, same
+# permissions, same routes. A family picks the word they use; the stored
+# value is always "parent" so nothing downstream has to know which.
+CAREGIVER_TERMS = ("parent", "guardian")
+DEFAULT_CAREGIVER_TERM = "parent"
+
+
 class ProviderKind(str, enum.Enum):
     """What kind of service an organisation delivers."""
 
@@ -713,11 +720,24 @@ class SessionSource(str, enum.Enum):
 
 
 class RequestedBy(str, enum.Enum):
-    """Which persona raised a change request."""
+    """
+    Which persona raised a change request.
+
+    "parent" and "guardian" are the same persona under two names. Plenty of
+    children are raised by a grandparent, a foster carer or a legal guardian,
+    so both words are accepted everywhere and stored as ``parent``; which one
+    a family reads is ``RuleSet.caregiver_term``.
+    """
 
     KID = "kid"
     PROVIDER = "provider"
     PARENT = "parent"
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str) and value.strip().lower() in CAREGIVER_TERMS:
+            return cls.PARENT
+        return None
 
 
 class ChangeKind(str, enum.Enum):
@@ -841,6 +861,10 @@ class RuleSet(Base):
 
     # Parent notification is a preference, not part of the rule evaluation.
     notify_on_auto_approve = Column(Boolean, default=True, nullable=False)
+
+    # Which of the two interchangeable words this family reads: "parent" or
+    # "guardian". It changes the label, never the permissions or the routes.
+    caregiver_term = Column(String(20), default=DEFAULT_CAREGIVER_TERM, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

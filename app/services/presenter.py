@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ..database.models import (
+    DEFAULT_CAREGIVER_TERM,
     ApprovalRequest,
     ChangeKind,
     ChangeLogEntry,
@@ -40,9 +41,12 @@ ACTIVITY_TILES = {"aba": 0, "speech": 1, "ot": 2, "school": 3}
 class Presenter:
     """One reader, one language, one set of rendered strings."""
 
-    def __init__(self, translator: Translator, db):
+    def __init__(self, translator: Translator, db, caregiver_term: str = DEFAULT_CAREGIVER_TERM):
         self.t = translator
         self.db = db
+        # Whether this family reads "parent" or "guardian". Same persona,
+        # same permissions - only the word on screen differs.
+        self.caregiver_term = caregiver_term
 
     # -- sessions ---------------------------------------------------------
 
@@ -162,6 +166,8 @@ class Presenter:
             kid = self.db.query(User).filter(User.id == request.kid_id).first()
             if kid:
                 return kid.display_name or kid.username or self.t.t("persona.kid")
+        if requested_by == RequestedBy.PARENT.value:
+            return self.t.caregiver(self.caregiver_term)
         return self.t.t(f"persona.{requested_by}")
 
     def approve_label(self, request: ApprovalRequest) -> str:

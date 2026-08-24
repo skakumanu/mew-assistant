@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import datetime, time
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from ..database.models import CAREGIVER_TERMS, DEFAULT_CAREGIVER_TERM
 
 # ---------------------------------------------------------------------------
 # Rules
@@ -43,8 +45,25 @@ class RuleSetUpdate(BaseModel):
     cancellation_needs_approval: Optional[bool] = None
     allowed_weekdays: Optional[List[int]] = None
     notify_on_auto_approve: Optional[bool] = None
+    caregiver_term: Optional[str] = Field(
+        None,
+        description=(
+            'Which word this family reads: "parent" or "guardian". '
+            "The two are interchangeable - only the label changes."
+        ),
+    )
     protected_blocks: Optional[List[ProtectedBlockIn]] = None
     weekly_caps: Optional[List[WeeklyCapIn]] = None
+
+    @field_validator("caregiver_term")
+    @classmethod
+    def _known_term(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalised = value.strip().lower()
+        if normalised not in CAREGIVER_TERMS:
+            raise ValueError('caregiver_term must be "parent" or "guardian"')
+        return normalised
 
 
 class ProtectedBlockOut(BaseModel):
@@ -73,6 +92,8 @@ class RuleSetOut(BaseModel):
     cancellation_needs_approval: bool
     allowed_weekdays: Optional[List[int]] = None
     notify_on_auto_approve: bool
+    caregiver_term: str = DEFAULT_CAREGIVER_TERM
+    caregiver_label: str = Field("", description="That word rendered in the reader's language")
     protected_blocks: List[ProtectedBlockOut] = Field(default_factory=list)
     weekly_caps: List[WeeklyCapOut] = Field(default_factory=list)
 

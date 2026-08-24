@@ -155,6 +155,19 @@ class Translator:
             out = out.replace("{" + name + "}", str(value))
         return out
 
+    def caregiver(self, term: str = "parent") -> str:
+        """
+        The word this family uses for the person who decides.
+
+        "Parent" and "guardian" name the same persona: a grandparent, a foster
+        carer or a legal guardian holds exactly the same place in the loop.
+        Anything unrecognised falls back to "parent" rather than guessing.
+        """
+        normalised = (term or "parent").strip().lower()
+        if normalised not in ("parent", "guardian"):
+            normalised = "parent"
+        return self.t(f"persona.{normalised}")
+
     def reason(self, code: str) -> str:
         """Render one rule-engine reason code as a sentence fragment."""
         return self.t(f"reasons.{code}")

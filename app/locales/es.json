@@ -15,6 +15,7 @@
   ],
   "persona": {
     "parent": "Madre o padre",
+    "guardian": "Tutor o tutora",
     "kid": "Niña",
     "provider": "Proveedor"
   },

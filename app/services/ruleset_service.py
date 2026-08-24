@@ -17,6 +17,8 @@ from typing import Dict, List, Optional
 from sqlalchemy.orm import Session as DbSession
 
 from ..database.models import (
+    CAREGIVER_TERMS,
+    DEFAULT_CAREGIVER_TERM,
     ApprovalRule,
     ProtectedBlock,
     RuleSet,
@@ -82,6 +84,17 @@ class RuleSetService:
         self.backfill_from_approval_rules(ruleset)
         return ruleset
 
+    def caregiver_term(self, parent_id: int, child_id: Optional[int] = None) -> str:
+        """
+        Which of the two interchangeable words this family reads.
+
+        Falls back to "parent" when no rule set exists yet, so a label is
+        never blank and never guessed.
+        """
+        ruleset = self.get(parent_id, child_id)
+        term = (ruleset.caregiver_term if ruleset else None) or DEFAULT_CAREGIVER_TERM
+        return term if term in CAREGIVER_TERMS else DEFAULT_CAREGIVER_TERM
+
     # -- engine translation ------------------------------------------------
 
     def to_engine_rules(self, ruleset: RuleSet) -> engine.RuleSet:
@@ -141,6 +154,11 @@ class RuleSetService:
         for name in simple_fields:
             if name in payload:
                 setattr(ruleset, name, payload[name])
+
+        if payload.get("caregiver_term"):
+            # "parent" and "guardian" are one persona; only the label moves.
+            term = str(payload["caregiver_term"]).strip().lower()
+            ruleset.caregiver_term = term if term in CAREGIVER_TERMS else DEFAULT_CAREGIVER_TERM
 
         for name in (
             "require_same_provider_person",

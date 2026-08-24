@@ -183,8 +183,33 @@
       if (pane === 'rules') parent.loadRules();
     },
 
+    /**
+     * "Parent" and "guardian" are the same persona. The family's own word
+     * comes back with their rules, so the label corrects itself on load
+     * rather than making anyone read the wrong one.
+     */
+    applyCaregiverTerm: function (rules) {
+      if (!rules || !rules.caregiver_label) return;
+      var panel = document.getElementById('parent-panel');
+      var label = document.getElementById('parent-persona');
+      var name = document.getElementById('parent-name');
+      var previous = panel ? panel.getAttribute('data-caregiver-term') : null;
+
+      if (label) label.textContent = rules.caregiver_label;
+      if (panel) {
+        panel.setAttribute('aria-label', rules.caregiver_label);
+        panel.setAttribute('data-caregiver-term', rules.caregiver_term);
+      }
+      // Only replace the heading if it is still the placeholder word, never
+      // a name the family typed.
+      if (name && previous && name.textContent === t('persona.' + previous)) {
+        name.textContent = rules.caregiver_label;
+      }
+    },
+
     load: function () {
       var inbox = document.getElementById('parent-inbox');
+      api('/rules').then(parent.applyCaregiverTerm).catch(function () {});
       api('/parent/approvals/inbox').then(function (requests) {
         parent.renderInbox(requests);
         document.getElementById('parent-count').textContent = requests.length
@@ -330,8 +355,10 @@
 
     loadRules: function () {
       var host = document.getElementById('parent-rules');
-      api('/rules').then(function (rules) { parent.renderRules(host, rules); })
-        .catch(function () { failed(host); });
+      api('/rules').then(function (rules) {
+        parent.applyCaregiverTerm(rules);
+        parent.renderRules(host, rules);
+      }).catch(function () { failed(host); });
     },
 
     /**

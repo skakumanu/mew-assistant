@@ -6,9 +6,8 @@ change is either applied immediately or parked for the parent with reason
 codes and three compliant alternatives attached.
 """
 
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
-import pytest
 from fastapi import status
 
 from app.database.models import (
@@ -16,114 +15,12 @@ from app.database.models import (
     ApprovalStatus,
     ChangeLogEntry,
     ProviderOrg,
-    ProviderPerson,
-    RuleSet,
     ScheduledSession,
     User,
 )
-from app.utils.auth import create_access_token, get_password_hash
+from app.utils.auth import get_password_hash
 
-
-def _token(user: User) -> str:
-    return create_access_token({"sub": user.email, "user_id": user.id})
-
-
-def _auth(user: User) -> dict:
-    return {"Authorization": f"Bearer {_token(user)}", "Accept-Language": "en"}
-
-
-@pytest.fixture
-def family(db_session):
-    """A parent, a child, an ABA provider with two therapists."""
-    parent = User(
-        email="sarah@example.com",
-        username="sarah",
-        hashed_password=get_password_hash("password123"),
-        is_active=True,
-        is_kid_account=False,
-        display_name="Sarah",
-    )
-    db_session.add(parent)
-    db_session.commit()
-
-    kid = User(
-        email="ellie@example.com",
-        username="ellie",
-        hashed_password=get_password_hash("password123"),
-        is_active=True,
-        is_kid_account=True,
-        parent_id=parent.id,
-        display_name="Ellie",
-    )
-    org = ProviderOrg(name="Bright Steps ABA", kind="aba", calendar_provider="google")
-    db_session.add_all([kid, org])
-    db_session.commit()
-
-    dana = ProviderPerson(org_id=org.id, display_name="Dana R.")
-    jordan = ProviderPerson(org_id=org.id, display_name="Jordan P.")
-    db_session.add_all([dana, jordan])
-    db_session.commit()
-
-    provider_login = User(
-        email="dana@brightsteps.example",
-        username="dana",
-        hashed_password=get_password_hash("password123"),
-        is_active=True,
-        is_kid_account=False,
-    )
-    db_session.add(provider_login)
-    db_session.commit()
-    dana.user_id = provider_login.id
-    db_session.commit()
-
-    return {
-        "parent": parent,
-        "kid": kid,
-        "org": org,
-        "dana": dana,
-        "jordan": jordan,
-        "provider_login": provider_login,
-    }
-
-
-@pytest.fixture
-def rules(db_session, family):
-    """Sarah's declared defaults, with the midday block left off by default."""
-    ruleset = RuleSet(
-        parent_id=family["parent"].id,
-        child_id=family["kid"].id,
-        min_notice_hours=24,
-        earliest_start=time(8, 0),
-        latest_end=time(18, 0),
-        require_same_provider_person=True,
-        buffer_minutes=45,
-        cancellation_needs_approval=True,
-    )
-    db_session.add(ruleset)
-    db_session.commit()
-    return ruleset
-
-
-@pytest.fixture
-def session_row(db_session, family):
-    """One ABA session, comfortably far enough out to satisfy min-notice."""
-    start = (datetime.utcnow() + timedelta(days=3)).replace(
-        hour=15, minute=30, second=0, microsecond=0
-    )
-    row = ScheduledSession(
-        child_id=family["kid"].id,
-        provider_org_id=family["org"].id,
-        provider_person_id=family["dana"].id,
-        title="ABA session",
-        activity_type="aba",
-        start_utc=start,
-        duration_minutes=90,
-        source="calendar",
-    )
-    db_session.add(row)
-    db_session.commit()
-    db_session.refresh(row)
-    return row
+from .conftest import _auth
 
 
 class TestAutoApply:

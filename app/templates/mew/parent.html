@@ -3,13 +3,14 @@
 
 {% block content %}
 <div class="panels">
-  <section class="panel panel--parent panel--solo" id="parent-panel" aria-label="{{ t.persona.parent }}">
+  <section class="panel panel--parent panel--solo" id="parent-panel"
+           data-caregiver-term="{{ caregiver_term }}" aria-label="{{ caregiver_label }}">
     <div class="panel__accent" aria-hidden="true"></div>
 
     <header class="panel__header">
       <div class="panel__persona">
         <span class="panel__dot" aria-hidden="true"></span>
-        <span class="panel__persona-label">{{ t.persona.parent }}</span>
+        <span class="panel__persona-label" id="parent-persona">{{ caregiver_label }}</span>
       </div>
       <div class="panel__title-row">
         <h1 class="panel__name" id="parent-name">{{ display_name }}</h1>
