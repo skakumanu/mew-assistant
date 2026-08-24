@@ -23,6 +23,17 @@ All notable changes to the Mew Assistant project.
 - `/parent/approvals/pending` gained `reason_codes` and `alternatives` (existing fields unchanged)
 - Kid-facing copy replaced with plain sentences and 56px targets; the sticker collection maps onto a "calm days in a row" streak
 
+### 🔌 Integrations
+- **Calendars are real**: sessions are mirrored in from Google (per-user OAuth) or any ICS feed — which is how Apple, Calendly and most clinic and school booking tools publish — and approved changes are written back as invite updates
+  - Idempotent pull matched on `external_event_id`; Mew stays authoritative, and an unreachable or read-only calendar never undoes an applied change
+  - Dependency-free ICS parser: folded lines, escaped text, `DURATION` without `DTEND`, `STATUS:CANCELLED`
+- **Notifications reach people**: stored as a locale key plus parameters, then delivered by email/SMS best effort, so a kid's outcome survives the session moving off today and every channel says the same sentence ([GET /notifications](app/routers/notifications.py))
+- **Setup in one call**: `POST /onboarding/setup` creates the child, the rules, the provider organisations and their therapists, and pulls their calendars — idempotent, so a half-finished setup can be re-sent
+- **Sign-in on the screens**: an HttpOnly session cookie replaces the pasted bearer token; `get_current_user` accepts either, and an API `Authorization` header still wins
+
+### 🔧 Fixed
+- **`SmartApprovalService` was entirely dead** — it imported a module that does not exist and referenced ten attributes absent from the models, so every method would have raised. Rewritten against the real schema and sequenced *behind* the deterministic engine: it advises on already-parked requests and batches what is waiting, and can never override a declared rule
+
 ### 🌍 Internationalisation
 - UI locale resolves from `Accept-Language` or an explicit per-user choice, never from the content of a message
 - One file per locale with `en.json` as the contract, enforced by tests; ships en/es/hi/ar
@@ -43,7 +54,7 @@ All notable changes to the Mew Assistant project.
 - **Implementation guide**: the loop, the API surface, the locked reason codes and what was reused versus changed ([docs/THREE_PERSONA_SCHEDULING.md](docs/THREE_PERSONA_SCHEDULING.md))
 
 ### 🧪 Tests
-- 108 new tests across the rule engine (100% covered), the loop end to end, the locale contract, rule-set backfill and caregiver-term interchangeability
+- 178 new tests across the rule engine (100% covered), the loop end to end, the locale contract, rule-set backfill, caregiver-term interchangeability, calendar ingest and write-back, notification delivery, the smart-approval boundary, onboarding and sign-in
 
 ---
 
