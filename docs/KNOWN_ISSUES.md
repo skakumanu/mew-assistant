@@ -67,3 +67,29 @@ t.intent  # AttributeError: 'VoiceTranscription' object has no attribute 'intent
   with the live `ai_scheduler_service.py`). Left in place deliberately —
   deleting scaffolding for a feature nobody has decided against yet destroys
   work that might still be wanted.
+
+## `tests/test_auth.py::test_refresh_token` is flaky (~2.5% failure rate)
+
+**Not something this PR touched or caused** — found while landing PR #53,
+which never touches `app/middleware/bot_protection.py`, `app/routers/auth.py`
+or `tests/test_auth.py`. Documented here because it's real, reproducible, and
+otherwise easy to mistake for a broken PR on the next red run.
+
+**Cause:** `BotProtectionMiddleware._check_suspicious_content` regex-scans
+every POST body against a fixed pattern list that includes `r"(--|;)"`
+(meant to catch SQL-injection-style tautologies). Refresh tokens are
+base64url-encoded JWTs, which use `-` as part of their alphabet. Any token
+whose encoding happens to contain two consecutive `-` characters trips the
+pattern and the request is rejected with `400 Bad Request` before it ever
+reaches the `/auth/refresh` handler — nothing wrong with the token or the
+handler, the request never got there.
+
+**Measured:** 1 failure in 40 local runs (~2.5%), consistent with the
+theoretical collision rate for two adjacent characters landing on `-` in a
+base64url alphabet (64 symbols) across a token-length string.
+
+**Not fixed here:** the middleware's suspicious-content regex is
+security-sensitive shared code — every POST endpoint in the app goes through
+it, not just `/auth/refresh` (any base64-bearing payload is equally exposed:
+image uploads, encoded IDs, other JWTs). Tightening it needs its own
+change and its own review, not a rider on an unrelated PR.
