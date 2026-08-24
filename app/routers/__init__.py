@@ -12,7 +12,6 @@ from .kid_friendly import router as kid_router
 from .message import router as message_router
 from .mew_ui import router as mew_ui_router
 from .mobile import router as mobile_router
-from .mobile_api import router as mobile_api_router
 from .notifications import router as notifications_router
 from .oauth_simple import router as simple_oauth_router
 from .onboarding_setup import router as onboarding_setup_router
@@ -35,7 +34,6 @@ __all__ = [
     "summary_router",
     "calendar_router",
     "mobile_router",
-    "mobile_api_router",
     "kid_router",
     "parent_approval_router",
     "parent_log_router",
