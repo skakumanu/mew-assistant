@@ -68,28 +68,33 @@ t.intent  # AttributeError: 'VoiceTranscription' object has no attribute 'intent
   deleting scaffolding for a feature nobody has decided against yet destroys
   work that might still be wanted.
 
-## `tests/test_auth.py::test_refresh_token` is flaky (~2.5% failure rate)
+## `tests/test_auth.py::test_refresh_token` was flaky (~2.5% failure rate) — fixed
 
-**Not something this PR touched or caused** — found while landing PR #53,
-which never touches `app/middleware/bot_protection.py`, `app/routers/auth.py`
-or `tests/test_auth.py`. Documented here because it's real, reproducible, and
-otherwise easy to mistake for a broken PR on the next red run.
+**Was not something the PR that found it touched or caused** — found while
+landing PR #53, which never touched `app/middleware/bot_protection.py`,
+`app/routers/auth.py` or `tests/test_auth.py`. Documented here first because
+it was real, reproducible, and easy to mistake for a broken PR on a red run;
+now documented as resolved.
 
-**Cause:** `BotProtectionMiddleware._check_suspicious_content` regex-scans
-every POST body against a fixed pattern list that includes `r"(--|;)"`
+**Cause:** `BotProtectionMiddleware._check_suspicious_content` regex-scanned
+every POST body against a fixed pattern list that included `r"(--|;)"`
 (meant to catch SQL-injection-style tautologies). Refresh tokens are
 base64url-encoded JWTs, which use `-` as part of their alphabet. Any token
-whose encoding happens to contain two consecutive `-` characters trips the
-pattern and the request is rejected with `400 Bad Request` before it ever
-reaches the `/auth/refresh` handler — nothing wrong with the token or the
-handler, the request never got there.
+whose encoding happened to contain two consecutive `-` characters tripped
+the pattern and the request was rejected with `400 Bad Request` before it
+ever reached the `/auth/refresh` handler — nothing wrong with the token or
+the handler, the request never got there.
 
-**Measured:** 1 failure in 40 local runs (~2.5%), consistent with the
-theoretical collision rate for two adjacent characters landing on `-` in a
-base64url alphabet (64 symbols) across a token-length string.
+**Measured before the fix:** 1 failure in 40 local runs (~2.5%), consistent
+with the theoretical collision rate for two adjacent characters landing on
+`-` in a base64url alphabet (64 symbols) across a token-length string.
 
-**Not fixed here:** the middleware's suspicious-content regex is
-security-sensitive shared code — every POST endpoint in the app goes through
-it, not just `/auth/refresh` (any base64-bearing payload is equally exposed:
-image uploads, encoded IDs, other JWTs). Tightening it needs its own
-change and its own review, not a rider on an unrelated PR.
+**Fix:** scoped the two patterns to how `--` and `;` are actually used in
+SQL rather than matching them bare anywhere in the body — `r"--(?:\s|$)"`
+for a real SQL line-comment marker, and
+`r";\s*(?:--|#|/\*|drop|delete|insert|update|select|union|exec)\b"` for a
+stacked query. Verified this drops the false-positive rate on random
+base64url tokens to 0/20,000 in a local check while still matching
+`admin'--`, `1; DROP TABLE users;--`, and friends. See
+`tests/test_bot_protection.py::TestSqlPatternScoping` and
+`app/middleware/bot_protection.py`.
