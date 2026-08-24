@@ -110,6 +110,37 @@ def add_approval_columns(dry_run: bool) -> None:
         logger.info("Added approval_requests.%s", name)
 
 
+# Columns added to tables this migration created in an earlier run.
+LATE_COLUMNS = {
+    "rule_sets": {
+        "caregiver_term": {"postgresql": "VARCHAR(20)", "sqlite": "VARCHAR(20)"},
+    },
+}
+
+
+def add_late_columns(dry_run: bool) -> None:
+    """Add columns introduced after a table was first created."""
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    dialect = engine.dialect.name
+
+    for table, columns in LATE_COLUMNS.items():
+        if table not in tables:
+            continue  # create_all just made it, with every column
+        existing = {column["name"] for column in inspector.get_columns(table)}
+        for name, types in columns.items():
+            if name in existing:
+                continue
+            column_type = types.get(dialect, types["sqlite"])
+            statement = f"ALTER TABLE {table} ADD COLUMN {name} {column_type}"
+            if dry_run:
+                logger.info("[dry run] %s", statement)
+                continue
+            with engine.begin() as connection:
+                connection.execute(text(statement))
+            logger.info("Added %s.%s", table, name)
+
+
 def seed_rulesets(dry_run: bool) -> None:
     """One RuleSet per parent, seeded from any older ApprovalRule rows."""
     session = SessionLocal()
@@ -161,6 +192,7 @@ def main() -> int:
     try:
         create_new_tables(args.dry_run)
         add_approval_columns(args.dry_run)
+        add_late_columns(args.dry_run)
         if not args.skip_seed:
             seed_rulesets(args.dry_run)
     except Exception as error:

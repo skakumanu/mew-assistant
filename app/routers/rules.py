@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
-from ..database.models import RuleSet, User
+from ..database.models import DEFAULT_CAREGIVER_TERM, RuleSet, User
 from ..schemas.change_request import (
     ProtectedBlockOut,
     RuleSetOut,
@@ -21,11 +21,12 @@ from ..schemas.change_request import (
 )
 from ..services.ruleset_service import RuleSetService
 from ..utils.auth import get_current_user, verify_parent_account
+from ..utils.locale_context import translator_for
 
 router = APIRouter(prefix="/rules", tags=["Rules"])
 
 
-def _serialise(ruleset: RuleSet) -> RuleSetOut:
+def _serialise(ruleset: RuleSet, translator) -> RuleSetOut:
     return RuleSetOut(
         id=ruleset.id,
         child_id=ruleset.child_id,
@@ -38,6 +39,8 @@ def _serialise(ruleset: RuleSet) -> RuleSetOut:
         cancellation_needs_approval=bool(ruleset.cancellation_needs_approval),
         allowed_weekdays=ruleset.allowed_weekdays,
         notify_on_auto_approve=bool(ruleset.notify_on_auto_approve),
+        caregiver_term=ruleset.caregiver_term or DEFAULT_CAREGIVER_TERM,
+        caregiver_label=translator.caregiver(ruleset.caregiver_term),
         protected_blocks=[
             ProtectedBlockOut(
                 id=block.id,
@@ -57,6 +60,7 @@ def _serialise(ruleset: RuleSet) -> RuleSetOut:
 
 @router.get("", response_model=RuleSetOut)
 async def get_rules(
+    request: Request,
     child_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
@@ -69,7 +73,8 @@ async def get_rules(
     """
     verify_parent_account(current_user)
     ruleset = RuleSetService(db).get_or_create(current_user.id, child_id)
-    return _serialise(ruleset)
+    translator = translator_for(request.headers.get("accept-language"), current_user, db)
+    return _serialise(ruleset, translator)
 
 
 @router.put("", response_model=RuleSetOut)
@@ -103,4 +108,5 @@ async def update_rules(
         ]
 
     ruleset = service.update(ruleset, body)
-    return _serialise(ruleset)
+    translator = translator_for(request.headers.get("accept-language"), current_user, db)
+    return _serialise(ruleset, translator)

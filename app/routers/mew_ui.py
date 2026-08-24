@@ -17,6 +17,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
+from ..database.models import DEFAULT_CAREGIVER_TERM
 from ..utils.locale import Translator
 from ..utils.locale_context import translator_for
 
@@ -39,17 +40,33 @@ def _context(request: Request, translator: Translator, **extra) -> dict:
     return context
 
 
+# "Parent" and "guardian" name one persona, so one screen answers on both
+# paths and the label it shows comes from the family's own choice of word.
 @router.get("/parent", response_class=HTMLResponse)
+@router.get("/guardian", response_class=HTMLResponse)
 async def parent_screen(
     request: Request,
     name: Optional[str] = None,
+    term: Optional[str] = None,
     db: DbSession = Depends(get_db),
 ):
-    """Inbox, week and rules. The only screen a parent has to keep up to date."""
+    """Inbox, week and rules. The only screen a caregiver has to keep up to date."""
     translator = translator_for(request.headers.get("accept-language"), None, db)
+
+    # The path itself is a reasonable default: somebody who opened /app/guardian
+    # should not be greeted by the word "parent" before their rules load.
+    if term is None:
+        term = "guardian" if request.url.path.endswith("/guardian") else DEFAULT_CAREGIVER_TERM
+
     return templates.TemplateResponse(
         "mew/parent.html",
-        _context(request, translator, display_name=name or translator.strings["persona"]["parent"]),
+        _context(
+            request,
+            translator,
+            caregiver_term=term,
+            caregiver_label=translator.caregiver(term),
+            display_name=name or translator.caregiver(term),
+        ),
     )
 
 

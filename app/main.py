@@ -94,13 +94,17 @@ app.include_router(mobile_router, tags=["mobile"])
 app.include_router(voice_router, tags=["voice"])
 app.include_router(kid_router, tags=["kid"])
 app.include_router(ai_scheduler_router, tags=["ai-scheduler"])
-app.include_router(parent_approval_router, tags=["approvals"])
+# "Parent" and "guardian" are interchangeable: the same handlers answer on
+# both paths, so a family that says "guardian" never reads "parent" in a URL.
+for _caregiver_prefix in ("/parent", "/guardian"):
+    app.include_router(parent_approval_router, prefix=_caregiver_prefix, tags=["approvals"])
 
 # Three-persona scheduling: rules in, requests through one write path, and
 # the provider's own view of the sessions they already run.
 app.include_router(rules_router, tags=["rules"])
 app.include_router(change_requests_router, tags=["change-requests"])
-app.include_router(parent_log_router, tags=["approvals"])
+for _caregiver_prefix in ("/parent", "/guardian"):
+    app.include_router(parent_log_router, prefix=_caregiver_prefix, tags=["approvals"])
 app.include_router(provider_router, tags=["provider"])
 app.include_router(mew_ui_router, tags=["mew-ui"])
 

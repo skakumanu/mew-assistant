@@ -15,6 +15,7 @@
   ],
   "persona": {
     "parent": "Parent",
+    "guardian": "Guardian",
     "kid": "Kid",
     "provider": "Service provider"
   },
