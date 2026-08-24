@@ -30,7 +30,7 @@ jobs:
         pip-compile --upgrade requirements.in -o requirements.txt || true
     
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v6
+      uses: peter-evans/create-pull-request@v8
       with:
         commit-message: 'chore: update dependencies'
         title: 'chore: Weekly dependency updates'
