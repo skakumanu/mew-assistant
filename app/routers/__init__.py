@@ -26,6 +26,7 @@ from .smart_approval import router as smart_approval_router
 from .summary import router as summary_router
 from .voice import router as voice_router
 from .voice_requests import router as voice_requests_router
+from .webhooks import router as webhooks_router
 
 __all__ = [
     "auth_router",
@@ -54,4 +55,5 @@ __all__ = [
     # "approval_router",
     "oauth_web",
     "debug_router",
+    "webhooks_router",
 ]

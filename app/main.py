@@ -82,6 +82,7 @@ from .routers import (
     summary_router,
     voice_requests_router,
     voice_router,
+    webhooks_router,
 )
 
 app.include_router(auth_router, tags=["auth"])
@@ -124,6 +125,10 @@ app.include_router(mew_ui_router, tags=["mew-ui"])
 
 # Voice may REQUEST anything and approve nothing.
 app.include_router(voice_requests_router, tags=["voice"])
+
+# Inbound SMS/WhatsApp from Twilio - every message-processing endpoint
+# verifies the Twilio signature before touching anything.
+app.include_router(webhooks_router, tags=["webhooks"])
 
 
 @app.get("/health")

@@ -12,6 +12,7 @@ from app.database import get_db
 from app.integrations import SMSIntegration, WhatsAppIntegration
 from app.services.message_service import MessageService
 from app.utils.logger import get_logger
+from app.utils.twilio_signature import verify_twilio_request
 
 logger = get_logger(__name__)
 
@@ -37,6 +38,9 @@ async def receive_sms(
     This endpoint is called by Twilio when an SMS is received.
     Configure in Twilio Console: Account > Phone Numbers > Your Number > Messaging > Webhook
     """
+    if not await verify_twilio_request(request):
+        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+
     message_service = MessageService(db)
     try:
         webhook_data = {
@@ -50,8 +54,8 @@ async def receive_sms(
         parsed_data = sms_integration.parse_incoming_sms(webhook_data)
 
         # Sanitize user input for logging (prevent log injection)
-        safe_from = str(From).replace('\n', '').replace('\r', '')[:50]
-        safe_body = str(Body).replace('\n', '').replace('\r', '')[:50]
+        safe_from = str(From).replace("\n", "").replace("\r", "")[:50]
+        safe_body = str(Body).replace("\n", "").replace("\r", "")[:50]
         logger.info(f"Received SMS from {safe_from}: {safe_body}...")
 
         # Process the message
@@ -96,6 +100,9 @@ async def receive_whatsapp(
 
     Configure in Twilio Console: Programmable Messaging > WhatsApp > Sandbox Settings
     """
+    if not await verify_twilio_request(request):
+        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
+
     message_service = MessageService(db)
     try:
         webhook_data = {
@@ -110,8 +117,8 @@ async def receive_whatsapp(
         parsed_data = whatsapp_integration.parse_incoming_message(webhook_data)
 
         # Sanitize user input for logging (prevent log injection)
-        safe_sender = str(ProfileName or From).replace('\n', '').replace('\r', '')[:50]
-        safe_body = str(Body).replace('\n', '').replace('\r', '')[:50]
+        safe_sender = str(ProfileName or From).replace("\n", "").replace("\r", "")[:50]
+        safe_body = str(Body).replace("\n", "").replace("\r", "")[:50]
         logger.info(f"Received WhatsApp from {safe_sender}: {safe_body}...")
 
         # Process the message
@@ -152,12 +159,12 @@ async def sms_status(
     """
     try:
         # Sanitize user input for logging (prevent log injection)
-        safe_sid = str(MessageSid).replace('\n', '').replace('\r', '')[:50]
-        safe_status = str(MessageStatus).replace('\n', '').replace('\r', '')[:20]
+        safe_sid = str(MessageSid).replace("\n", "").replace("\r", "")[:50]
+        safe_status = str(MessageStatus).replace("\n", "").replace("\r", "")[:20]
         logger.info(f"SMS {safe_sid} status: {safe_status}")
 
         if ErrorCode:
-            safe_error = str(ErrorCode).replace('\n', '').replace('\r', '')[:20]
+            safe_error = str(ErrorCode).replace("\n", "").replace("\r", "")[:20]
             logger.error(f"SMS {safe_sid} error: {safe_error}")
 
         return {"status": "received"}
