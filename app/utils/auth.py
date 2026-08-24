@@ -12,7 +12,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
@@ -86,8 +86,11 @@ def verify_kid_account(user: User) -> None:
 
 def verify_parent_account(user: User) -> None:
     """
-    Verify that the user is a parent account (not a kid account).
-    Raises HTTPException if user is a kid account.
+    Verify that the user is a parent or guardian account (not a kid account).
+
+    "Parent" and "guardian" are interchangeable: a grandparent, a foster carer
+    or a legal guardian holds exactly the same place, with the same
+    permissions. Only the word a family reads differs.
 
     Args:
         user: User object to verify
@@ -98,8 +101,13 @@ def verify_parent_account(user: User) -> None:
     if user.is_kid_account:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This endpoint is only available for parent/caregiver accounts",
+            detail="This endpoint is only available for parent or guardian accounts",
         )
+
+
+# The same check under the other name, so calling code can read whichever
+# word fits it. There is only one rule, in one place.
+verify_guardian_account = verify_parent_account
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -166,12 +174,23 @@ def decode_token(token: str) -> dict:
         )
 
 
+# The screens sign in with a cookie rather than a pasted token. HttpOnly, so
+# script on the page cannot read it, which is a meaningful step up from
+# keeping a bearer token in localStorage.
+SESSION_COOKIE = "mew_session"
+
+
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """
     Dependency to get current authenticated user from JWT token.
+
+    Accepts either an ``Authorization: Bearer`` header (API clients) or the
+    ``mew_session`` cookie the screens set at sign-in. The header wins when
+    both are present, so an explicit credential is never silently ignored.
 
     Use this in endpoint dependencies to require authentication:
     ```python
@@ -181,14 +200,16 @@ async def get_current_user(
     ```
     """
 
-    if credentials is None:
+    token = credentials.credentials if credentials is not None else None
+    if not token:
+        token = request.cookies.get(SESSION_COOKIE)
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    token = credentials.credentials
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

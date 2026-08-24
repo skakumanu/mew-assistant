@@ -1,6 +1,10 @@
 """
 Smart Approval Router
 Endpoints for intelligent approval management.
+
+Everything here is about a caregiver's attention, never about authority.
+The deterministic rule engine decides what is allowed; these endpoints only
+group what is already waiting and surface what history says about it.
 """
 
 from typing import List
@@ -34,7 +38,7 @@ async def get_approval_batches(
     Reduces overwhelm by grouping similar requests.
     """
     service = SmartApprovalService(db)
-    batches = await service.batch_pending_requests(current_user, min_batch_size)
+    batches = service.batch_pending(current_user, min_batch_size)
     return batches
 
 
@@ -53,7 +57,7 @@ async def create_auto_approval_rule(
     - Auto-approve specific locations (home, school)
     """
     service = SmartApprovalService(db)
-    rule = await service.create_auto_approval_rule(current_user, rule_data.dict())
+    rule = service.create_auto_approval_rule(current_user, rule_data.dict())
     return rule
 
 
@@ -66,7 +70,7 @@ async def get_auto_approval_rules(
 
     rules = (
         db.query(ApprovalRule)
-        .filter(ApprovalRule.user_id == current_user.id, ApprovalRule.is_active.is_(True))
+        .filter(ApprovalRule.created_by == current_user.id, ApprovalRule.is_active.is_(True))
         .all()
     )
     return rules
@@ -83,7 +87,7 @@ async def delete_auto_approval_rule(
 
     rule = (
         db.query(ApprovalRule)
-        .filter(ApprovalRule.id == rule_id, ApprovalRule.user_id == current_user.id)
+        .filter(ApprovalRule.id == rule_id, ApprovalRule.created_by == current_user.id)
         .first()
     )
 
@@ -106,7 +110,7 @@ async def get_rule_suggestions(
     Mew learns from your approval patterns and suggests rules to save you time.
     """
     service = SmartApprovalService(db)
-    suggestions = await service.suggest_rules_from_history(current_user)
+    suggestions = service.suggest_rules_from_history(current_user)
     return suggestions
 
 
@@ -118,12 +122,19 @@ async def accept_rule_suggestion(
 ):
     """Accept a suggested auto-approval rule."""
     service = SmartApprovalService(db)
-    suggestions = await service.suggest_rules_from_history(current_user)
+    suggestions = service.suggest_rules_from_history(current_user)
 
     if index >= len(suggestions):
         raise HTTPException(status_code=404, detail="Suggestion not found")
 
     suggestion = suggestions[index]
-    rule = await service.create_auto_approval_rule(current_user, suggestion)
+    rule = service.create_auto_approval_rule(
+        current_user,
+        {
+            "name": f"Always allow {suggestion['activity_type']}",
+            "rule_type": "activity_type",
+            "conditions": {"allowed_activities": [suggestion["activity_type"]]},
+        },
+    )
 
-    return {"message": "Rule created successfully", "rule": rule}
+    return {"message": "Rule created successfully", "rule_id": rule.id}

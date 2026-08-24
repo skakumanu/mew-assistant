@@ -4,6 +4,70 @@ All notable changes to the Mew Assistant project.
 
 ---
 
+## [Unreleased]
+
+## [1.1.0] - August 24, 2026
+
+### ✨ Features
+- **Three-persona scheduling**: one schedule shared by a caregiver, a kid and a service provider
+  - Deterministic rule engine ([app/services/rule_engine.py](app/services/rule_engine.py)) evaluates every change request before it can reach a caregiver — a request that fits the declared rules is applied immediately, never queued behind a confidence score
+  - A rule failure is a stable reason code, never a sentence, so one parked request reads correctly in any language
+  - `POST /requests` is the only write path for kid and provider; no client decides what is allowed
+  - A parked request arrives as one card with three compliant alternatives attached, approved in one tap via `POST /parent/approvals/{id}/choose`
+  - Auto-applied changes land in a quiet log ("Handled for you") instead of a notification
+- **Service provider persona**: `ProviderOrg` / `ProviderPerson`, with `GET /provider/sessions` scoped to the caller's own organisation
+- **Caregiver screens**: `/app/parent`, `/app/kid` and `/app/provider`, built from the design's tokens
+- **Parent and guardian are interchangeable**: both route prefixes, both accepted values, one permission check, and a per-family choice of which word is shown
+- **Voice**: `POST /voice/requests` reads a spoken request back before sending it, and can never approve
+
+### ♻️ Changed
+- `/kid/change-request` applies a compliant request instead of always creating a pending approval; cancellations still reach the caregiver when `cancellation_needs_approval` is on
+- `/parent/approvals/pending` gained `reason_codes` and `alternatives` (existing fields unchanged)
+- Kid-facing copy replaced with plain sentences and 56px targets; the sticker collection maps onto a "calm days in a row" streak
+
+### 🔌 Integrations
+- **Calendars are real**: sessions are mirrored in from Google (per-user OAuth) or any ICS feed — which is how Apple, Calendly and most clinic and school booking tools publish — and approved changes are written back as invite updates
+  - Idempotent pull matched on `external_event_id`; Mew stays authoritative, and an unreachable or read-only calendar never undoes an applied change
+  - Dependency-free ICS parser: folded lines, escaped text, `DURATION` without `DTEND`, `STATUS:CANCELLED`
+- **Notifications reach people**: stored as a locale key plus parameters, then delivered by email/SMS best effort, so a kid's outcome survives the session moving off today and every channel says the same sentence ([GET /notifications](app/routers/notifications.py))
+- **Setup in one call**: `POST /onboarding/setup` creates the child, the rules, the provider organisations and their therapists, and pulls their calendars — idempotent, so a half-finished setup can be re-sent
+- **Sign-in on the screens**: an HttpOnly session cookie replaces the pasted bearer token; `get_current_user` accepts either, and an API `Authorization` header still wins
+
+### 🔧 Fixed
+- **`SmartApprovalService` was entirely dead** — it imported a module that does not exist and referenced ten attributes absent from the models, so every method would have raised. Rewritten against the real schema and sequenced *behind* the deterministic engine: it advises on already-parked requests and batches what is waiting, and can never override a declared rule
+
+### 🌍 Internationalisation
+- UI locale resolves from `Accept-Language` or an explicit per-user choice, never from the content of a message
+- One file per locale with `en.json` as the contract, enforced by tests; ships en/es/hi/ar
+- **`hi` and `ar` are unreviewed machine-quality translations and need a native speaker before shipping** ([app/locales/README.md](app/locales/README.md))
+
+### ♿ Accessibility
+- No information in a single channel: every banner also reaches the live region as the same sentence
+- Status is never colour alone; touch targets never shrink responsively; 200% text without horizontal scroll
+- `prefers-reduced-motion` disables all motion
+- AAC symbols are plain glyphs — real symbol sets (PCS, ARASAAC, Bliss) need licensed artwork
+
+### 🗄️ Database
+- New tables: `provider_orgs`, `provider_people`, `scheduled_sessions`, `rule_sets`, `protected_blocks`, `weekly_caps`, `change_log_entries`, `user_locales`
+- `approval_requests` gained `requested_by`, `provider_org_id`, `change_kind`, `scheduled_session_id`, `new_start_utc`, `new_provider_person_id`, `reason_codes`, `alternatives`, `auto_applied`, `chosen_alternative_index`
+- Idempotent migration ([scripts/migrate_three_persona_scheduling.py](scripts/migrate_three_persona_scheduling.py)) seeds a `RuleSet` per caregiver from existing `ApprovalRule` rows
+
+### 📚 Documentation
+- **Implementation guide**: the loop, the API surface, the locked reason codes and what was reused versus changed ([docs/THREE_PERSONA_SCHEDULING.md](docs/THREE_PERSONA_SCHEDULING.md))
+
+### 🧪 Tests
+- 178 new tests across the rule engine (100% covered), the loop end to end, the locale contract, rule-set backfill, caregiver-term interchangeability, calendar ingest and write-back, notification delivery, the smart-approval boundary, onboarding and sign-in
+
+### 🔒 Security
+- **Inbound SMS/WhatsApp webhooks now verify the Twilio signature** before touching anything, using Twilio's own SDK; fails closed if the auth token isn't configured. Previously unmounted and, even mounted as-is, would have silently swallowed every real webhook call — its two payload parsers didn't exist
+- **Fixed a `BotProtectionMiddleware` false positive**: the SQL-injection heuristic matched a bare `--` or `;` anywhere in a POST body, which collided with base64url JWTs (refresh tokens use `-`) at a measurable rate. Scoped the patterns to how `--`/`;` are actually used in SQL; verified 0/20,000 false positives on random tokens with the classic injection shapes still caught
+
+### 🧹 Dead code
+- Fixed `VoiceService.process_voice_command` constructing `VoiceCommand` with four columns that don't exist (`audio_duration`, `transcript`, `entities`, `timestamp`), which raised on every call
+- Removed five duplicate/broken/unauthenticated routers that were never registered: `auth_router.py`, `mobile_api.py`, `oauth.py`, `onboarding.py`, `password_reset.py` (the last had no auth check on its own reset endpoint)
+
+---
+
 ## [1.0.3] - January 3, 2026
 
 ### 🔐 Security & Infrastructure

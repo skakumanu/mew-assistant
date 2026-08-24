@@ -1,227 +1,255 @@
 """
-Smart Approval Service
-Reduces parent overwhelm by intelligently auto-approving safe requests
-and batching others for efficient review.
+Smart approval: the second opinion, never the decision.
+
+The deterministic rule engine decides. It runs FIRST and it runs alone: a
+request that satisfies the caregiver's declared rules is applied without ever
+consulting this module, and a request that breaks one is parked no matter how
+confident a pattern-matcher feels about it. A caregiver who wrote "nothing
+past 6pm" meant it, and no confidence score gets to overrule that.
+
+What is left is genuinely useful, and it is all this module does:
+
+  * **Advice.** When a request is already parked, say what history says about
+    it - "you have approved 8 of 9 requests like this" - so the caregiver can
+    decide in a glance instead of from scratch.
+  * **Batching.** Group what is waiting so a caregiver reads one screen
+    rather than a trickle of notifications.
+
+Both are read-time only. Nothing here writes to a schedule.
 """
 
-from datetime import datetime
+from __future__ import annotations
+
+import json
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session as DbSession
 
-from app.database.models import ApprovalRequest, ApprovalRule, User
-from app.schemas.approval import ApprovalStatus, RequestPriority
+from app.database.models import (
+    ApprovalRequest,
+    ApprovalRule,
+    ApprovalStatus,
+    ScheduledSession,
+    User,
+)
+
+logger = logging.getLogger(__name__)
+
+# Below this many comparable decisions, history is noise rather than a signal.
+MIN_HISTORY = 3
+# A request starting sooner than this is worth surfacing first.
+TIME_SENSITIVE_HOURS = 2
+
+
+@dataclass(frozen=True)
+class Advisory:
+    """
+    What history says about a parked request.
+
+    Deliberately not a recommendation: it reports counts and lets the
+    caregiver draw the conclusion.
+    """
+
+    approved: int
+    denied: int
+    matched_rule: Optional[str] = None
+
+    @property
+    def total(self) -> int:
+        return self.approved + self.denied
+
+    @property
+    def approval_rate(self) -> float:
+        return self.approved / self.total if self.total else 0.0
+
+    def as_dict(self) -> Dict:
+        return {
+            "approved": self.approved,
+            "denied": self.denied,
+            "total": self.total,
+            "approval_rate": round(self.approval_rate, 2),
+            "matched_rule": self.matched_rule,
+        }
+
+
+@dataclass(frozen=True)
+class RequestFacts:
+    """
+    One request, described in terms the real schema actually has.
+
+    Built once so the checks below never reach for a column that does not
+    exist - which is how the previous version of this file came to reference
+    ten attributes that were never on the models.
+    """
+
+    activity_type: str
+    start: Optional[datetime]
+    duration_minutes: int
+    location: Optional[str]
+    change_kind: Optional[str]
 
 
 class SmartApprovalService:
-    """
-    Intelligent approval system that learns from parent decisions
-    and auto-approves safe, routine requests.
-    """
+    """Advice and batching. It never decides, and never writes a schedule."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: DbSession):
         self.db = db
 
-    async def evaluate_request(self, request: ApprovalRequest, parent: User) -> Dict:
+    # ------------------------------------------------------------------
+    # advice
+    # ------------------------------------------------------------------
+
+    def advise(self, request: ApprovalRequest) -> Optional[Advisory]:
         """
-        Evaluate if request can be auto-approved based on rules and patterns.
+        What history says about a request the engine already parked.
 
-        Returns:
-            dict with 'auto_approved', 'reason', and 'confidence' keys
+        Returns None when there is not enough comparable history to say
+        anything honest, rather than inventing a confident-looking number.
         """
-        # Check explicit auto-approval rules
-        auto_approve_rule = self._check_auto_approval_rules(request, parent)
-        if auto_approve_rule:
-            return {
-                "auto_approved": True,
-                "reason": f"Matches rule: {auto_approve_rule.name}",
-                "confidence": 1.0,
-            }
+        facts = self.facts_for(request)
 
-        # Check learned patterns from history
-        pattern_match = await self._check_learned_patterns(request, parent)
-        if pattern_match and pattern_match["confidence"] > 0.85:
-            return {
-                "auto_approved": True,
-                "reason": "Similar requests always approved in past",
-                "confidence": pattern_match["confidence"],
-            }
-
-        # Check if low-risk routine request
-        if self._is_low_risk_routine(request):
-            return {
-                "auto_approved": True,
-                "reason": "Low-risk routine activity",
-                "confidence": 0.9,
-            }
-
-        return {
-            "auto_approved": False,
-            "reason": "Requires parent review",
-            "confidence": 0.0,
-        }
-
-    def _check_auto_approval_rules(
-        self, request: ApprovalRequest, parent: User
-    ) -> Optional[ApprovalRule]:
-        """Check if request matches any auto-approval rules."""
-        rules = (
-            self.db.query(ApprovalRule)
-            .filter(ApprovalRule.user_id == parent.id, ApprovalRule.is_active.is_(True))
-            .all()
-        )
-
-        for rule in rules:
-            if self._matches_rule(request, rule):
-                return rule
-
-        return None
-
-    def _matches_rule(self, request: ApprovalRequest, rule: ApprovalRule) -> bool:
-        """Check if request matches a specific rule."""
-        # Time-based rules
-        if rule.rule_type == "time_range":
-            req_time = request.proposed_start_time.time()
-            if rule.time_start <= req_time <= rule.time_end:
-                return True
-
-        # Activity-based rules
-        elif rule.rule_type == "activity_type":
-            if request.activity_type in rule.allowed_activities:
-                return True
-
-        # Duration-based rules
-        elif rule.rule_type == "duration":
-            duration = (
-                request.proposed_end_time - request.proposed_start_time
-            ).total_seconds() / 60
-            if duration <= rule.max_duration_minutes:
-                return True
-
-        # Location-based rules
-        elif rule.rule_type == "location":
-            if request.location in rule.allowed_locations:
-                return True
-
-        return False
-
-    async def _check_learned_patterns(
-        self, request: ApprovalRequest, parent: User
-    ) -> Optional[Dict]:
-        """
-        Analyze historical approvals to find patterns.
-        Uses ML-like approach to calculate confidence.
-        """
-        # Get similar past requests
-        similar_requests = (
-            self.db.query(ApprovalRequest)
-            .filter(
-                ApprovalRequest.parent_id == parent.id,
-                ApprovalRequest.activity_type == request.activity_type,
-                ApprovalRequest.status.in_([ApprovalStatus.APPROVED, ApprovalStatus.DENIED]),
-            )
-            .order_by(ApprovalRequest.created_at.desc())
-            .limit(20)
-            .all()
-        )
-
-        if len(similar_requests) < 5:
+        comparable = [
+            other
+            for other in self._decided_history(request.parent_id)
+            if self.facts_for(other).activity_type == facts.activity_type and other.id != request.id
+        ]
+        if len(comparable) < MIN_HISTORY:
             return None
 
-        # Calculate approval rate
-        approved_count = sum(1 for r in similar_requests if r.status == ApprovalStatus.APPROVED)
-        approval_rate = approved_count / len(similar_requests)
+        approved = sum(1 for r in comparable if r.status == ApprovalStatus.APPROVED)
+        rule = self.matching_rule(request, facts)
 
-        # Additional similarity scoring
-        similarity_scores = []
-        for past_req in similar_requests:
-            score = self._calculate_similarity(request, past_req)
-            similarity_scores.append((score, past_req.status))
+        return Advisory(
+            approved=approved,
+            denied=len(comparable) - approved,
+            matched_rule=rule.rule_name if rule else None,
+        )
 
-        # Weight recent approvals more heavily
-        weighted_score = sum(
-            score * (1.0 if status == ApprovalStatus.APPROVED else 0.0)
-            for score, status in similarity_scores
-        ) / len(similarity_scores)
+    def _decided_history(self, parent_id: int, limit: int = 50) -> List[ApprovalRequest]:
+        return (
+            self.db.query(ApprovalRequest)
+            .filter(
+                ApprovalRequest.parent_id == parent_id,
+                ApprovalRequest.status.in_([ApprovalStatus.APPROVED, ApprovalStatus.DENIED]),
+                # Auto-applied requests were never a decision, so counting
+                # them would tell a caregiver they agreed with things they
+                # never actually saw.
+                ApprovalRequest.auto_applied.isnot(True),
+            )
+            .order_by(ApprovalRequest.created_at.desc())
+            .limit(limit)
+            .all()
+        )
 
-        confidence = (approval_rate * 0.6) + (weighted_score * 0.4)
+    # ------------------------------------------------------------------
+    # facts
+    # ------------------------------------------------------------------
 
-        return {
-            "confidence": confidence,
-            "sample_size": len(similar_requests),
-            "approval_rate": approval_rate,
-        }
+    def facts_for(self, request: ApprovalRequest) -> RequestFacts:
+        """Describe a request using columns that exist."""
+        session = None
+        if request.scheduled_session_id:
+            session = (
+                self.db.query(ScheduledSession)
+                .filter(ScheduledSession.id == request.scheduled_session_id)
+                .first()
+            )
 
-    def _calculate_similarity(self, req1: ApprovalRequest, req2: ApprovalRequest) -> float:
-        """Calculate similarity score between two requests (0-1)."""
-        score = 0.0
-        weight_sum = 0.0
+        return RequestFacts(
+            activity_type=(
+                session.activity_type if session else (request.requested_activity or "other")
+            ),
+            start=request.new_start_utc or (session.start_utc if session else None),
+            duration_minutes=session.duration_minutes if session else 60,
+            location=session.location if session else None,
+            change_kind=request.change_kind,
+        )
 
-        # Activity type match (weight: 0.3)
-        if req1.activity_type == req2.activity_type:
-            score += 0.3
-        weight_sum += 0.3
+    # ------------------------------------------------------------------
+    # the caregiver's own free-form rules
+    # ------------------------------------------------------------------
 
-        # Time of day similarity (weight: 0.2)
-        time_diff = abs(req1.proposed_start_time.hour - req2.proposed_start_time.hour)
-        time_similarity = max(0, 1 - (time_diff / 12))
-        score += time_similarity * 0.2
-        weight_sum += 0.2
-
-        # Duration similarity (weight: 0.2)
-        dur1 = (req1.proposed_end_time - req1.proposed_start_time).total_seconds()
-        dur2 = (req2.proposed_end_time - req2.proposed_start_time).total_seconds()
-        dur_diff = abs(dur1 - dur2) / max(dur1, dur2)
-        dur_similarity = max(0, 1 - dur_diff)
-        score += dur_similarity * 0.2
-        weight_sum += 0.2
-
-        # Day of week match (weight: 0.15)
-        if req1.proposed_start_time.weekday() == req2.proposed_start_time.weekday():
-            score += 0.15
-        weight_sum += 0.15
-
-        # Location match (weight: 0.15)
-        if req1.location == req2.location:
-            score += 0.15
-        weight_sum += 0.15
-
-        return score / weight_sum if weight_sum > 0 else 0.0
-
-    def _is_low_risk_routine(self, request: ApprovalRequest) -> bool:
-        """Determine if request is low-risk and routine."""
-        low_risk_activities = [
-            "homework",
-            "reading",
-            "practice",
-            "break",
-            "snack",
-            "free_play",
-            "rest",
-        ]
-
-        # Check activity type
-        if request.activity_type not in low_risk_activities:
-            return False
-
-        # Check duration (max 60 minutes for auto-approval)
-        duration = (request.proposed_end_time - request.proposed_start_time).total_seconds() / 60
-        if duration > 60:
-            return False
-
-        # Check time (during daytime hours)
-        hour = request.proposed_start_time.hour
-        if hour < 6 or hour > 21:
-            return False
-
-        return True
-
-    async def batch_pending_requests(self, parent: User, min_batch_size: int = 3) -> List[Dict]:
+    def matching_rule(
+        self, request: ApprovalRequest, facts: Optional[RequestFacts] = None
+    ) -> Optional[ApprovalRule]:
         """
-        Group pending requests into smart batches for efficient review.
+        The first active ApprovalRule this request matches, if any.
 
-        Returns:
-            List of batches with metadata for optimal presentation
+        These are the older free-form rules, kept because families may have
+        written them. The structured fields live inside ``conditions`` JSON,
+        not as columns.
+        """
+        facts = facts or self.facts_for(request)
+
+        rules = (
+            self.db.query(ApprovalRule)
+            .filter(
+                ApprovalRule.created_by == request.parent_id,
+                ApprovalRule.is_active.is_(True),
+            )
+            .order_by(ApprovalRule.priority.asc())
+            .all()
+        )
+        for rule in rules:
+            if self._matches(rule, facts):
+                return rule
+        return None
+
+    def _matches(self, rule: ApprovalRule, facts: RequestFacts) -> bool:
+        try:
+            conditions = json.loads(rule.conditions or "{}")
+        except (TypeError, ValueError):
+            logger.warning("ApprovalRule %s has unparseable conditions", rule.id)
+            return False
+        if not isinstance(conditions, dict):
+            return False
+
+        allowed = conditions.get("allowed_activities")
+        if allowed and facts.activity_type not in allowed:
+            return False
+
+        locations = conditions.get("allowed_locations")
+        if locations and facts.location not in locations:
+            return False
+
+        max_duration = conditions.get("max_duration_minutes")
+        if isinstance(max_duration, int) and facts.duration_minutes > max_duration:
+            return False
+
+        if facts.start is not None:
+            start = _time_of(conditions.get("time_start"))
+            end = _time_of(conditions.get("time_end"))
+            if start is not None and facts.start.hour < start:
+                return False
+            if end is not None and facts.start.hour >= end:
+                return False
+
+        # A rule with no usable conditions matches nothing, rather than
+        # everything - the safer direction to be wrong in.
+        return any(
+            key in conditions
+            for key in (
+                "allowed_activities",
+                "allowed_locations",
+                "max_duration_minutes",
+                "time_start",
+                "time_end",
+            )
+        )
+
+    # ------------------------------------------------------------------
+    # batching
+    # ------------------------------------------------------------------
+
+    def batch_pending(self, parent: User, min_batch_size: int = 3) -> List[Dict]:
+        """
+        Group what is waiting, so a caregiver reads one screen.
+
+        Time-sensitive requests come first: something starting in an hour
+        cannot wait for a batch.
         """
         pending = (
             self.db.query(ApprovalRequest)
@@ -229,7 +257,7 @@ class SmartApprovalService:
                 ApprovalRequest.parent_id == parent.id,
                 ApprovalRequest.status == ApprovalStatus.PENDING,
             )
-            .order_by(ApprovalRequest.created_at)
+            .order_by(ApprovalRequest.created_at.asc())
             .all()
         )
 
@@ -237,156 +265,103 @@ class SmartApprovalService:
             return [
                 {
                     "batch_id": "single",
-                    "requests": pending,
+                    "request_ids": [r.id for r in pending],
                     "priority": "normal",
-                    "description": f"{len(pending)} pending request(s)",
+                    "count": len(pending),
                 }
             ]
 
-        batches = []
+        soon, later = [], []
+        for request in pending:
+            (soon if self.is_time_sensitive(request) else later).append(request)
 
-        # Batch 1: Urgent/Time-sensitive
-        urgent = [
-            r for r in pending if r.priority == RequestPriority.URGENT or self._is_time_sensitive(r)
-        ]
-        if urgent:
+        batches = []
+        if soon:
             batches.append(
                 {
-                    "batch_id": "urgent",
-                    "requests": urgent,
-                    "priority": "high",
-                    "description": f"⚡ {len(urgent)} urgent request(s) - needs quick decision",
+                    "batch_id": "time_sensitive",
+                    "request_ids": [r.id for r in soon],
+                    "priority": "urgent",
+                    "count": len(soon),
                 }
             )
-
-        # Batch 2: Same activity type
-        remaining = [r for r in pending if r not in urgent]
-        activity_groups = {}
-        for req in remaining:
-            activity_groups.setdefault(req.activity_type, []).append(req)
-
-        for activity, reqs in activity_groups.items():
-            if len(reqs) >= 2:
-                batches.append(
-                    {
-                        "batch_id": f"activity_{activity}",
-                        "requests": reqs,
-                        "priority": "normal",
-                        "description": f"📚 {len(reqs)} {activity} requests - similar activities",
-                    }
-                )
-                remaining = [r for r in remaining if r not in reqs]
-
-        # Batch 3: Same day
-        if remaining:
-            day_groups = {}
-            for req in remaining:
-                day_key = req.proposed_start_time.date()
-                day_groups.setdefault(day_key, []).append(req)
-
-            for day, reqs in day_groups.items():
-                batches.append(
-                    {
-                        "batch_id": f"day_{day}",
-                        "requests": reqs,
-                        "priority": "low",
-                        "description": f"📅 {len(reqs)} request(s) for {day.strftime('%A, %b %d')}",
-                    }
-                )
-
+        if later:
+            batches.append(
+                {
+                    "batch_id": "everything_else",
+                    "request_ids": [r.id for r in later],
+                    "priority": "normal",
+                    "count": len(later),
+                }
+            )
         return batches
 
-    def _is_time_sensitive(self, request: ApprovalRequest) -> bool:
-        """Check if request is time-sensitive."""
-        now = datetime.utcnow()
-        time_until = request.proposed_start_time - now
+    def is_time_sensitive(self, request: ApprovalRequest) -> bool:
+        """True when the session starts soon enough that waiting is a decision."""
+        start = self.facts_for(request).start
+        if start is None:
+            return False
+        return start - datetime.utcnow() < timedelta(hours=TIME_SENSITIVE_HOURS)
 
-        # Urgent if starts within 2 hours
-        return time_until.total_seconds() < 7200
+    # ------------------------------------------------------------------
+    # caregiver-authored rules
+    # ------------------------------------------------------------------
 
-    async def create_auto_approval_rule(self, parent: User, rule_data: Dict) -> ApprovalRule:
-        """Allow parents to create custom auto-approval rules."""
+    def create_auto_approval_rule(self, parent: User, rule_data: Dict) -> ApprovalRule:
+        """Store a free-form rule. Conditions are JSON, matching the column."""
         rule = ApprovalRule(
-            user_id=parent.id,
-            name=rule_data["name"],
-            rule_type=rule_data["rule_type"],
+            family_id=rule_data.get("family_id"),
+            rule_name=rule_data.get("name") or rule_data.get("rule_name") or "Rule",
+            rule_type=rule_data.get("rule_type", "activity_type"),
+            conditions=json.dumps(rule_data.get("conditions", rule_data.get("params", {}))),
             is_active=True,
-            **rule_data.get("params", {}),
+            priority=rule_data.get("priority", 100),
+            created_by=parent.id,
         )
-
         self.db.add(rule)
         self.db.commit()
         self.db.refresh(rule)
-
         return rule
 
-    async def suggest_rules_from_history(self, parent: User) -> List[Dict]:
+    def suggest_rules_from_history(self, parent: User) -> List[Dict]:
         """
-        Analyze approval history and suggest auto-approval rules
-        to reduce parent workload.
+        Activities this caregiver has always said yes to.
+
+        A suggestion, never an applied rule: turning "you always approve
+        this" into "so I did it for you" is exactly the move the design
+        exists to avoid.
         """
-        suggestions = []
+        history = self._decided_history(parent.id, limit=200)
+        if len(history) < 10:
+            return []
 
-        # Get approval history
-        approved = (
-            self.db.query(ApprovalRequest)
-            .filter(
-                ApprovalRequest.parent_id == parent.id,
-                ApprovalRequest.status == ApprovalStatus.APPROVED,
-            )
-            .all()
-        )
+        tally: Dict[str, Dict[str, int]] = {}
+        for request in history:
+            activity = self.facts_for(request).activity_type
+            bucket = tally.setdefault(activity, {"approved": 0, "denied": 0})
+            key = "approved" if request.status == ApprovalStatus.APPROVED else "denied"
+            bucket[key] += 1
 
-        if len(approved) < 10:
-            return suggestions
-
-        # Analyze patterns
-
-        # 1. Activities always approved
-        activity_counts = {}
-        for req in approved:
-            activity_counts[req.activity_type] = activity_counts.get(req.activity_type, 0) + 1
-
-        for activity, count in activity_counts.items():
-            if count >= 5:
-                suggestions.append(
-                    {
-                        "rule_type": "activity_type",
-                        "name": f"Auto-approve {activity}",
-                        "description": f"You've approved {count} {activity} requests - always approve?",
-                        "params": {"allowed_activities": [activity]},
-                        "confidence": min(count / 10, 1.0),
-                    }
-                )
-
-        # 2. Time windows
-        morning_count = sum(1 for r in approved if 6 <= r.proposed_start_time.hour < 12)
-        if morning_count >= 10:
-            suggestions.append(
-                {
-                    "rule_type": "time_range",
-                    "name": "Auto-approve morning activities",
-                    "description": "Auto-approve low-risk activities during morning hours",
-                    "params": {"time_start": "06:00", "time_end": "12:00"},
-                    "confidence": min(morning_count / 20, 1.0),
-                }
-            )
-
-        # 3. Short duration activities
-        short_activities = [
-            r
-            for r in approved
-            if (r.proposed_end_time - r.proposed_start_time).total_seconds() <= 1800
+        return [
+            {
+                "activity_type": activity,
+                "approved": counts["approved"],
+                "denied": counts["denied"],
+                "suggestion": "always_allow",
+            }
+            for activity, counts in sorted(tally.items())
+            if counts["denied"] == 0 and counts["approved"] >= 5
         ]
-        if len(short_activities) >= 10:
-            suggestions.append(
-                {
-                    "rule_type": "duration",
-                    "name": "Auto-approve activities under 30 minutes",
-                    "description": f"You've approved {len(short_activities)} short activities",
-                    "params": {"max_duration_minutes": 30},
-                    "confidence": min(len(short_activities) / 20, 1.0),
-                }
-            )
 
-        return sorted(suggestions, key=lambda x: x["confidence"], reverse=True)
+
+def _time_of(value) -> Optional[int]:
+    """An hour from 17, "17" or "17:00"."""
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip():
+        head = value.split(":")[0].strip()
+        try:
+            return int(head)
+        except ValueError:
+            return None
+    return None
