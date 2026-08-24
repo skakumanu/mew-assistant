@@ -116,6 +116,62 @@ class TestBotProtection:
         assert response.status_code == 200
 
 
+class TestSqlPatternScoping:
+    """
+    The old `r"(--|;)"` rule matched any dash pair or semicolon anywhere in
+    a POST body - including inside a base64url JWT, whose alphabet includes
+    '-'. That made `/auth/refresh` fail closed on ~2.5% of real refresh
+    tokens for no security reason. The patterns must stay scoped to how
+    '--' and ';' are actually used in SQL, not just co-occur with it.
+    """
+
+    @staticmethod
+    def _patterns():
+        # Constructed directly rather than pulled off `client.app.state`:
+        # that attribute only exists once some earlier test has driven a
+        # request through the app and built the middleware stack, which
+        # makes these tests order-dependent for no reason.
+        from app.middleware.bot_protection import BotProtectionMiddleware
+
+        return BotProtectionMiddleware(app=None).suspicious_patterns
+
+    def test_base64url_tokens_with_double_dashes_are_not_flagged(self):
+        """A refresh-token-shaped body must never trip the SQL heuristics."""
+        import re
+
+        patterns = self._patterns()
+
+        # Every double-dash position in a long base64url string, so this
+        # covers the collision the flaky test was hitting by chance.
+        for i in range(40):
+            token = ("a" * i) + "--" + ("b" * (40 - i))
+            body = f'{{"refresh_token": "{token}"}}'
+            assert not any(
+                re.search(p, body, re.IGNORECASE) for p in patterns
+            ), f"false positive at offset {i}: {body!r}"
+
+    def test_sql_comment_marker_is_still_caught(self):
+        import re
+
+        patterns = self._patterns()
+        assert any(re.search(p, "admin'--", re.IGNORECASE) for p in patterns)
+
+    def test_stacked_query_is_still_caught(self):
+        import re
+
+        patterns = self._patterns()
+        assert any(re.search(p, "1; DROP TABLE users;--", re.IGNORECASE) for p in patterns)
+
+    def test_refresh_with_a_double_dash_token_is_accepted(self):
+        """End-to-end: a body containing a "--"-bearing token must not 400."""
+        response = client.post(
+            "/auth/refresh",
+            json={"refresh_token": "not-a-real--token-but-shaped-like-one.abc.def"},
+        )
+        # Invalid token -> 401, never the bot-protection 400.
+        assert response.status_code != 400
+
+
 class TestCaptcha:
     """Test CAPTCHA verification"""
 
