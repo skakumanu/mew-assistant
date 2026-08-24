@@ -27,7 +27,10 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         except MewException as e:
-            logger.warning(f"MewException: {e.message}")
+            logger.warning(
+                "MewException",
+                extra={"extra_data": {"message": e.message, "code": e.error_code}},
+            )
             return JSONResponse(
                 status_code=e.status_code,
                 content={
@@ -39,7 +42,11 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 },
             )
         except Exception as e:
-            logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+            logger.error(
+                "Unhandled exception",
+                extra={"extra_data": {"error": str(e)}},
+                exc_info=True,
+            )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={
@@ -58,17 +65,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         request.state.request_id = request_id
         start_time = time.time()
         logger.info(
-            f"Request started: {request.method} {request.url.path}",
-            extra={"request_id": request_id},
+            "Request started",
+            extra={
+                "request_id": request_id,
+                "extra_data": {"method": request.method, "path": request.url.path},
+            },
         )
         response = await call_next(request)
         duration = time.time() - start_time
         logger.info(
-            f"Request completed: {request.method} {request.url.path}",
+            "Request completed",
             extra={
                 "request_id": request_id,
                 "status_code": response.status_code,
                 "duration_ms": round(duration * 1000, 2),
+                "extra_data": {"method": request.method, "path": request.url.path},
             },
         )
         response.headers["X-Request-ID"] = request_id
