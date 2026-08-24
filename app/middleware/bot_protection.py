@@ -30,7 +30,13 @@ class BotProtectionMiddleware(BaseHTTPMiddleware):
             r"union.*select",
             r"drop.*table",
             r"\bOR\b\s+['\"][^'\"]+['\"]\s*=\s*['\"][^'\"]+['\"]",
-            r"(--|;)",
+            # SQL comment / stacked-query markers. Scoped to how they're
+            # actually used in SQL rather than a bare "--" or ";" - those
+            # collide with base64url content (JWTs use '-' as part of their
+            # alphabet, so two adjacent '-' show up in ordinary tokens at a
+            # measurable rate) without that context.
+            r"--(?:\s|$)",
+            r";\s*(?:--|#|/\*|drop|delete|insert|update|select|union|exec)\b",
         ]
         try:
             if hasattr(app, "state"):
