@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "name": "हिन्दी",
+    "dir": "ltr",
+    "clock": "12h"
+  },
+  "days": [
+    "सोम",
+    "मंगल",
+    "बुध",
+    "गुरु",
+    "शुक्र",
+    "शनि",
+    "रवि"
+  ],
+  "persona": {
+    "parent": "माता-पिता",
+    "guardian": "अभिभावक",
+    "kid": "बच्चा",
+    "provider": "सेवा प्रदाता"
+  },
+  "parent": {
+    "tab_inbox": "आपकी जरूरत",
+    "tab_week": "सप्ताह",
+    "tab_rules": "नियम",
+    "all_clear": "सब ठीक",
+    "waiting": "{count} बाकी",
+    "nothing_waiting": "कुन बाकी नहीं। सब कुछ नियमों में था।",
+    "not_fit": "नियमों के बाहर:",
+    "pick_fit": "नियमों में आने वाला समय चुनें:",
+    "closest": "सबसे नजदीक",
+    "also_fits": "यह भी सही",
+    "allow_anyway": "फिर भी मंजूर",
+    "skip_it": "रद्द करें",
+    "say_no": "नहीं",
+    "handled": "आपके लिए हुआ",
+    "no_changes": "अब तक कोई बदलाव नहीं।",
+    "free": "खाली",
+    "updated": "बदला",
+    "rules_intro": "एक बार सेट करें। हर अनुरोध पहले इनसे जांचा जाता है।",
+    "headline_move": "{title} → {when}",
+    "headline_skip": "{title} रद्द करें?",
+    "detail_now": "अब {when} — {person}",
+    "detail_swap": "अब {when} — {person} ({original} की जगह)",
+    "detail_skip": "{when} — {person}",
+    "option_at": "{day}, {date} — {time}",
+    "log_moved": "{title} बदला: {when}",
+    "log_cancelled": "{title} ({day}) रद्द",
+    "log_stays": "{title} वैसा ही: {when}",
+    "meta_auto": "{who} ने पूछा, नियमों में था",
+    "meta_approved": "आपने {who} का अनुरोध मंजूर किया",
+    "meta_declined": "आपने {who} का अनुरोध मना किया",
+    "meta_picked": "आपने यह समय चुना",
+    "rules": {
+      "min_notice": {
+        "label": "कम से कम {hours} घंटे की सूचना",
+        "detail": "उसी दिन के बदलाव हमेशा मेरे पास आते हैं।"
+      },
+      "latest_end": {
+        "label": "{time} के बाद कुछ नहीं",
+        "detail": "शामें रात के खाने और आराम के लिए हैं।"
+      },
+      "protected_block": {
+        "label": "{start} से {end} तक सुरक्षित रखें",
+        "detail": "खाना और दवाइयाँ, हर दिन।"
+      },
+      "same_provider": {
+        "label": "केवल वही थेरापिस्ट",
+        "detail": "नया व्यक्ति पहले मेरी अनुमति चाहता है।"
+      },
+      "buffer": {
+        "label": "सत्रों के बीच {minutes} मिनट",
+        "detail": "यात्रा और आराम का समय।"
+      },
+      "cancel_needs_approval": {
+        "label": "रद्द करने के लिए मेरी अनुमति",
+        "detail": "समय बदलना ठीक है। रद्द करना मैं तय करूँगा।"
+      },
+      "on": "चालू",
+      "off": "बंद"
+    }
+  },
+  "kid": {
+    "my_day": "मेरा दिन",
+    "things_today": {
+      "one": "आज 1 काम",
+      "other": "आज {count} काम"
+    },
+    "calm_days": "लगातार {count} शांत दिन",
+    "words": "शब्द",
+    "symbols": "तस्वीरें",
+    "read_aloud": "पढ़कर सुनाएँ",
+    "ask_later": "बाद में, प्लीज़",
+    "ask_skip": "आज नहीं",
+    "with": "साथ",
+    "asked": "मैंने पूछ लिया है। जवाब जल्द आएगा।",
+    "asked_skip": "रद्द करने के बारे में पूछ लिया है।",
+    "done": "हो गया। {title} अब {time} पर।",
+    "changed_to": "बदल गया। नया समय: {time}।",
+    "parent_yes": "हां। {title} अब {day} को {time} पर।",
+    "parent_yes_skip": "हां। आज {title} नहीं।",
+    "parent_no": "इस बार नहीं। {title} वैसे ही {day} को {time} पर।",
+    "parent_moved": "{title} बदला: {day} को {time} पर।",
+    "note": "पूछना हमेशा ठीक है। नियमों में हो तो खुद हो जाता है।"
+  },
+  "provider": {
+    "sessions_from": "आपके कैलेंडर से सत्र",
+    "synced_with": "सिंक:",
+    "change_this": "बदलें",
+    "close": "बंद",
+    "waiting_on_parent": "मंज़ूरी का इंतज़ार",
+    "move_to": "इस दिन",
+    "start_at": "शुरूआत",
+    "person": "थेरापिस्ट:",
+    "tap_to_swap": "बदलने के लिए टैप",
+    "send": "अनुरोध भेजें",
+    "confirmed": "{when} के लिए पुष्टि। दोनों कैलेंडर अपडेट।",
+    "sent": "मंजूरी के लिए भेजा: {reasons}।",
+    "note": "जवाब सीधा आपके कैलेंडर में आता है।"
+  },
+  "reasons": {
+    "min_notice": "24 घंटे से कम सूचना",
+    "latest_end": "अनुमत समय के बाहर",
+    "protected_block": "सुरक्षित समय से टकराव",
+    "same_provider": "दूसरा थेरापिस्ट",
+    "buffer": "दूसरे सत्र के बहुत करीब",
+    "max_per_week": "साप्ताहिक सीमा से अधिक",
+    "cancel_needs_approval": "रद्द करने के लिए अनुमति जरूरी",
+    "outside_allowed_days": "यह दिन अनुमत नहीं है"
+  },
+  "blocks": {
+    "block.midday": "दोपहर का सुरक्षित समय",
+    "block.custom": "एक सुरक्षित समय"
+  },
+  "ui": {
+    "sign_in": "जारी रखने के लिए साइन इन करें",
+    "token": "एक्सेस टोकन",
+    "continue": "जारी रखें",
+    "loading": "लोड हो रहा है…",
+    "error": "कुछ गड़बड़ हुई। फिर कोशिश करें।",
+    "sign_out": "साइन आउट"
+  }
+}

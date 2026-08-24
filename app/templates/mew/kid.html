@@ -1,0 +1,42 @@
+{% extends "mew/base.html" %}
+{% block title %}{{ t.kid.my_day }} · Mew Assistant{% endblock %}
+
+{% block content %}
+<div class="panels">
+  <section class="panel panel--kid panel--solo" id="kid-panel" aria-label="{{ t.persona.kid }}">
+    <div class="panel__accent" aria-hidden="true"></div>
+
+    <header class="panel__header">
+      <div class="panel__persona">
+        <span class="panel__dot" aria-hidden="true"></span>
+        <span class="panel__persona-label">{{ t.persona.kid }}</span>
+      </div>
+      <div class="kid-head-name">
+        <span class="mark" aria-hidden="true">m</span>
+        <h1 class="kid-head-title">{{ t.kid.my_day }}</h1>
+      </div>
+      <p class="kid-day" id="kid-day"></p>
+      <div class="kid-meta">
+        <span class="kid-dots" id="kid-dots" aria-hidden="true"></span>
+        <span class="kid-count" id="kid-count"></span>
+        <span class="streak" id="kid-streak"></span>
+      </div>
+      <div class="kid-modes">
+        <button class="mode" id="mode-words" aria-pressed="true">{{ t.kid.words }}</button>
+        <button class="mode" id="mode-symbols" aria-pressed="false">{{ t.kid.symbols }}</button>
+        <button class="mode" id="mode-read" aria-pressed="false">{{ t.kid.read_aloud }}</button>
+      </div>
+    </header>
+
+    <div class="panel__scroll">
+      <div id="kid-banner"></div>
+      <div id="kid-cards"></div>
+      <p class="kid-note">{{ t.kid.note }}</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>Mew.kid.start();</script>
+{% endblock %}
