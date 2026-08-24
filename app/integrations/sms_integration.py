@@ -92,3 +92,20 @@ class SMSIntegration:
 
         message = f"📊 Daily Summary\n\n{summary_text}\n\n- Mew Assistant"
         return await self.send_sms(to_number, message)
+
+    def parse_incoming_sms(self, webhook_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalise a Twilio incoming-SMS webhook payload.
+
+        Twilio's field names (MessageSid, From, Body) are its own; callers
+        elsewhere in the app expect the same three fields every channel
+        parser produces (message_sid, from_number, body), so the webhook
+        router never has to know which channel it received.
+        """
+        return {
+            "message_sid": webhook_data.get("MessageSid", ""),
+            "from_number": webhook_data.get("From", ""),
+            "to_number": webhook_data.get("To", ""),
+            "body": webhook_data.get("Body", ""),
+            "num_media": int(webhook_data.get("NumMedia") or 0),
+        }
