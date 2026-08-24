@@ -15,6 +15,7 @@ from .mobile import router as mobile_router
 from .mobile_api import router as mobile_api_router
 from .notifications import router as notifications_router
 from .oauth_simple import router as simple_oauth_router
+from .onboarding_setup import router as onboarding_setup_router
 from .parent_approval import parent_router as parent_log_router
 from .parent_approval import router as parent_approval_router
 from .provider import router as provider_router
@@ -44,6 +45,7 @@ __all__ = [
     "calendar_sync_router",
     "smart_approval_router",
     "notifications_router",
+    "onboarding_setup_router",
     "mew_ui_router",
     "voice_requests_router",
     "voice_router",

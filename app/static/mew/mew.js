@@ -14,8 +14,6 @@
 (function (global) {
   'use strict';
 
-  var TOKEN_KEY = 'mew_token';
-
   // ------------------------------------------------------------ strings
 
   function lookup(path) {
@@ -111,21 +109,23 @@
 
   // -------------------------------------------------------------- api
 
-  function token() {
-    try { return global.localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
-  }
-
+  /**
+   * The session lives in an HttpOnly cookie, so this page cannot read it and
+   * neither can anything injected into it. Requests carry it automatically;
+   * a 401 means it expired or was never set, and the answer is the sign-in
+   * screen rather than a box asking for a pasted token.
+   */
   function api(path, options) {
     options = options || {};
     var headers = { 'Accept-Language': global.MEW.locale };
     if (options.body) headers['Content-Type'] = 'application/json';
-    if (token()) headers.Authorization = 'Bearer ' + token();
     return fetch(path, {
       method: options.method || 'GET',
       headers: headers,
+      credentials: 'same-origin',
       body: options.body ? JSON.stringify(options.body) : undefined
     }).then(function (response) {
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         requireSignIn();
         throw new Error('unauthenticated');
       }
@@ -134,24 +134,9 @@
     });
   }
 
-  /** A token gate, not a product screen: real sign-in lives in /auth. */
   function requireSignIn() {
-    if (document.getElementById('mew-signin')) return;
-    var input = el('input', { id: 'mew-token', type: 'password',
-                              placeholder: t('ui.token'), autocomplete: 'off' });
-    var form = el('form', {
-      id: 'mew-signin', class: 'signin',
-      onsubmit: function (event) {
-        event.preventDefault();
-        try { global.localStorage.setItem(TOKEN_KEY, input.value.trim()); } catch (e) { /* private mode */ }
-        global.location.reload();
-      }
-    }, [
-      el('h2', { text: t('ui.sign_in'), style: 'font-size:17px;font-weight:600' }),
-      input,
-      el('button', { class: 'btn btn--primary', type: 'submit', text: t('ui.continue') })
-    ]);
-    document.querySelector('.page').insertBefore(form, document.querySelector('.page').firstChild);
+    var here = global.location.pathname + global.location.search;
+    global.location.assign('/app/sign-in?next=' + encodeURIComponent(here));
   }
 
   function failed(node) {
