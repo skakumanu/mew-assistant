@@ -66,6 +66,7 @@ jobs:
       contents: read
     with:
       scan-args: |-
+        --config=.osv-scanner.toml
         -r
         requirements.txt
 
