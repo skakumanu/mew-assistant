@@ -29,6 +29,21 @@ def run_migration():
         conn.autocommit = True
         cursor = conn.cursor()
 
+        # On a brand-new database, federated_identities doesn't exist yet at
+        # all - the app's own startup (init_db() in app/main.py) creates it
+        # fresh, already with these columns, right after this script exits.
+        # That's not an error state; it's the normal first-deploy path.
+        cursor.execute(
+            """
+            SELECT to_regclass('public.federated_identities');
+        """
+        )
+        if cursor.fetchone()[0] is None:
+            print("✅ federated_identities doesn't exist yet (fresh database), skipping migration")
+            cursor.close()
+            conn.close()
+            return
+
         # Check if columns already exist
         cursor.execute(
             """
