@@ -15,6 +15,7 @@ from app.database.models import (
     ChangeKind,
     OAuthProvider,
     ProviderOrg,
+    ProviderOrgConnection,
     ProviderPerson,
     ScheduledSession,
     User,
@@ -415,21 +416,18 @@ class TestPush:
         org = synced_org["org"]
         org.calendar_provider = "google"
         org.calendar_account_id = "primary"
-        login = User(
-            email="therapist@example.com",
-            username="therapist",
-            hashed_password=get_password_hash("password123"),
-            is_active=True,
-        )
-        db_session.add(login)
-        db_session.commit()
-        db_session.add(ProviderPerson(org_id=org.id, display_name="Dana R.", user_id=login.id))
+        parent = synced_org["parent"]
         db_session.add(
             OAuthProvider(
-                user_id=login.id,
+                user_id=parent.id,
                 provider="google",
                 provider_user_id="g-1",
                 access_token="token",
+            )
+        )
+        db_session.add(
+            ProviderOrgConnection(
+                org_id=org.id, parent_id=parent.id, connected_by_user_id=parent.id
             )
         )
         row = ScheduledSession(
@@ -465,6 +463,46 @@ class TestPush:
         assert await CalendarSyncService(db_session).push(row, ChangeKind.MOVE) is True
         assert seen["method"] == "PATCH"
         assert "2026-09-10T16:30:00Z" in seen["body"]
+
+    @pytest.mark.asyncio
+    async def test_a_provider_person_link_alone_is_not_enough_for_calendar_access(
+        self, db_session, synced_org
+    ):
+        """
+        Regression guard for a real design mistake caught before it shipped:
+        ProviderPerson.user_id means "this login is this org's own staff" -
+        provider.py and change_request_service.py both trust it to grant a
+        whole org's roster and session list. Reusing it as "whoever
+        connected the calendar" would let one family's parent silently gain
+        that access at any org another family happens to share the name
+        of. A ProviderPerson row must never be sufficient on its own.
+        """
+        org = synced_org["org"]
+        org.calendar_provider = "google"
+        org.calendar_account_id = "primary"
+        someone = User(
+            email="someone@example.com",
+            username="someone",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add(someone)
+        db_session.commit()
+        db_session.add(ProviderPerson(org_id=org.id, display_name="Dana R.", user_id=someone.id))
+        db_session.add(
+            OAuthProvider(
+                user_id=someone.id,
+                provider="google",
+                provider_user_id="g-1",
+                access_token="token",
+            )
+        )
+        db_session.commit()
+        # Deliberately no ProviderOrgConnection row.
+
+        adapter = CalendarSyncService(db_session).adapter_for(org)
+
+        assert adapter is None
 
 
 def _serve(monkeypatch, body: str, status: int = 200):

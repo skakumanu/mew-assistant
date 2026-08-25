@@ -61,6 +61,7 @@ from .routers import auth_router  # noqa: E402
 from .routers import calendar_router  # noqa: E402
 from .routers import (
     ai_scheduler_router,
+    calendar_oauth_router,
     calendar_sync_router,
     calendar_web_router,
     change_requests_router,
@@ -113,6 +114,7 @@ for _caregiver_prefix in ("/parent", "/guardian"):
     app.include_router(parent_log_router, prefix=_caregiver_prefix, tags=["approvals"])
 app.include_router(provider_router, tags=["provider"])
 app.include_router(calendar_sync_router, tags=["calendar-sync"])
+app.include_router(calendar_oauth_router, tags=["calendar-sync"])
 
 # Attention, not authority: batching and history, never a decision.
 app.include_router(smart_approval_router, tags=["smart-approval"])
