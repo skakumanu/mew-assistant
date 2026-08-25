@@ -5,7 +5,7 @@ pydantic==2.12.4
 pydantic-settings==2.15.0
 
 # Database
-sqlalchemy==2.0.22
+sqlalchemy==2.0.52
 psycopg2-binary==2.9.11
 alembic==1.12.0
 
@@ -19,10 +19,10 @@ httpx==0.28.1
 cryptography==50.0.0
 
 # Google Services
-google-auth==2.40.0
-google-auth-oauthlib==1.2.3
+google-auth==2.56.3
+google-auth-oauthlib==1.4.0
 google-auth-httplib2==0.2.0
-google-api-python-client==2.166.0
+google-api-python-client==2.199.0
 
 # Azure
 azure-identity==1.25.1
