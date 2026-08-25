@@ -1,0 +1,41 @@
+# OSV-Scanner ignore list for advisories that can't be resolved by bumping
+# a line in requirements.txt — each requires separate, riskier dependency
+# surgery on core auth/web-framework packages, tracked here rather than
+# silently blocking CI or blindly weakening the whole osv_scan gate.
+
+[[IgnoredVulns]]
+id = "GHSA-wj6h-64fc-37mp"
+reason = "ecdsa (transitive via python-jose): Minerva timing side-channel. No fixed version exists upstream — python-ecdsa's maintainer has declined to fix it (out of their stated threat model). Can't be resolved by a version bump."
+
+[[IgnoredVulns]]
+id = "GHSA-jr27-m4p2-rc6r"
+reason = "pyasn1 (transitive via python-jose): python-jose[cryptography]==3.4.0 itself pins pyasn1<0.5.0, so the fixed 0.6.x can't be installed without first migrating off python-jose or confirming a newer python-jose release drops that pin."
+[[IgnoredVulns]]
+id = "GHSA-m4p7-r5rc-7g4j"
+reason = "Same pyasn1/python-jose constraint as GHSA-jr27-m4p2-rc6r."
+[[IgnoredVulns]]
+id = "GHSA-8ppf-4f7h-5ppj"
+reason = "Same pyasn1/python-jose constraint as GHSA-jr27-m4p2-rc6r."
+[[IgnoredVulns]]
+id = "GHSA-hm4w-wwcw-mr6r"
+reason = "Same pyasn1/python-jose constraint as GHSA-jr27-m4p2-rc6r."
+
+[[IgnoredVulns]]
+id = "GHSA-86qp-5c8j-p5mr"
+reason = "starlette (transitive via fastapi==0.121.1): fastapi pins a compatible starlette range internally. Bumping starlette standalone to the fixed 1.x line would very likely break FastAPI and needs its own tested PR, not folded into a CI/infra consolidation change."
+[[IgnoredVulns]]
+id = "GHSA-x746-7m8f-x49c"
+reason = "Same starlette/fastapi constraint as GHSA-86qp-5c8j-p5mr."
+[[IgnoredVulns]]
+id = "GHSA-wqp7-x3pw-xc5r"
+reason = "Same starlette/fastapi constraint as GHSA-86qp-5c8j-p5mr."
+[[IgnoredVulns]]
+id = "GHSA-jp82-jpqv-5vv3"
+reason = "Same starlette/fastapi constraint as GHSA-86qp-5c8j-p5mr."
+[[IgnoredVulns]]
+id = "GHSA-82w8-qh3p-5jfq"
+reason = "Same starlette/fastapi constraint as GHSA-86qp-5c8j-p5mr."
+
+[[IgnoredVulns]]
+id = "GHSA-6w46-j5rx-g56g"
+reason = "pytest (transitive via pytest-asyncio/pytest-benchmark, dev/test-only, never shipped to production): bumping to 9.x needs pytest-asyncio 0.23.8 and pytest-benchmark 5.2.3 verified compatible first — separate follow-up, not blocking this infra PR."
