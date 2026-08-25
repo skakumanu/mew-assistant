@@ -78,7 +78,18 @@
       },
       "on": "activado",
       "off": "desactivado"
-    }
+    },
+    "tab_providers": "Proveedores",
+    "providers_intro": "Conecta el calendario que cada proveedor ya usa, para que sus sesiones aparezcan aquí solas.",
+    "no_providers": "Aún no hay proveedores. Añade uno desde la configuración, o vuelve cuando lo hagas.",
+    "calendar_connected": "Conectado vía {provider}.",
+    "calendar_not_connected": "Aún no conectado.",
+    "ics_url_placeholder": "Pega la URL del calendario (.ics)",
+    "connect_ics": "Conectar feed",
+    "connect_google": "Conectar Google Calendar",
+    "sync_now": "Sincronizar ahora",
+    "sync_ok": "Sincronizado. {count} actualizados.",
+    "sync_failed": "No se pudo sincronizar: {error}"
   },
   "kid": {
     "my_day": "Mi día",
