@@ -186,6 +186,63 @@ class TestSetup:
         assert org["calendar_error"]
 
 
+class TestGoogleOAuthCallback:
+    """
+    The callback used to redirect to a legacy page and hand back a JWT whose
+    payload shape the cookie-based auth dependency could not resolve. It now
+    sets the same mew_session cookie /app/sign-in does, with a payload
+    get_current_user can read either way.
+    """
+
+    def _mock_google(self, monkeypatch, email, name="Some Parent"):
+        import app.routers.oauth_simple as oauth_simple
+
+        def handler(request):
+            if request.url.path == "/token":
+                return httpx.Response(
+                    200, json={"access_token": "tok-123", "refresh_token": "refresh-123"}
+                )
+            return httpx.Response(
+                200, json={"email": email, "name": name, "sub": "google-sub-1"}
+            )
+
+        transport = httpx.MockTransport(handler)
+        real_async_client = httpx.AsyncClient
+        monkeypatch.setattr(
+            oauth_simple.httpx,
+            "AsyncClient",
+            lambda *args, **kwargs: real_async_client(transport=transport),
+        )
+
+    def test_a_new_user_gets_a_working_cookie_and_goes_to_the_wizard(self, client, monkeypatch):
+        self._mock_google(monkeypatch, "newparent@example.com")
+
+        response = client.get(
+            "/auth/simple/google/callback", params={"code": "abc123"}, follow_redirects=False
+        )
+
+        assert response.status_code == status.HTTP_303_SEE_OTHER
+        assert response.headers["location"] == "/app/setup"
+        cookie = response.headers["set-cookie"]
+        assert SESSION_COOKIE in cookie
+        assert "HttpOnly" in cookie
+
+        # The cookie the callback set must actually authenticate later calls -
+        # this is the payload-shape bug the fix closes.
+        assert client.get("/rules").status_code == status.HTTP_200_OK
+
+    def test_an_existing_parent_with_a_child_goes_straight_to_the_dashboard(
+        self, client, family, monkeypatch
+    ):
+        self._mock_google(monkeypatch, family["parent"].email, name=family["parent"].display_name)
+
+        response = client.get(
+            "/auth/simple/google/callback", params={"code": "abc123"}, follow_redirects=False
+        )
+
+        assert response.headers["location"] == "/app/parent"
+
+
 class TestSignIn:
     def test_the_form_is_served(self, client):
         response = client.get("/app/sign-in")
@@ -211,11 +268,47 @@ class TestSignIn:
         )
 
         assert response.status_code == status.HTTP_303_SEE_OTHER
-        assert response.headers["location"] == "/app/parent"
+        # No child on file yet, so the wizard - not the empty dashboard - is next.
+        assert response.headers["location"] == "/app/setup"
         cookie = response.headers["set-cookie"]
         assert SESSION_COOKIE in cookie
         assert "HttpOnly" in cookie  # page script must not be able to read it
         assert "samesite=lax" in cookie.lower()
+
+    def test_a_parent_with_no_children_is_sent_to_the_wizard(self, client, db_session):
+        user = User(
+            email="fresh@example.com",
+            username="fresh",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+            is_kid_account=False,
+        )
+        db_session.add(user)
+        db_session.commit()
+
+        response = client.post(
+            "/app/sign-in",
+            data={"email": "fresh@example.com", "password": "password123"},
+            follow_redirects=False,
+        )
+
+        assert response.headers["location"] == "/app/setup"
+
+    def test_a_parent_with_a_child_already_skips_the_wizard(self, client, family):
+        """Regression guard: an established family lands straight on the dashboard."""
+        response = client.post(
+            "/app/sign-in",
+            data={"email": family["parent"].email, "password": "password123"},
+            follow_redirects=False,
+        )
+
+        assert response.headers["location"] == "/app/parent"
+
+    def test_the_wizard_page_is_served(self, client):
+        response = client.get("/app/setup")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "wizard-child-name" in response.text
 
     def test_the_cookie_authenticates_api_calls(self, client, db_session, family):
         client.post(

@@ -4,6 +4,7 @@ No complex libraries - just direct HTTP calls
 """
 
 import logging
+import os
 from urllib.parse import urlencode
 
 import httpx
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..database.connection import get_db
 from ..database.models import FederatedIdentity, User, UserRole
-from ..utils.auth import create_access_token
+from ..utils.auth import ACCESS_TOKEN_EXPIRE_MINUTES, SESSION_COOKIE, create_access_token
 from ..utils.config import settings
 from ..utils.log_sanitizer import sanitize_email, sanitize_user_id
 from .oauth_success_page import get_success_page
@@ -302,19 +303,34 @@ async def google_callback(
 
         logger.info(f"User logged in: {sanitize_email(email)}")
 
-        # Generate JWT token
-        token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
+        # Generate JWT token. sub/user_id match what the mew_session cookie
+        # carries elsewhere (see mew_ui.py's sign_in()) so get_current_user
+        # can resolve this same token whether it arrives as a Bearer header
+        # or as the cookie set below.
+        token_data = {"sub": user.email, "user_id": user.id, "role": user.role.value}
         jwt_token = create_access_token(token_data)
 
-        logger.info(
-            f"Created JWT token for user {sanitize_user_id(user.id)}, redirecting to /calendar with token"
-        )
-        logger.info(f"Token length: {len(jwt_token)}, starts with: {jwt_token[:20]}")
+        logger.info(f"Created JWT token for user {sanitize_user_id(user.id)}")
 
-        # Redirect to calendar page with token in URL
-        redirect_url = f"/calendar?token={jwt_token}&name={user.full_name}"
-        logger.info(f"Redirect URL: {redirect_url[:100]}...")
-        return RedirectResponse(url=redirect_url, status_code=303)
+        has_children = (
+            db.query(User)
+            .filter(User.parent_id == user.id, User.is_kid_account.is_(True))
+            .first()
+            is not None
+        )
+        destination = "/app/parent" if has_children else "/app/setup"
+
+        response = RedirectResponse(url=destination, status_code=303)
+        response.set_cookie(
+            SESSION_COOKIE,
+            jwt_token,
+            httponly=True,
+            samesite="lax",
+            secure=os.getenv("ENVIRONMENT", "development") == "production",
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            path="/",
+        )
+        return response
 
     except HTTPException:
         raise

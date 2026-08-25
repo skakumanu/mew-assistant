@@ -1,0 +1,53 @@
+{% extends "mew/base.html" %}
+{% block title %}{{ t.wizard.title }} · Mew Assistant{% endblock %}
+
+{% block content %}
+<div class="masthead">
+  <div class="wordmark">
+    <span class="mark" aria-hidden="true">m</span>
+    <span class="eyebrow">Mew Assistant</span>
+  </div>
+</div>
+
+<section class="signin" id="wizard-child" aria-labelledby="wizard-child-heading">
+  <h1 id="wizard-child-heading" style="font-size:21px;font-weight:600">{{ t.wizard.child_heading }}</h1>
+  <p class="field-label" style="font-weight:400">{{ t.wizard.child_intro }}</p>
+
+  <p id="wizard-child-error" class="banner banner--waiting" role="alert" hidden></p>
+
+  <label for="wizard-child-name" class="field-label">{{ t.wizard.child_name_label }}</label>
+  <input id="wizard-child-name" type="text" required>
+
+  <label for="wizard-child-age" class="field-label">{{ t.wizard.child_age_label }}</label>
+  <input id="wizard-child-age" type="number" min="0" max="25">
+
+  <button id="wizard-child-continue" class="btn btn--primary" type="button">{{ t.wizard.child_continue }}</button>
+</section>
+
+<section class="signin" id="wizard-provider" aria-labelledby="wizard-provider-heading" hidden>
+  <h1 id="wizard-provider-heading" style="font-size:21px;font-weight:600">{{ t.wizard.provider_heading }}</h1>
+  <p class="field-label" style="font-weight:400">{{ t.wizard.provider_intro }}</p>
+
+  <p id="wizard-provider-error" class="banner banner--waiting" role="alert" hidden></p>
+
+  <label for="wizard-provider-name" class="field-label">{{ t.wizard.provider_name_label }}</label>
+  <input id="wizard-provider-name" type="text">
+
+  <label for="wizard-provider-kind" class="field-label">{{ t.wizard.provider_kind_label }}</label>
+  <select id="wizard-provider-kind">
+    <option value="aba">{{ t.wizard.provider_kind_aba }}</option>
+    <option value="speech">{{ t.wizard.provider_kind_speech }}</option>
+    <option value="ot">{{ t.wizard.provider_kind_ot }}</option>
+    <option value="school">{{ t.wizard.provider_kind_school }}</option>
+    <option value="transport">{{ t.wizard.provider_kind_transport }}</option>
+    <option value="other" selected>{{ t.wizard.provider_kind_other }}</option>
+  </select>
+
+  <button id="wizard-finish" class="btn btn--primary" type="button">{{ t.wizard.finish }}</button>
+  <button id="wizard-skip" class="btn btn--quiet" type="button">{{ t.wizard.skip }}</button>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>Mew.setup.start();</script>
+{% endblock %}
