@@ -76,7 +76,11 @@ async def receive_sms(
         return twiml_response
 
     except Exception:
-        # Return TwiML error response (no logging to prevent any information leakage)
+        # The response to Twilio stays generic (no internals leaked to an
+        # external caller), but the failure itself must not vanish - an
+        # unlogged exception here means an inbound message is dropped with
+        # no operator-visible trail at all.
+        logger.exception("Failed to process incoming message webhook")
         error_twiml = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<Response><Message>Unable to process message</Message></Response>"
@@ -140,7 +144,11 @@ async def receive_whatsapp(
         return twiml_response
 
     except Exception:
-        # Return TwiML error response (no logging to prevent any information leakage)
+        # The response to Twilio stays generic (no internals leaked to an
+        # external caller), but the failure itself must not vanish - an
+        # unlogged exception here means an inbound message is dropped with
+        # no operator-visible trail at all.
+        logger.exception("Failed to process incoming message webhook")
         error_twiml = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<Response><Message>Unable to process message</Message></Response>"
