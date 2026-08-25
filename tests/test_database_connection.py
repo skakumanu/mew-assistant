@@ -12,9 +12,12 @@ takes this code path at all, so nothing caught it before it shipped.
 import asyncio
 from unittest.mock import MagicMock, patch
 
+import pytest
+from sqlalchemy import create_engine
 from sqlalchemy.sql.elements import TextClause
 
 from app.database import connection as connection_module
+from app.database.models import Base
 
 
 class _FakeResult:
@@ -61,3 +64,29 @@ def test_advisory_lock_queries_are_wrapped_in_text(monkeypatch):
         "raises ObjectNotExecutableError for that at runtime, which the "
         "outer except Exception in init_db() swallows as a warning"
     )
+
+
+class TestVerifySchema:
+    """
+    init_db() swallows its own failures on purpose (so a container that
+    boots before the database is reachable doesn't crash forever) - which
+    is exactly what let the text() bug above ship a build that silently ran
+    with zero tables. verify_schema() is the other half of that tradeoff:
+    called right after init_db() in main.py's lifespan, it must raise
+    rather than let the app come up and start serving traffic against a
+    database that was never actually initialized.
+    """
+
+    def test_raises_when_users_table_is_missing(self, monkeypatch):
+        empty_engine = create_engine("sqlite:///:memory:")
+        monkeypatch.setattr(connection_module, "engine", empty_engine)
+
+        with pytest.raises(RuntimeError, match="not initialized"):
+            connection_module.verify_schema()
+
+    def test_passes_once_the_schema_exists(self, monkeypatch):
+        initialized_engine = create_engine("sqlite:///:memory:")
+        Base.metadata.create_all(bind=initialized_engine)
+        monkeypatch.setattr(connection_module, "engine", initialized_engine)
+
+        connection_module.verify_schema()  # must not raise

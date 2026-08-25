@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .database.connection import init_db
+from .database.connection import init_db, verify_schema
 from .middleware import CORSSecurityMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
 from .middleware.bot_protection import BotProtectionMiddleware
 from .routers import landing
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting Mew Assistant...")
     await init_db()
+    verify_schema()
     yield
     logger.info("Shutting down Mew Assistant...")
 

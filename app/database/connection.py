@@ -125,3 +125,27 @@ async def init_db():
     except Exception as e:
         logger.warning(f"Could not initialize database: {e}")
         logger.info("Database tables will be created when connection is available.")
+
+
+def verify_schema() -> None:
+    """
+    Raise if init_db() did not actually create the schema.
+
+    init_db() deliberately swallows its own exceptions so a container that
+    boots before the database is reachable doesn't crash forever - but that
+    tolerance is exactly what let a real bug (SQLAlchemy 2.0 rejecting a raw
+    SQL string) ship a build that silently ran with zero tables for as long
+    as nobody happened to hit an endpoint that queried them. This is the
+    other half of that tradeoff: once init_db() has had its attempt, the
+    core schema must actually exist, or the app should fail to start rather
+    than serve traffic against a database it never initialized.
+    """
+    from sqlalchemy import inspect
+
+    if "users" not in inspect(engine).get_table_names():
+        raise RuntimeError(
+            "Database schema is not initialized (no 'users' table found) - "
+            "init_db() ran but did not create the schema. Check the logs "
+            "above for 'Schema initialization attempt failed' or "
+            "'Could not initialize database'."
+        )
