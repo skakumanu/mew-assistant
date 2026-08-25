@@ -1,0 +1,29 @@
+# fly.toml — Fly.io app configuration for mew-assistant
+# Deploy: flyctl deploy --remote-only
+# Docs: https://fly.io/docs/reference/configuration/
+
+app = 'mew-assistant'
+primary_region = 'iad'
+
+[build]
+  # Uses the existing Dockerfile unchanged
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '10s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

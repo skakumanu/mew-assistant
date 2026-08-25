@@ -2,7 +2,7 @@
 fastapi==0.121.1
 uvicorn[standard]==0.38.0
 pydantic==2.12.4
-pydantic-settings==2.12.0
+pydantic-settings==2.15.0
 
 # Database
 sqlalchemy==2.0.22
@@ -13,10 +13,10 @@ alembic==1.12.0
 python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
 argon2-cffi==23.1.0
-python-multipart==0.0.18
-Authlib==1.6.6
+python-multipart==0.0.32
+Authlib==1.7.2
 httpx==0.28.1
-cryptography==46.0.5
+cryptography==50.0.0
 
 # Google Services
 google-auth==2.40.0
@@ -29,7 +29,7 @@ azure-identity==1.25.1
 azure-keyvault-secrets==4.7.0
 
 # Email
-python-dotenv==1.2.1
+python-dotenv==1.2.3
 email-validator==2.3.0
 
 # Templating (Jinja2Templates in app/routers/mew_ui.py and onboarding.py)
@@ -39,9 +39,9 @@ jinja2==3.1.6
 twilio==9.11.0
 
 # Other
-requests==2.32.4
+requests==2.33.0
 python-dateutil==2.9.0.post0
 pytz==2024.2
-bleach==6.2.0
+bleach==6.4.0
 pytest-asyncio==0.23.8
 pytest-benchmark==5.2.3
