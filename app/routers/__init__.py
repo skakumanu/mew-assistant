@@ -5,6 +5,7 @@ from . import oauth_web
 from .ai_scheduler import router as ai_scheduler_router
 from .auth import router as auth_router
 from .calendar import router as calendar_router
+from .calendar_oauth import router as calendar_oauth_router
 from .calendar_sync import router as calendar_sync_router
 from .calendar_web import router as calendar_web_router
 from .debug_page import router as debug_router
@@ -42,6 +43,7 @@ __all__ = [
     "change_requests_router",
     "provider_router",
     "calendar_sync_router",
+    "calendar_oauth_router",
     "smart_approval_router",
     "notifications_router",
     "onboarding_setup_router",

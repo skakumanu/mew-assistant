@@ -154,6 +154,10 @@
         tab.addEventListener('click', function () { parent.show(tab.dataset.pane); });
       });
       parent.load();
+      // The Google Calendar connect flow redirects back here with
+      // ?tab=providers so the parent lands where they left off.
+      var requested = new URLSearchParams(global.location.search).get('tab');
+      if (requested && requested !== 'inbox') parent.show(requested);
     },
 
     show: function (pane) {
@@ -161,11 +165,12 @@
       Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
         tab.setAttribute('aria-selected', String(tab.dataset.pane === pane));
       });
-      ['inbox', 'week', 'rules'].forEach(function (name) {
+      ['inbox', 'week', 'rules', 'providers'].forEach(function (name) {
         document.getElementById('pane-' + name).hidden = name !== pane;
       });
       if (pane === 'week') parent.loadWeek();
       if (pane === 'rules') parent.loadRules();
+      if (pane === 'providers') parent.loadProviders();
     },
 
     /**
@@ -425,6 +430,78 @@
         ]);
         host.appendChild(button);
       });
+    },
+
+    loadProviders: function () {
+      var host = document.getElementById('parent-providers');
+      api('/calendar-sync/orgs').then(function (orgs) {
+        parent.renderProviders(host, orgs);
+      }).catch(function () { failed(host); });
+    },
+
+    renderProviders: function (host, orgs) {
+      clear(host);
+      if (!orgs.length) {
+        host.appendChild(el('p', { class: 'empty', text: t('parent.no_providers') }));
+        return;
+      }
+      orgs.forEach(function (org) { host.appendChild(parent.providerCard(org)); });
+    },
+
+    providerCard: function (org) {
+      var statusMsg = el('p', { class: 'log-row__meta' });
+
+      var statusText = org.calendar_connected
+        ? t('parent.calendar_connected', { provider: org.calendar_provider })
+        : t('parent.calendar_not_connected');
+
+      var icsInput = el('input', { type: 'text', placeholder: t('parent.ics_url_placeholder') });
+      var connectIcsBtn = el('button', {
+        class: 'btn btn--quiet', type: 'button', text: t('parent.connect_ics'),
+        onclick: function () { parent.connectIcs(org.id, icsInput.value, statusMsg); }
+      });
+
+      var connectGoogleBtn = el('a', {
+        class: 'btn btn--quiet', href: '/calendar-sync/google/connect?org_id=' + org.id,
+        text: t('parent.connect_google')
+      });
+
+      var syncBtn = el('button', {
+        class: 'btn btn--primary', type: 'button', text: t('parent.sync_now'),
+        onclick: function () { parent.syncOrg(org.id, statusMsg); }
+      });
+
+      return el('article', { class: 'provider-card' }, [
+        el('h3', { class: 'provider-card__name', text: org.name }),
+        el('p', { class: 'field-label', text: statusText }),
+        el('div', { class: 'actions' }, [icsInput, connectIcsBtn]),
+        el('div', { class: 'actions' }, [connectGoogleBtn, syncBtn]),
+        statusMsg
+      ]);
+    },
+
+    connectIcs: function (orgId, url, statusMsg) {
+      var trimmed = (url || '').trim();
+      if (!trimmed) return;
+      api('/calendar-sync/orgs/' + orgId + '/calendar', {
+        method: 'PUT', body: { calendar_provider: 'ics', calendar_account_id: trimmed }
+      }).then(function (report) { parent.showSyncReport(statusMsg, report); })
+        .catch(function () { statusMsg.textContent = t('ui.error'); });
+    },
+
+    syncOrg: function (orgId, statusMsg) {
+      statusMsg.textContent = t('ui.loading');
+      api('/calendar-sync/pull?provider_org_id=' + orgId, { method: 'POST' }).then(function (reports) {
+        var report = reports[0];
+        if (!report) { statusMsg.textContent = t('parent.calendar_not_connected'); return; }
+        parent.showSyncReport(statusMsg, report);
+      }).catch(function () { statusMsg.textContent = t('ui.error'); });
+    },
+
+    showSyncReport: function (statusMsg, report) {
+      statusMsg.textContent = report.ok
+        ? t('parent.sync_ok', { count: report.created + report.updated })
+        : t('parent.sync_failed', { error: report.error });
     }
   };
 
