@@ -139,5 +139,27 @@
     "loading": "جارٍ التحميل…",
     "error": "حدث خطأ ما. حاول مرة أخرى.",
     "sign_out": "تسجيل الخروج"
+  },
+  "wizard": {
+    "title": "لنبدأ الإعداد",
+    "child_heading": "أضف طفلك",
+    "child_intro": "فقط اسم للبدء. يمكنك إضافة المزيد من التفاصيل لاحقًا.",
+    "child_name_label": "اسم الطفل",
+    "child_age_label": "العمر (اختياري)",
+    "child_continue": "متابعة",
+    "provider_heading": "أضف مقدّم خدمة",
+    "provider_intro": "اختياري — يمكنك إضافته لاحقًا إن أردت.",
+    "provider_name_label": "اسم مقدّم الخدمة",
+    "provider_kind_label": "النوع",
+    "provider_kind_aba": "علاج ABA",
+    "provider_kind_speech": "علاج النطق",
+    "provider_kind_ot": "العلاج الوظيفي",
+    "provider_kind_school": "المدرسة",
+    "provider_kind_transport": "النقل",
+    "provider_kind_other": "أخرى",
+    "skip": "تخطَّ الآن",
+    "finish": "إضافة وإنهاء",
+    "name_required": "اكتب اسمًا للمتابعة",
+    "saving": "جارٍ الحفظ…"
   }
 }
