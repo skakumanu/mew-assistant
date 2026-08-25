@@ -1,7 +1,6 @@
 """Routers package for API endpoints."""
 
 # from .approval import router as approval_router
-from . import oauth_web
 from .ai_scheduler import router as ai_scheduler_router
 from .auth import router as auth_router
 from .calendar import router as calendar_router
@@ -14,7 +13,7 @@ from .message import router as message_router
 from .mew_ui import router as mew_ui_router
 from .mobile import router as mobile_router
 from .notifications import router as notifications_router
-from .oauth_simple import router as simple_oauth_router
+from .oauth_workos import router as oauth_workos_router
 from .onboarding_setup import router as onboarding_setup_router
 from .parent_approval import parent_router as parent_log_router
 from .parent_approval import router as parent_approval_router
@@ -22,7 +21,6 @@ from .provider import router as provider_router
 from .requests import router as change_requests_router
 from .rules import router as rules_router
 from .session import router as session_router
-from .simple_calendar import router as simple_calendar_router
 from .smart_approval import router as smart_approval_router
 from .summary import router as summary_router
 from .voice import router as voice_router
@@ -50,12 +48,10 @@ __all__ = [
     "mew_ui_router",
     "voice_requests_router",
     "voice_router",
-    "simple_oauth_router",
+    "oauth_workos_router",
     "ai_scheduler_router",
-    "simple_calendar_router",
     "calendar_web_router",
     # "approval_router",
-    "oauth_web",
     "debug_router",
     "webhooks_router",
 ]

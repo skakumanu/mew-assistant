@@ -43,18 +43,15 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None
 
-    # OAuth Providers
+    # WorkOS AuthKit - the parent-facing sign-in flow (app/routers/oauth_workos.py).
+    WORKOS_API_KEY: Optional[str] = None
+    WORKOS_CLIENT_ID: Optional[str] = None
+
+    # Google Calendar (app/routers/calendar_oauth.py's read-access grant
+    # only - a separate concern from sign-in, and a separate app
+    # registration from anything WorkOS manages itself).
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
-    MICROSOFT_CLIENT_ID: Optional[str] = None
-    MICROSOFT_CLIENT_SECRET: Optional[str] = None
-    APPLE_CLIENT_ID: Optional[str] = None
-    APPLE_TEAM_ID: Optional[str] = None
-    APPLE_KEY_ID: Optional[str] = None
-    APPLE_PRIVATE_KEY: Optional[str] = None
-    FACEBOOK_CLIENT_ID: Optional[str] = None
-    FACEBOOK_CLIENT_SECRET: Optional[str] = None
-    OAUTH_REDIRECT_URL: Optional[str] = None
     BASE_URL: str = "http://localhost:8888"
 
     # Application
