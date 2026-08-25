@@ -125,14 +125,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         except SecurityViolationError as se:
             # Log full details internally, return generic message to client
-            logger.warning(f"Security violation: {str(se)}")
+            logger.warning("Security violation", extra={"extra_data": {"detail": str(se)}})
             return JSONResponse(status_code=403, content={"detail": "Access forbidden"})
         except RateLimitExceeded as rexc:
             # Log full details internally, return generic message to client
-            logger.warning(f"Rate limit exceeded: {str(rexc)}")
+            logger.warning("Rate limit exceeded", extra={"extra_data": {"detail": str(rexc)}})
             return JSONResponse(status_code=429, content={"detail": "Too many requests"})
         except Exception as exc:
-            logger.exception("Unexpected error in security middleware: %s", exc)
+            logger.exception(
+                "Unexpected error in security middleware",
+                extra={"extra_data": {"error": str(exc)}},
+            )
             return JSONResponse(status_code=500, content={"detail": "Internal security error"})
 
         # 6. Add security headers
@@ -206,7 +209,10 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Check if rate limit exceeded
         request_count = len(self.request_counts[client_ip][path])
         if request_count >= rate_limit:
-            logger.warning(f"Rate limit exceeded for {client_ip} on {path}")
+            logger.warning(
+                "Rate limit exceeded",
+                extra={"extra_data": {"client_ip": client_ip, "path": path}},
+            )
             raise RateLimitExceeded(
                 f"Rate limit exceeded. Maximum {rate_limit} requests per minute allowed."
             )
@@ -222,7 +228,15 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if content_length:
             size_mb = int(content_length) / (1024 * 1024)
             if size_mb > 10:  # 10 MB limit
-                logger.warning(f"Large request blocked: {size_mb:.2f}MB from {request.client.host}")
+                logger.warning(
+                    "Large request blocked",
+                    extra={
+                        "extra_data": {
+                            "size_mb": round(size_mb, 2),
+                            "client_ip": request.client.host,
+                        }
+                    },
+                )
                 raise SecurityViolationError("Request payload too large. Maximum 10MB allowed.")
 
     async def _scan_request(self, request: Request):
@@ -233,12 +247,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         query_string = urllib.parse.unquote_plus(str(request.url.query))
         for pattern in self.DANGEROUS_PATTERNS:
             if pattern.search(query_string):
-                logger.error(f"Malicious pattern detected in query: {query_string}")
+                logger.error(
+                    "Malicious pattern detected in query",
+                    extra={"extra_data": {"query": query_string}},
+                )
                 raise SecurityViolationError("Potentially malicious request detected")
 
         # Additional XSS heuristics (e.g., event handlers like onerror)
         if XSSPrevention.contains_xss(query_string):
-            logger.error(f"XSS pattern detected in query: {query_string}")
+            logger.error(
+                "XSS pattern detected in query", extra={"extra_data": {"query": query_string}}
+            )
             raise SecurityViolationError("Potentially malicious request detected")
 
         # Additional SQLi heuristics (cover encoded payloads/tautologies)
@@ -248,12 +267,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         except Exception:
             sqli_match = False
         if sqli_match:
-            logger.error(f"SQL injection heuristics matched in query: {query_string}")
+            logger.error(
+                "SQL injection heuristics matched in query",
+                extra={"extra_data": {"query": query_string}},
+            )
             raise SecurityViolationError("Potentially malicious request detected")
 
         # Check for PII in URL (should never be in URL)
         if PIIDetector.contains_pii(query_string):
-            logger.error(f"PII detected in URL query string from {request.client.host}")
+            logger.error(
+                "PII detected in URL query string",
+                extra={"extra_data": {"client_ip": request.client.host}},
+            )
             raise SecurityViolationError("Sensitive data should not be sent in URL")
 
         # Scan headers
@@ -263,13 +288,21 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 # Still run simple dangerous-pattern matches (e.g., explicit script tags)
                 for pattern in self.DANGEROUS_PATTERNS:
                     if pattern.search(str(header_value)):
-                        logger.error(f"Malicious pattern in header {header_name}: {header_value}")
+                        logger.error(
+                            "Malicious pattern in header",
+                            extra={
+                                "extra_data": {"header": header_name, "value": str(header_value)}
+                            },
+                        )
                         raise SecurityViolationError("Potentially malicious request detected")
                 continue
 
             for pattern in self.DANGEROUS_PATTERNS:
                 if pattern.search(str(header_value)):
-                    logger.error(f"Malicious pattern in header {header_name}: {header_value}")
+                    logger.error(
+                        "Malicious pattern in header",
+                        extra={"extra_data": {"header": header_name, "value": str(header_value)}},
+                    )
                     raise SecurityViolationError("Potentially malicious request detected")
 
             # Also run SQLi heuristics against header values for non-whitelisted headers
@@ -280,7 +313,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 header_sqli = False
             if header_sqli:
                 logger.error(
-                    f"SQL injection heuristics matched in header {header_name}: {header_value}"
+                    "SQL injection heuristics matched in header",
+                    extra={"extra_data": {"header": header_name, "value": str(header_value)}},
                 )
                 raise SecurityViolationError("Potentially malicious request detected")
 
@@ -310,7 +344,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         csrf_token = request.headers.get("X-CSRF-Token")
         if not csrf_token:
-            logger.warning(f"Missing CSRF token from {request.client.host}")
+            logger.warning(
+                "Missing CSRF token", extra={"extra_data": {"client_ip": request.client.host}}
+            )
             raise SecurityViolationError("CSRF token required for this operation")
 
         # In production, verify token against session
@@ -513,7 +549,10 @@ class SQLInjectionPrevention:
         Validate input doesn't contain SQL injection
         """
         if cls.is_sql_injection_attempt(text):
-            logger.error(f"SQL injection attempt detected in {field_name}: {text[:100]}")
+            logger.error(
+                "SQL injection attempt detected",
+                extra={"extra_data": {"field": field_name, "sample": text[:100]}},
+            )
             raise SecurityViolationError(f"Invalid input for {field_name}")
 
         return text
@@ -554,6 +593,8 @@ class XSSPrevention:
         Remove XSS vectors from text
         """
         if cls.contains_xss(text):
-            logger.warning(f"XSS attempt detected and sanitized: {text[:100]}")
+            logger.warning(
+                "XSS attempt detected and sanitized", extra={"extra_data": {"sample": text[:100]}}
+            )
             return InputSanitizer.sanitize_html(text)
         return text

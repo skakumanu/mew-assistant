@@ -123,7 +123,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
             # Return JSON response for compliance violations (tests expect HTTP 403)
             import json
 
-            logger.warning(f"Compliance violation: {exc}")
+            logger.warning("Compliance violation", extra={"extra_data": {"detail": str(exc)}})
             body = json.dumps({"detail": str(exc)})
             return Response(content=body, status_code=403, media_type="application/json")
 
@@ -140,7 +140,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
             )
 
             if not consent_header or consent_header != "true":
-                logger.warning(f"Missing consent for {request.url.path}")
+                logger.warning("Missing consent", extra={"extra_data": {"path": request.url.path}})
                 # Include the consent key in the error message so callers/tests can assert on it
                 raise ComplianceViolationError(
                     "Missing required consent: data_processing (Agreement to process data with AI/ML models)"
@@ -155,7 +155,9 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
         if request.method == "DELETE":
             retention_override = request.headers.get("X-Retention-Override")
             if not retention_override:
-                logger.info(f"Data deletion requested for {request.url.path}")
+                logger.info(
+                    "Data deletion requested", extra={"extra_data": {"path": request.url.path}}
+                )
 
     def _requires_audit(self, path: str) -> bool:
         """
@@ -194,7 +196,7 @@ class ComplianceMiddleware(BaseHTTPMiddleware):
             audit_entry["duration_seconds"] = duration
 
         # Log to secure audit log (should be sent to SIEM in production)
-        logger.info(f"AUDIT: {audit_entry}")
+        logger.info("AUDIT", extra={"extra_data": audit_entry})
 
     @staticmethod
     def _anonymize_ip(ip: str) -> str:
@@ -252,7 +254,10 @@ class DataMinimizationGuard:
 
         removed_fields = set(data.keys()) - set(filtered_data.keys())
         if removed_fields:
-            logger.warning(f"Removed unauthorized fields: {removed_fields}")
+            logger.warning(
+                "Removed unauthorized fields",
+                extra={"extra_data": {"fields": sorted(removed_fields)}},
+            )
 
         return filtered_data
 
