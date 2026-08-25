@@ -22,7 +22,7 @@ jobs:
           fi
           echo "Current branch: $BRANCH"
           
-          if [[ "$BRANCH" =~ ^(main|develop|feature/.+|release/.+|hotfix/.+)$ ]]; then
+          if [[ "$BRANCH" =~ ^(main|develop|feature/.+|release/.+|hotfix/.+|ci/.+)$ ]]; then
             echo "✅ Valid GitFlow branch name"
           else
             echo "❌ Invalid branch name. Must follow GitFlow conventions:"
@@ -30,5 +30,6 @@ jobs:
             echo "  - feature/* (for features)"
             echo "  - release/* (for releases)"
             echo "  - hotfix/* (for hotfixes)"
+            echo "  - ci/* (for automated workflow branches, e.g. sync-develop.yml)"
             exit 1
           fi
