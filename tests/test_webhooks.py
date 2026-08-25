@@ -162,6 +162,59 @@ class TestWebhookSignatureGate:
         assert mocked.call_args.kwargs["profile_name"] == "Dana"
 
 
+class TestWebhookFailureIsLogged:
+    """
+    A processing failure must still return the generic TwiML Twilio expects
+    (never leak internals to an external caller) - but it must not vanish
+    with zero trace. It used to: `except Exception: return error_twiml` with
+    no logging at all, so a broken message pipeline would silently drop
+    every inbound SMS/WhatsApp message with no operator-visible sign.
+    """
+
+    def test_sms_failure_is_logged_not_swallowed(self, client, caplog):
+        params = {"MessageSid": "SM1", "From": "+15550001111", "To": "+15550002222", "Body": "hi"}
+        with patch("app.utils.twilio_signature.settings.TWILIO_AUTH_TOKEN", AUTH_TOKEN):
+            sig = _sign("http://testserver/webhooks/sms/incoming", params)
+            with patch(
+                "app.services.message_service.MessageService.process_incoming_message",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("db is down"),
+            ):
+                with caplog.at_level("ERROR"):
+                    resp = client.post(
+                        "/webhooks/sms/incoming",
+                        data=params,
+                        headers={"X-Twilio-Signature": sig},
+                    )
+        assert resp.status_code == 200
+        assert "Unable to process message" in resp.text
+        assert any("Failed to process incoming message webhook" in r.message for r in caplog.records)
+
+    def test_whatsapp_failure_is_logged_not_swallowed(self, client, caplog):
+        params = {
+            "MessageSid": "SM2",
+            "From": "whatsapp:+15550001111",
+            "To": "whatsapp:+15550002222",
+            "Body": "hi",
+        }
+        with patch("app.utils.twilio_signature.settings.TWILIO_AUTH_TOKEN", AUTH_TOKEN):
+            sig = _sign("http://testserver/webhooks/whatsapp/incoming", params)
+            with patch(
+                "app.services.message_service.MessageService.process_incoming_message",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("db is down"),
+            ):
+                with caplog.at_level("ERROR"):
+                    resp = client.post(
+                        "/webhooks/whatsapp/incoming",
+                        data=params,
+                        headers={"X-Twilio-Signature": sig},
+                    )
+        assert resp.status_code == 200
+        assert "Unable to process message" in resp.text
+        assert any("Failed to process incoming message webhook" in r.message for r in caplog.records)
+
+
 class TestWebhookUnauthenticatedEndpoints:
     """Status callbacks and health checks don't feed message processing."""
 
