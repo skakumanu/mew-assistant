@@ -733,5 +733,61 @@
     }
   };
 
-  global.Mew = { t: t, api: api, parent: parent, kid: kid, provider: provider, announce: announce };
+  // ------------------------------------------------------------- setup
+
+  var setup = {
+    state: { child: null },
+
+    start: function () {
+      document.getElementById('wizard-child-continue').addEventListener('click', setup.continueToProvider);
+      document.getElementById('wizard-finish').addEventListener('click', function () { setup.submit(false); });
+      document.getElementById('wizard-skip').addEventListener('click', function () { setup.submit(true); });
+    },
+
+    continueToProvider: function () {
+      var name = document.getElementById('wizard-child-name').value.trim();
+      var errorNode = document.getElementById('wizard-child-error');
+      if (!name) {
+        errorNode.textContent = t('wizard.name_required');
+        errorNode.hidden = false;
+        return;
+      }
+      errorNode.hidden = true;
+
+      var ageValue = document.getElementById('wizard-child-age').value;
+      setup.state.child = { display_name: name };
+      if (ageValue !== '') setup.state.child.age = Number(ageValue);
+
+      document.getElementById('wizard-child').hidden = true;
+      document.getElementById('wizard-provider').hidden = false;
+      document.getElementById('wizard-provider-name').focus();
+    },
+
+    /** Skipping and finishing both save the child; only the provider list differs. */
+    submit: function (skipProvider) {
+      var payload = { child: setup.state.child, providers: [] };
+
+      if (!skipProvider) {
+        var providerName = document.getElementById('wizard-provider-name').value.trim();
+        if (providerName) {
+          payload.providers.push({
+            name: providerName,
+            kind: document.getElementById('wizard-provider-kind').value
+          });
+        }
+      }
+
+      var errorNode = document.getElementById('wizard-provider-error');
+      errorNode.hidden = true;
+
+      api('/onboarding/setup', { method: 'POST', body: payload }).then(function (result) {
+        global.location.href = result.caregiver_screen || '/app/parent';
+      }).catch(function () {
+        errorNode.textContent = t('ui.error');
+        errorNode.hidden = false;
+      });
+    }
+  };
+
+  global.Mew = { t: t, api: api, parent: parent, kid: kid, provider: provider, setup: setup, announce: announce };
 })(window);
