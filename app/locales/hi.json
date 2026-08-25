@@ -139,5 +139,27 @@
     "loading": "लोड हो रहा है…",
     "error": "कुछ गड़बड़ हुई। फिर कोशिश करें।",
     "sign_out": "साइन आउट"
+  },
+  "wizard": {
+    "title": "चलिए सेट अप करते हैं",
+    "child_heading": "अपने बच्चे को जोड़ें",
+    "child_intro": "शुरुआत के लिए बस एक नाम चाहिए। बाकी विवरण आप कभी भी जोड़ सकते हैं।",
+    "child_name_label": "बच्चे का नाम",
+    "child_age_label": "उम्र (वैकल्पिक)",
+    "child_continue": "जारी रखें",
+    "provider_heading": "एक प्रदाता जोड़ें",
+    "provider_intro": "वैकल्पिक — आप इसे बाद में भी जोड़ सकते हैं।",
+    "provider_name_label": "प्रदाता का नाम",
+    "provider_kind_label": "प्रकार",
+    "provider_kind_aba": "एबीए थेरेपी",
+    "provider_kind_speech": "स्पीच थेरेपी",
+    "provider_kind_ot": "ऑक्यूपेशनल थेरेपी",
+    "provider_kind_school": "स्कूल",
+    "provider_kind_transport": "परिवहन",
+    "provider_kind_other": "अन्य",
+    "skip": "अभी के लिए छोड़ें",
+    "finish": "जोड़ें और समाप्त करें",
+    "name_required": "जारी रखने के लिए एक नाम लिखें",
+    "saving": "सहेजा जा रहा है…"
   }
 }

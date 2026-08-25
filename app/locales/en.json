@@ -139,5 +139,27 @@
     "loading": "Loading…",
     "error": "Something went wrong. Try again.",
     "sign_out": "Sign out"
+  },
+  "wizard": {
+    "title": "Let's get set up",
+    "child_heading": "Add your child",
+    "child_intro": "Just a name to start. You can add more detail any time.",
+    "child_name_label": "Child's name",
+    "child_age_label": "Age (optional)",
+    "child_continue": "Continue",
+    "provider_heading": "Add a provider",
+    "provider_intro": "Optional — add this later if you'd rather.",
+    "provider_name_label": "Provider name",
+    "provider_kind_label": "Type",
+    "provider_kind_aba": "ABA therapy",
+    "provider_kind_speech": "Speech therapy",
+    "provider_kind_ot": "Occupational therapy",
+    "provider_kind_school": "School",
+    "provider_kind_transport": "Transport",
+    "provider_kind_other": "Other",
+    "skip": "Skip for now",
+    "finish": "Add and finish",
+    "name_required": "Enter a name to continue",
+    "saving": "Saving…"
   }
 }

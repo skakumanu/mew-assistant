@@ -18,7 +18,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
-from ..database.models import DEFAULT_CAREGIVER_TERM
+from ..database.models import DEFAULT_CAREGIVER_TERM, User
 from ..utils.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SESSION_COOKIE,
@@ -75,6 +75,19 @@ async def parent_screen(
             display_name=name or translator.caregiver(term),
         ),
     )
+
+
+@router.get("/setup", response_class=HTMLResponse)
+async def setup_wizard_screen(request: Request, db: DbSession = Depends(get_db)):
+    """
+    First-run wizard: add a child, optionally a provider.
+
+    Same "static shell, client script does the rest" pattern as the other
+    screens - the page renders unconditionally and mew.js's requireSignIn()
+    redirects to sign-in if the session cookie is missing or expired.
+    """
+    translator = translator_for(request.headers.get("accept-language"), None, db)
+    return templates.TemplateResponse("mew/setup_wizard.html", _context(request, translator))
 
 
 @router.get("/kid", response_class=HTMLResponse)
@@ -150,6 +163,18 @@ async def sign_in(
             url=f"/app/sign-in?next={destination}&error=1",
             status_code=status.HTTP_303_SEE_OTHER,
         )
+
+    # A caregiver with no child on file yet can't do anything useful on the
+    # screens they'd otherwise land on - send them to add one first.
+    if not user.is_kid_account and destination == "/app/parent":
+        has_children = (
+            db.query(User)
+            .filter(User.parent_id == user.id, User.is_kid_account.is_(True))
+            .first()
+            is not None
+        )
+        if not has_children:
+            destination = "/app/setup"
 
     token = create_access_token({"sub": user.email, "user_id": user.id})
     response = RedirectResponse(url=destination, status_code=status.HTTP_303_SEE_OTHER)
