@@ -18,6 +18,13 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql://mew_user:mew_password@localhost:5432/mew_assistant"
 )
 
+# Fly Postgres (and Heroku, and others) hand out DATABASE_URL with the
+# postgres:// scheme, which SQLAlchemy 1.4+ no longer recognizes as a
+# dialect - it needs postgresql://. Normalize rather than requiring every
+# deployment target to hand-edit the secret to match.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Create engine with connection pooling
 # For SQLite, use different settings
 if DATABASE_URL.startswith("sqlite"):
