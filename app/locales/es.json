@@ -139,5 +139,27 @@
     "loading": "Cargando…",
     "error": "Algo salió mal. Inténtalo de nuevo.",
     "sign_out": "Cerrar sesión"
+  },
+  "wizard": {
+    "title": "Vamos a configurar todo",
+    "child_heading": "Añade a tu hijo/a",
+    "child_intro": "Solo un nombre para empezar. Puedes añadir más detalles cuando quieras.",
+    "child_name_label": "Nombre del niño/a",
+    "child_age_label": "Edad (opcional)",
+    "child_continue": "Continuar",
+    "provider_heading": "Añade un proveedor",
+    "provider_intro": "Opcional — puedes añadirlo más tarde si lo prefieres.",
+    "provider_name_label": "Nombre del proveedor",
+    "provider_kind_label": "Tipo",
+    "provider_kind_aba": "Terapia ABA",
+    "provider_kind_speech": "Terapia del habla",
+    "provider_kind_ot": "Terapia ocupacional",
+    "provider_kind_school": "Escuela",
+    "provider_kind_transport": "Transporte",
+    "provider_kind_other": "Otro",
+    "skip": "Omitir por ahora",
+    "finish": "Añadir y terminar",
+    "name_required": "Escribe un nombre para continuar",
+    "saving": "Guardando…"
   }
 }
