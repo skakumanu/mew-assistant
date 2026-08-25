@@ -6,7 +6,7 @@ Handles connection pooling and session lifecycle.
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -99,7 +99,9 @@ async def init_db():
                     import time
 
                     for _ in range(5):
-                        res = conn.execute("SELECT pg_try_advisory_lock(436901387)").scalar()
+                        res = conn.execute(
+                            text("SELECT pg_try_advisory_lock(436901387)")
+                        ).scalar()
                         if res:
                             acquired = True
                             break
@@ -111,7 +113,7 @@ async def init_db():
                         try:
                             ModelsBase.metadata.create_all(bind=engine)
                         finally:
-                            conn.execute("SELECT pg_advisory_unlock(436901387)")
+                            conn.execute(text("SELECT pg_advisory_unlock(436901387)"))
                         logger.info("Database tables created successfully (with advisory lock)")
             except Exception as ex:
                 logger.warning(f"Schema initialization attempt failed: {ex}")
