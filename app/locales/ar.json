@@ -78,7 +78,18 @@
       },
       "on": "مُفعّل",
       "off": "مُعطّل"
-    }
+    },
+    "tab_providers": "مقدّمو الخدمة",
+    "providers_intro": "اربط التقويم الذي يستخدمه كل مقدّم خدمة بالفعل، لتظهر جلساته هنا تلقائيًا.",
+    "no_providers": "لا يوجد مقدّمو خدمة بعد. أضف واحدًا من الإعداد، أو عد بعد إضافته.",
+    "calendar_connected": "متصل عبر {provider}.",
+    "calendar_not_connected": "غير متصل بعد.",
+    "ics_url_placeholder": "الصق رابط تقويم (.ics)",
+    "connect_ics": "ربط الخلاصة",
+    "connect_google": "ربط تقويم Google",
+    "sync_now": "مزامنة الآن",
+    "sync_ok": "تمت المزامنة. تم تحديث {count}.",
+    "sync_failed": "تعذّرت المزامنة: {error}"
   },
   "kid": {
     "my_day": "يومي",

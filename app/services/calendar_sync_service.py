@@ -29,6 +29,7 @@ from ..database.models import (
     ChangeKind,
     OAuthProvider,
     ProviderOrg,
+    ProviderOrgConnection,
     ScheduledSession,
     SessionSource,
 )
@@ -101,19 +102,22 @@ class CalendarSyncService:
         self, org: ProviderOrg, calendar_id: str
     ) -> Optional[GoogleCalendarAdapter]:
         """
-        Google needs a person's token, so find someone in this org who granted
-        one. Any active member's link will do: the calendar is the org's, and
-        whoever connected it authorised exactly that.
+        Google needs a person's token - specifically, whoever granted Mew
+        access to read this calendar. That is recorded on
+        ``ProviderOrgConnection.connected_by_user_id`` when a family
+        connects Google Calendar for this org; it is deliberately NOT
+        ``ProviderPerson.user_id``, which means something else entirely (a
+        real clinic staff member's own login) and is trusted elsewhere
+        (provider.py, change_request_service.py) to grant that org's whole
+        roster and session list - a parent's own connection must never
+        satisfy that check.
         """
-        from ..database.models import ProviderPerson
-
         user_ids = [
-            person.user_id
-            for person in self.db.query(ProviderPerson)
+            row.connected_by_user_id
+            for row in self.db.query(ProviderOrgConnection)
             .filter(
-                ProviderPerson.org_id == org.id,
-                ProviderPerson.is_active.is_(True),
-                ProviderPerson.user_id.isnot(None),
+                ProviderOrgConnection.org_id == org.id,
+                ProviderOrgConnection.connected_by_user_id.isnot(None),
             )
             .all()
         ]

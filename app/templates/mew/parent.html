@@ -25,6 +25,8 @@
               aria-controls="pane-week" data-pane="week">{{ t.parent.tab_week }}</button>
       <button class="tab" role="tab" id="tab-rules" aria-selected="false"
               aria-controls="pane-rules" data-pane="rules">{{ t.parent.tab_rules }}</button>
+      <button class="tab" role="tab" id="tab-providers" aria-selected="false"
+              aria-controls="pane-providers" data-pane="providers">{{ t.parent.tab_providers }}</button>
     </div>
 
     <div class="panel__scroll">
@@ -39,6 +41,11 @@
       <div id="pane-rules" role="tabpanel" aria-labelledby="tab-rules" hidden>
         <p class="lede" style="font-size:14px">{{ t.parent.rules_intro }}</p>
         <div id="parent-rules"></div>
+      </div>
+
+      <div id="pane-providers" role="tabpanel" aria-labelledby="tab-providers" hidden>
+        <p class="lede" style="font-size:14px">{{ t.parent.providers_intro }}</p>
+        <div id="parent-providers"></div>
       </div>
     </div>
   </section>

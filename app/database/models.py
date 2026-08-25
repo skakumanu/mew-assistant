@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     Time,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -773,6 +774,39 @@ class ProviderOrg(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     people = relationship("ProviderPerson", back_populates="org", cascade="all, delete-orphan")
+
+
+class ProviderOrgConnection(Base):
+    """
+    A family's own link to a provider organisation.
+
+    ``ProviderOrg`` is global (matched by name, not per-family), so this is
+    the only record of which family actually cares about a given org. It
+    also carries the token-lookup key for a Google-connected calendar:
+    ``connected_by_user_id`` is deliberately its own column, distinct from
+    ``ProviderPerson.user_id``, which means something else entirely (a real
+    clinic staff member's own login) and must not be repurposed - two other
+    authorisation checks (provider.py, change_request_service.py) already
+    trust "has a ProviderPerson row on this org" to mean "is this org's
+    staff", and a parent's own connection here must never satisfy that.
+    """
+
+    __tablename__ = "provider_org_connections"
+    __table_args__ = (
+        UniqueConstraint("org_id", "parent_id", name="uq_provider_org_connection"),
+        {"extend_existing": True},
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("provider_orgs.id"), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # Who authorised Google access for this connection, if any - used to
+    # find the token in OAuthProvider. Usually equals parent_id; kept
+    # separate in case that ever changes (e.g. a co-parent connects it).
+    connected_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class ProviderPerson(Base):

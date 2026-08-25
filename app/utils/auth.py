@@ -142,6 +142,45 @@ def create_refresh_token(data: dict) -> str:
     return encoded_jwt
 
 
+CALENDAR_CONNECT_STATE_TYPE = "calendar_connect"
+CALENDAR_CONNECT_STATE_EXPIRE_MINUTES = 10
+
+
+def create_calendar_connect_state(user_id: int, org_id: int) -> str:
+    """
+    Sign a short-lived ``state`` value for the Google Calendar connect
+    flow (``app/routers/calendar_oauth.py``).
+
+    This is NOT ``create_access_token``: that always stamps ``type:
+    "access"``, which would make a state value - sitting in a URL, visible
+    in browser history, referrer headers and Google's own logs - a fully
+    valid Bearer token for anything in the app if it ever leaked. This
+    token's own ``type`` makes it something ``get_current_user`` already
+    refuses to accept.
+    """
+    to_encode = {
+        "user_id": user_id,
+        "org_id": org_id,
+        "type": CALENDAR_CONNECT_STATE_TYPE,
+        "exp": datetime.utcnow() + timedelta(minutes=CALENDAR_CONNECT_STATE_EXPIRE_MINUTES),
+    }
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_calendar_connect_state(token: str) -> dict:
+    """Decode a calendar-connect state value, rejecting anything else."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="This connection link has expired")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid connection link")
+
+    if payload.get("type") != CALENDAR_CONNECT_STATE_TYPE:
+        raise HTTPException(status_code=400, detail="Invalid connection link")
+    return payload
+
+
 def decode_token(token: str) -> dict:
     """
     Decode and validate JWT token.

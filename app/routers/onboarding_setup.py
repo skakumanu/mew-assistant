@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
 from ..database.models import ProviderOrg, ProviderPerson, User
+from ..routers.calendar_sync import _upsert_connection
 from ..schemas.change_request import RuleSetUpdate
 from ..services.calendar_sync_service import CalendarSyncService
 from ..services.ruleset_service import RuleSetService
@@ -109,6 +110,8 @@ async def set_up_family(
 
     for spec in payload.providers:
         org = _upsert_org(db, spec)
+        _upsert_connection(db, org_id=org.id, parent_id=current_user.id)
+        db.commit()
         people = _upsert_people(db, org, spec.people)
 
         report = SetupOrgOut(

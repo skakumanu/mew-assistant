@@ -78,7 +78,18 @@
       },
       "on": "on",
       "off": "off"
-    }
+    },
+    "tab_providers": "Providers",
+    "providers_intro": "Connect the calendar each provider already keeps, so their sessions show up here on their own.",
+    "no_providers": "No providers yet. Add one from setup, or come back once you have.",
+    "calendar_connected": "Connected via {provider}.",
+    "calendar_not_connected": "Not connected yet.",
+    "ics_url_placeholder": "Paste a calendar feed URL (.ics)",
+    "connect_ics": "Connect feed",
+    "connect_google": "Connect Google Calendar",
+    "sync_now": "Sync now",
+    "sync_ok": "Synced. {count} updated.",
+    "sync_failed": "Couldn't sync: {error}"
   },
   "kid": {
     "my_day": "My day",

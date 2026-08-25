@@ -8,7 +8,13 @@ take an email and a password like anything else, rather than a pasted token.
 import httpx
 from fastapi import status
 
-from app.database.models import ProviderPerson, RuleSet, ScheduledSession, User
+from app.database.models import (
+    ProviderOrgConnection,
+    ProviderPerson,
+    RuleSet,
+    ScheduledSession,
+    User,
+)
 from app.utils.auth import SESSION_COOKIE, get_password_hash
 
 from .conftest import _auth
@@ -73,6 +79,34 @@ class TestSetup:
         assert [p["display_name"] for p in org["people"]] == ["Marcus L."]
 
         assert db_session.query(ScheduledSession).count() == 1
+
+    def test_setup_records_this_familys_ownership_of_the_provider(
+        self, client, db_session, family
+    ):
+        """
+        So the new Providers tab (GET /calendar-sync/orgs) can show what
+        this family actually added, without ProviderOrg's global naming
+        leaking another family's providers into the list.
+        """
+        body = client.post(
+            "/onboarding/setup",
+            json={
+                "child": {"display_name": "Ellie"},
+                "providers": [{"name": "Willow Speech", "kind": "speech"}],
+            },
+            headers=_auth(family["parent"]),
+        ).json()
+
+        org_id = body["providers"][0]["id"]
+        connection = (
+            db_session.query(ProviderOrgConnection)
+            .filter(
+                ProviderOrgConnection.org_id == org_id,
+                ProviderOrgConnection.parent_id == family["parent"].id,
+            )
+            .one()
+        )
+        assert connection is not None
 
     def test_rules_can_be_set_during_setup(self, client, db_session, family):
         response = client.post(

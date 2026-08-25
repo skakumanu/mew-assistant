@@ -78,7 +78,18 @@
       },
       "on": "चालू",
       "off": "बंद"
-    }
+    },
+    "tab_providers": "प्रदाता",
+    "providers_intro": "हर प्रदाता जो कैलेंडर पहले से रखता है उसे जोड़ें, ताकि उनके सत्र यहाँ अपने आप दिखें।",
+    "no_providers": "अभी कोई प्रदाता नहीं है। सेटअप से एक जोड़ें, या जोड़ने के बाद वापस आएं।",
+    "calendar_connected": "{provider} के ज़रिए जुड़ा हुआ है।",
+    "calendar_not_connected": "अभी तक नहीं जुड़ा।",
+    "ics_url_placeholder": "कैलेंडर फ़ीड URL पेस्ट करें (.ics)",
+    "connect_ics": "फ़ीड जोड़ें",
+    "connect_google": "Google कैलेंडर जोड़ें",
+    "sync_now": "अभी सिंक करें",
+    "sync_ok": "सिंक हो गया। {count} अपडेट हुए।",
+    "sync_failed": "सिंक नहीं हो सका: {error}"
   },
   "kid": {
     "my_day": "मेरा दिन",
