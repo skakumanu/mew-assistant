@@ -8,23 +8,17 @@ the client never assembles a sentence by concatenation.
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
-from ..database.models import DEFAULT_CAREGIVER_TERM, User
-from ..utils.auth import (
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    SESSION_COOKIE,
-    authenticate_user,
-    create_access_token,
-)
+from ..database.models import DEFAULT_CAREGIVER_TERM
+from ..utils.auth import SESSION_COOKIE
 from ..utils.locale import Translator
 from ..utils.locale_context import translator_for
 
@@ -120,9 +114,11 @@ async def provider_screen(
 # ---------------------------------------------------------------------------
 # Signing in
 #
-# The screens used to want a bearer token pasted into a box. They now take an
-# email and a password like anything else, and keep the session in an
-# HttpOnly cookie that page script cannot read.
+# WorkOS AuthKit is the front door - its hosted UI is where a parent
+# actually enters a password, picks Google/Microsoft/Apple, or gets a
+# passwordless email code. This screen only ever renders when that flow
+# itself failed (an ?error=1 bounce-back); otherwise it redirects straight
+# to app/routers/oauth_workos.py before anything is shown.
 # ---------------------------------------------------------------------------
 
 
@@ -133,61 +129,17 @@ async def sign_in_screen(
     error: Optional[str] = None,
     db: DbSession = Depends(get_db),
 ):
-    """The sign-in form."""
-    translator = translator_for(request.headers.get("accept-language"), None, db)
-    return templates.TemplateResponse(
-        "mew/sign_in.html",
-        _context(request, translator, next_path=_safe_next(next), error=error),
-    )
-
-
-@router.post("/sign-in")
-async def sign_in(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...),
-    next: str = Form("/app/parent"),
-    db: DbSession = Depends(get_db),
-):
-    """
-    Authenticate and set the session cookie.
-
-    A failure says only that the pair did not match: which half was wrong is
-    not the signer-in's business to learn, and telling them enumerates
-    accounts for everybody else.
-    """
-    destination = _safe_next(next)
-    user = authenticate_user(db, email, password)
-    if user is None or not user.is_active:
-        return RedirectResponse(
-            url=f"/app/sign-in?next={destination}&error=1",
-            status_code=status.HTTP_303_SEE_OTHER,
+    """Send the browser straight to WorkOS, unless it just bounced back with an error."""
+    if error:
+        translator = translator_for(request.headers.get("accept-language"), None, db)
+        return templates.TemplateResponse(
+            "mew/sign_in.html",
+            _context(request, translator, next_path=_safe_next(next), error=error),
         )
-
-    # A caregiver with no child on file yet can't do anything useful on the
-    # screens they'd otherwise land on - send them to add one first.
-    if not user.is_kid_account and destination == "/app/parent":
-        has_children = (
-            db.query(User)
-            .filter(User.parent_id == user.id, User.is_kid_account.is_(True))
-            .first()
-            is not None
-        )
-        if not has_children:
-            destination = "/app/setup"
-
-    token = create_access_token({"sub": user.email, "user_id": user.id})
-    response = RedirectResponse(url=destination, status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(
-        SESSION_COOKIE,
-        token,
-        httponly=True,
-        samesite="lax",
-        secure=os.getenv("ENVIRONMENT", "development") == "production",
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        path="/",
+    return RedirectResponse(
+        url=f"/auth/workos/login?next={_safe_next(next)}",
+        status_code=status.HTTP_303_SEE_OTHER,
     )
-    return response
 
 
 @router.post("/sign-out")

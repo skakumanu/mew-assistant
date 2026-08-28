@@ -4,7 +4,7 @@ Google Calendar, through the token the user already granted.
 Talks to the v3 REST API over httpx rather than the google-api-python-client,
 because the existing CalendarIntegration is service-account based and this
 needs the *person's* calendar, not the app's. The tokens are the ones
-app/services/oauth_service.py already stores on OAuthProvider.
+app/routers/calendar_oauth.py stores on OAuthProvider.
 """
 
 from __future__ import annotations

@@ -1,18 +1,15 @@
 """
 Google Calendar connect: a small, isolated OAuth flow.
 
-Deliberately separate from oauth_simple.py's sign-in flow (proven working
-end-to-end with real credentials this session, and left untouched here to
-keep its blast radius small) and from oauth_service.py's generic-login
-linking flow (whose "google" client only ever requests identity scopes,
-never calendar access - see calendar_sync_service.py's docstring history
-for why that made Google Calendar sync silently non-functional). This
-flow exists for exactly one purpose: let an already-signed-in parent grant
-Mew read access to a Google Calendar for one of their providers.
+Deliberately separate from sign-in (app/routers/oauth_workos.py, via
+WorkOS AuthKit) - a different concern entirely. This flow exists for
+exactly one purpose: let an already-signed-in parent grant Mew read
+access to a Google Calendar for one of their providers, using its own
+Google Cloud OAuth client (GOOGLE_CLIENT_ID/SECRET), unrelated to
+whatever WorkOS manages internally for sign-in.
 
 Requires a Google Cloud Console redirect URI for this exact callback path
-to be authorized on the OAuth client, same as the one already added for
-oauth_simple.py's sign-in callback.
+to be authorized on that OAuth client.
 """
 
 import logging
@@ -146,7 +143,7 @@ async def callback(
 
 
 def _store_google_token(db: DbSession, user_id: int, provider_user_id: str, token_json: dict) -> None:
-    """Find-or-update, matching oauth_service.py's existing pattern - never a blind insert."""
+    """Find-or-update - never a blind insert."""
     link = (
         db.query(OAuthProvider)
         .filter(OAuthProvider.user_id == user_id, OAuthProvider.provider == "google")
