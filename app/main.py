@@ -71,15 +71,13 @@ from .routers import (
     mew_ui_router,
     mobile_router,
     notifications_router,
-    oauth_web,
+    oauth_workos_router,
     onboarding_setup_router,
     parent_approval_router,
     parent_log_router,
     provider_router,
     rules_router,
     session_router,
-    simple_calendar_router,
-    simple_oauth_router,
     smart_approval_router,
     summary_router,
     voice_requests_router,
@@ -88,9 +86,7 @@ from .routers import (
 )
 
 app.include_router(auth_router, tags=["auth"])
-app.include_router(oauth_web.router, tags=["oauth"])
-app.include_router(simple_oauth_router, tags=["oauth"])
-app.include_router(simple_calendar_router, tags=["calendar"])
+app.include_router(oauth_workos_router, tags=["auth"])
 app.include_router(calendar_web_router, tags=["calendar-web"])
 app.include_router(debug_router, tags=["debug"])
 app.include_router(session_router, tags=["sessions"])
