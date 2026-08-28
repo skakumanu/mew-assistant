@@ -33,6 +33,8 @@ jobs:
         DATABASE_URL: sqlite:///./test-${{ github.run_id }}.db
         SECRET_KEY: test-secret-key-for-ci-only
         JWT_SECRET_KEY: test-secret-key-for-ci-only
+        WORKOS_API_KEY: test-workos-api-key-for-ci-only
+        WORKOS_CLIENT_ID: test-workos-client-id-for-ci-only
         ENVIRONMENT: test
         PYTHONPATH: '.'
     - name: Upload coverage reports

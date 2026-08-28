@@ -1,315 +1,127 @@
-# OAuth Provider Setup Guide
+# Sign-in and Calendar OAuth Setup Guide
 
-## Overview
+Mew Assistant has two, deliberately separate, OAuth-shaped concerns:
 
-Mew Assistant supports OAuth login with **Google**, **Microsoft**, **Apple**, and **Facebook**. Each provider has different setup requirements.
+1. **Sign-in** - who a parent is. Handled entirely by
+   [WorkOS AuthKit](https://workos.com/docs/authkit) (hosted UI, no
+   per-provider code in this app). Covers email/password, Google,
+   Microsoft, Apple, and passwordless magic-code sign-in.
+2. **Google Calendar access** - a parent granting Mew read access to a
+   provider's calendar, once already signed in. Handled by its own,
+   unrelated Google Cloud OAuth client
+   (`app/routers/calendar_oauth.py`).
 
-## Quick Start Summary
-
-| Provider | Difficulty | Setup Time | Key Requirements |
-|----------|-----------|------------|------------------|
-| Google | Easy | 10 min | Google Cloud Project |
-| Microsoft | Easy | 10 min | Azure App Registration |
-| Apple | Medium | 20 min | Apple Developer Account ($99/year), Private Key |
-| Facebook | Easy | 10 min | Facebook Developer Account |
+Do not conflate the two: WorkOS manages its own OAuth app registrations
+with Google/Microsoft/Apple internally for sign-in. The Google Cloud
+client described in part 2 below is a completely separate app
+registration, used only for calendar reads, and must keep existing even
+if WorkOS's own Google connection is reconfigured.
 
 ---
 
-## 1. Google OAuth Setup
+## 1. Sign-in — WorkOS AuthKit
 
-### Step 1: Create Google Cloud Project
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Click **Select a project** → **New Project**
-3. Name: `Mew Assistant` → Click **Create**
+### Step 1: Create a WorkOS account and project
 
-### Step 2: Enable Google+ API
-1. In the left sidebar, go to **APIs & Services** → **Library**
-2. Search for "Google+ API"
-3. Click **Enable**
+1. Go to [workos.com](https://workos.com) and sign up.
+2. Create a project. WorkOS's free tier covers up to 1M monthly active
+   users - far beyond this app's scale.
 
-### Step 3: Create OAuth Credentials
-1. Go to **APIs & Services** → **Credentials**
-2. Click **Create Credentials** → **OAuth client ID**
-3. If prompted, configure consent screen:
-   - User Type: **External**
-   - App name: `Mew Assistant`
-   - User support email: Your email
-   - Developer contact: Your email
-   - Click **Save and Continue** through all steps
+### Step 2: Enable AuthKit and the sign-in methods you want
 
-4. Create OAuth Client ID:
-   - Application type: **Web application**
-   - Name: `Mew Assistant Web`
-   - Authorized redirect URIs:
-     ```
-     https://your-production-url.azurecontainerapps.io/auth/oauth/callback/google
-     http://localhost:8888/auth/oauth/callback/google
-     ```
-   - Click **Create**
+1. In the WorkOS dashboard, go to **User Management → AuthKit**.
+2. Enable it, and turn on whichever sign-in methods you want available:
+   email/password, Magic Auth (passwordless email code), and Social Auth
+   (Google, Microsoft, Apple, GitHub). Each social provider has its own
+   short setup step inside the WorkOS dashboard - WorkOS walks you through
+   registering its own OAuth app with that provider; you don't do this in
+   Google/Microsoft/Apple's own consoles directly.
 
-5. **Copy Client ID and Client Secret**
+### Step 3: Register the callback URL
 
-### Step 4: Store in Azure Key Vault
-```bash
-az keyvault secret set --vault-name mew-keyvault --name "GOOGLE-CLIENT-ID" --value "YOUR_CLIENT_ID"
-az keyvault secret set --vault-name mew-keyvault --name "GOOGLE-CLIENT-SECRET" --value "YOUR_CLIENT_SECRET"
+In the WorkOS dashboard's redirect URI settings, add:
+
+```
+https://mew-assistant.fly.dev/auth/workos/callback
+http://localhost:8888/auth/workos/callback   # for local development
 ```
 
+### Step 4: Get your API key and client ID
+
+From the WorkOS dashboard, copy the **API Key** and **Client ID**, then
+set them as Fly secrets:
+
+```bash
+flyctl secrets set WORKOS_API_KEY="sk_..." WORKOS_CLIENT_ID="client_..." --app mew-assistant
+```
+
+For local development, set the same two as environment variables (or in
+`.env`).
+
+### Testing sign-in
+
+1. Visit `/app/sign-in` - it redirects straight to WorkOS's hosted UI.
+2. Complete sign-in with whichever method you enabled.
+3. You should land on `/app/setup` (new account, no child on file yet) or
+   `/app/parent` (an existing account).
+
 ---
 
-## 2. Microsoft OAuth Setup
+## 2. Google Calendar access — a separate concern
 
-### Step 1: Register Application
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **App registrations** → **New registration**
-3. Name: `Mew Assistant`
-4. Supported account types: **Accounts in any organizational directory and personal Microsoft accounts**
-5. Redirect URI:
-   - Platform: **Web**
-   - URI: `https://your-production-url.azurecontainerapps.io/auth/oauth/callback/microsoft`
-6. Click **Register**
+This lets a parent connect a specific provider's Google Calendar so Mew
+can pull sessions from it (`app/routers/calendar_oauth.py`,
+`app/services/calendar_sync_service.py`). It has nothing to do with
+sign-in and uses its own Google Cloud OAuth client.
 
-### Step 2: Add Redirect URIs
-1. Go to **Authentication** in left sidebar
-2. Under **Web** → **Redirect URIs**, add:
+### Step 1: Create a Google Cloud OAuth client
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) →
+   **APIs & Services → Credentials**.
+2. Create an **OAuth client ID** (Web application).
+3. Add this authorized redirect URI:
    ```
-   http://localhost:8888/auth/oauth/callback/microsoft
+   https://mew-assistant.fly.dev/calendar-sync/google/callback
    ```
-3. Click **Save**
+4. Copy the Client ID and Client Secret.
 
-### Step 3: Create Client Secret
-1. Go to **Certificates & secrets** → **New client secret**
-2. Description: `Mew Assistant OAuth`
-3. Expires: **24 months** (or your preference)
-4. Click **Add**
-5. **Copy the secret Value immediately** (you can't see it again!)
-
-### Step 4: Copy Application ID
-1. Go to **Overview**
-2. Copy **Application (client) ID**
-
-### Step 5: Store in Azure Key Vault
-```bash
-az keyvault secret set --vault-name mew-keyvault --name "MICROSOFT-CLIENT-ID" --value "YOUR_CLIENT_ID"
-az keyvault secret set --vault-name mew-keyvault --name "MICROSOFT-CLIENT-SECRET" --value "YOUR_CLIENT_SECRET"
-```
-
----
-
-## 3. Apple OAuth Setup (Sign in with Apple)
-
-⚠️ **Requirements**: 
-- Apple Developer Account ($99/year)
-- Understanding of JWT and private keys
-
-### Step 1: Create App ID
-1. Go to [Apple Developer](https://developer.apple.com/account/)
-2. Navigate to **Certificates, Identifiers & Profiles**
-3. Click **Identifiers** → **+** → **App IDs** → **App**
-4. Fill in:
-   - Description: `Mew Assistant`
-   - Bundle ID: `com.mewassistant.app` (or your reverse domain)
-5. Enable **Sign in with Apple** capability
-6. Click **Continue** → **Register**
-
-### Step 2: Create Services ID
-1. Go to **Identifiers** → **+** → **Services IDs**
-2. Fill in:
-   - Description: `Mew Assistant Web`
-   - Identifier: `com.mewassistant.service`
-3. Enable **Sign in with Apple**
-4. Click **Configure** next to Sign in with Apple:
-   - **Primary App ID**: Select the App ID created above
-   - **Web Domain**: `your-production-domain.azurecontainerapps.io` (no https://)
-   - **Return URLs**: 
-     ```
-     https://your-production-domain.azurecontainerapps.io/auth/oauth/callback/apple
-     http://localhost:8888/auth/oauth/callback/apple
-     ```
-5. Click **Save** → **Continue** → **Register**
-
-### Step 3: Create Private Key
-1. Go to **Keys** → **+**
-2. Key Name: `Mew Assistant Sign in with Apple Key`
-3. Enable **Sign in with Apple**
-4. Click **Configure** → Select your Primary App ID
-5. Click **Save** → **Continue** → **Register**
-6. **Download the .p8 key file** (⚠️ You can only download this once!)
-7. **Note the Key ID** shown on the page
-
-### Step 4: Get Team ID
-1. Go to **Membership** in left sidebar
-2. Copy your **Team ID** (10-character alphanumeric)
-
-### Step 5: Store in Azure Key Vault
-```bash
-# Service ID (this is your Client ID)
-az keyvault secret set --vault-name mew-keyvault --name "APPLE-CLIENT-ID" --value "com.mewassistant.service"
-
-# Team ID
-az keyvault secret set --vault-name mew-keyvault --name "APPLE-TEAM-ID" --value "YOUR_TEAM_ID"
-
-# Key ID
-az keyvault secret set --vault-name mew-keyvault --name "APPLE-KEY-ID" --value "YOUR_KEY_ID"
-
-# Private Key (upload the .p8 file)
-az keyvault secret set --vault-name mew-keyvault --name "APPLE-PRIVATE-KEY" --file "path/to/AuthKey_KEYID.p8"
-```
-
-### Apple OAuth Notes
-- Apple uses JWT-based authentication (not traditional client secret)
-- Private key must be kept secure and never committed to git
-- Apple requires HTTPS in production
-- User email may only be provided on first sign-in
-- Supports "Hide My Email" - handle proxy emails gracefully
-
----
-
-## 4. Facebook OAuth Setup
-
-### Step 1: Create Facebook App
-1. Go to [Facebook Developers](https://developers.facebook.com/)
-2. Click **My Apps** → **Create App**
-3. Use case: **Consumer** → **Next**
-4. App name: `Mew Assistant`
-5. App contact email: Your email
-6. Click **Create App**
-
-### Step 2: Add Facebook Login
-1. In dashboard, find **Facebook Login** → **Set Up**
-2. Choose **Web**
-3. Site URL: `https://your-production-url.azurecontainerapps.io`
-4. Click **Save** → **Continue**
-
-### Step 3: Configure OAuth Redirect URIs
-1. Go to **Facebook Login** → **Settings**
-2. **Valid OAuth Redirect URIs**:
-   ```
-   https://your-production-url.azurecontainerapps.io/auth/oauth/callback/facebook
-   http://localhost:8888/auth/oauth/callback/facebook
-   ```
-3. Click **Save Changes**
-
-### Step 4: Get App Credentials
-1. Go to **Settings** → **Basic**
-2. Copy **App ID** and **App Secret**
-
-### Step 5: Store in Azure Key Vault
-```bash
-az keyvault secret set --vault-name mew-keyvault --name "FACEBOOK-CLIENT-ID" --value "YOUR_APP_ID"
-az keyvault secret set --vault-name mew-keyvault --name "FACEBOOK-CLIENT-SECRET" --value "YOUR_APP_SECRET"
-```
-
----
-
-## Testing OAuth Integration
-
-### Local Testing
-
-1. Start the app:
-```bash
-./podman-start.sh
-```
-
-2. Visit the OAuth test page:
-```
-http://localhost:8888/auth/oauth/login
-```
-
-3. Test each provider by clicking the respective button
-
-### Production Testing
-
-1. Update your production environment variables:
-```bash
-./scripts/deploy-azure.sh
-```
-
-2. Visit:
-```
-https://your-app.azurecontainerapps.io/auth/oauth/login
-```
-
----
-
-## Environment Variables Summary
-
-After setting up all providers, these environment variables will be loaded from Azure Key Vault:
+### Step 2: Set the Fly secrets
 
 ```bash
-# Google
-GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET
-
-# Microsoft
-MICROSOFT_CLIENT_ID
-MICROSOFT_CLIENT_SECRET
-
-# Apple
-APPLE_CLIENT_ID
-APPLE_TEAM_ID
-APPLE_KEY_ID
-APPLE_PRIVATE_KEY (store securely in Key Vault; do not commit private keys)
-
-# Facebook
-FACEBOOK_CLIENT_ID
-FACEBOOK_CLIENT_SECRET
+flyctl secrets set GOOGLE_CLIENT_ID="..." GOOGLE_CLIENT_SECRET="..." --app mew-assistant
 ```
+
+`BASE_URL` must also be set correctly (`https://mew-assistant.fly.dev` in
+production) - both this flow and WorkOS's callback derive their redirect
+URIs from it.
+
+### Testing calendar connect
+
+From `/app/parent`'s "Providers" tab, click "Connect Google Calendar" for
+a provider you've added. You should be sent to Google's consent screen,
+then back to `/app/parent?tab=providers` with the calendar connected.
 
 ---
 
 ## Troubleshooting
 
-### "redirect_uri_mismatch" Error
-- Double-check redirect URIs match exactly in provider console
-- Ensure you're using the correct protocol (http vs https)
-- Check for trailing slashes
+### "redirect_uri_mismatch"
 
-### Apple "invalid_client" Error
-- Verify your Team ID, Key ID, and Client ID are correct
-- Ensure private key (.p8) is valid and properly formatted
-- Check that Key ID matches the key you downloaded
+The callback URL registered in WorkOS (part 1) or Google Cloud Console
+(part 2) doesn't exactly match what the app is sending - check for a
+missing/extra trailing slash, or `http` vs `https`. These are two
+independent registrations; a mismatch in one never affects the other.
 
-### "access_denied" Error
-- User may have declined authorization
-- Check OAuth scopes are correctly configured
-- Verify app is not in sandbox/test mode blocking real users
+### Sign-in bounces back to `/app/sign-in?error=1`
 
-### Database Errors
-- Ensure database is running and migrations are applied
-- Check that OAuthProvider table exists
+Check the app logs for the actual WorkOS error (`flyctl logs`) - this
+page deliberately doesn't show provider-specific detail to the browser.
+Common causes: `WORKOS_API_KEY`/`WORKOS_CLIENT_ID` not set, or the
+callback URL isn't registered in the WorkOS dashboard yet.
 
----
+### Calendar connect fails, but sign-in works fine
 
-## Security Best Practices
-
-1. ⚠️ **Never commit secrets to git**
-   - Use `.gitignore` for sensitive files
-   - Store all secrets in Azure Key Vault
-
-2. 🔒 **Use HTTPS in production**
-   - OAuth providers require HTTPS
-   - Azure Container Apps provides automatic HTTPS
-
-3. 🔑 **Rotate secrets regularly**
-   - Set expiration dates on client secrets
-   - Regenerate and update before expiration
-
-4. 📝 **Audit OAuth access**
-   - Monitor failed login attempts
-   - Log OAuth provider usage
-
-5. 🛡️ **Validate redirect URIs**
-   - Only whitelist your own domains
-   - Never use wildcards in production
-
----
-
-## Next Steps
-
-Once OAuth is configured:
-1. [Set up Siri Shortcuts](SIRI_SETUP.md) for voice commands
-2. [Connect your calendar](GETTING_STARTED.md#calendar-integration)
-3. [Configure mobile app](GETTING_STARTED.md#mobile-setup)
-
-Need help? Check [GETTING_STARTED.md](GETTING_STARTED.md) or open an issue on GitHub.
+These are unrelated OAuth clients - confirm `GOOGLE_CLIENT_ID`/
+`GOOGLE_CLIENT_SECRET` (part 2) are set and that
+`/calendar-sync/google/callback` is registered in Google Cloud Console,
+not just WorkOS's own Google connection.
