@@ -21,25 +21,32 @@ if WorkOS's own Google connection is reconfigured.
 
 ## 1. Sign-in — WorkOS AuthKit
 
-### Step 1: Create a WorkOS account and project
+### Step 1: Create a WorkOS account, project, and application
 
 1. Go to [workos.com](https://workos.com) and sign up.
-2. Create a project. WorkOS's free tier covers up to 1M monthly active
-   users - far beyond this app's scale.
+2. Create a project (an environment, e.g. "Staging" or "Production" -
+   WorkOS's free tier covers up to 1M monthly active users, far beyond
+   this app's scale).
+3. Under **Applications**, create an application (e.g. "Mew Assistant").
+   As of the current dashboard, credentials and redirect URIs are scoped
+   *per application*, not per project - a project can hold more than one
+   application, each with its own Client ID/API key/redirect URIs, so
+   make sure every step below is done on the same application.
 
 ### Step 2: Enable AuthKit and the sign-in methods you want
 
-1. In the WorkOS dashboard, go to **User Management → AuthKit**.
-2. Enable it, and turn on whichever sign-in methods you want available:
-   email/password, Magic Auth (passwordless email code), and Social Auth
-   (Google, Microsoft, Apple, GitHub). Each social provider has its own
-   short setup step inside the WorkOS dashboard - WorkOS walks you through
-   registering its own OAuth app with that provider; you don't do this in
-   Google/Microsoft/Apple's own consoles directly.
+Under **Authentication → AuthKit** (or, on older dashboard layouts,
+**User Management → AuthKit**), enable it and turn on whichever sign-in
+methods you want available: email/password, Magic Auth (passwordless
+email code), and Social Auth (Google, Microsoft, Apple, GitHub). Each
+social provider has its own short setup step inside the WorkOS dashboard
+- WorkOS walks you through registering its own OAuth app with that
+provider; you don't do this in Google/Microsoft/Apple's own consoles
+directly.
 
 ### Step 3: Register the callback URL
 
-In the WorkOS dashboard's redirect URI settings, add:
+On your application's page, open the **Redirects** tab and add:
 
 ```
 https://mew-assistant.fly.dev/auth/workos/callback
@@ -48,8 +55,17 @@ http://localhost:8888/auth/workos/callback   # for local development
 
 ### Step 4: Get your API key and client ID
 
-From the WorkOS dashboard, copy the **API Key** and **Client ID**, then
-set them as Fly secrets:
+Still on your application's page:
+
+- The **Client ID** is shown at the top of the application page.
+- The **Secret API Key** is on the **API keys** tab (reveal an existing
+  one if present, rather than creating a new key per application unless
+  you specifically want separate keys - this repo has no key-rotation
+  automation, so an unnecessary expiration on the key just becomes a
+  future silent outage; leave it non-expiring unless you have a reason
+  to rotate it and a plan to update the Fly secret when you do).
+
+Set both as Fly secrets:
 
 ```bash
 flyctl secrets set WORKOS_API_KEY="sk_..." WORKOS_CLIENT_ID="client_..." --app mew-assistant
@@ -57,6 +73,22 @@ flyctl secrets set WORKOS_API_KEY="sk_..." WORKOS_CLIENT_ID="client_..." --app m
 
 For local development, set the same two as environment variables (or in
 `.env`).
+
+**Double-check the Client ID actually matches**: before wiring anything
+up, confirm the value you're about to deploy is the one shown on this
+exact application's page - a stale or unrelated Client ID (e.g. cached
+from another project or an old CLI run) will make `/auth/workos/login`
+build an authorization URL WorkOS rejects with `redirect_uri_mismatch`,
+since the redirect you registered in Step 3 lives on a *different*
+application than the one the deployed app is actually using. You can
+verify what's actually deployed without exposing the secret key:
+
+```bash
+curl -sS -D - -o /dev/null "https://mew-assistant.fly.dev/auth/workos/login?next=/app/parent"
+```
+
+The `location:` header's `client_id=` should match the application you
+configured above.
 
 ### Testing sign-in
 
