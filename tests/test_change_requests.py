@@ -23,6 +23,23 @@ from app.utils.auth import get_password_hash
 from .conftest import _auth
 
 
+def _soon_today(hours=2):
+    """
+    A moment `hours` from now, clamped to stay on today's date.
+
+    Plain `datetime.utcnow() + timedelta(hours=hours)` rolls into tomorrow
+    whenever the suite happens to run within `hours` of UTC midnight -
+    /kid/today filters strictly to [midnight, midnight+1) - so a session
+    "in 2 hours" would silently fall outside "today" and the test would
+    fail for no reason connected to the code under test.
+    """
+    now = datetime.utcnow().replace(microsecond=0)
+    start = now + timedelta(hours=hours)
+    if start.date() != now.date():
+        start = now.replace(hour=23, minute=59, second=0)
+    return start
+
+
 class TestAutoApply:
     """A request inside the rules never waits on anybody."""
 
@@ -444,7 +461,7 @@ class TestAuthorisation:
 
 class TestKidToday:
     def test_today_lists_the_days_cards(self, client, db_session, family, rules):
-        start = datetime.utcnow().replace(microsecond=0) + timedelta(hours=2)
+        start = _soon_today()
         row = ScheduledSession(
             child_id=family["kid"].id,
             provider_org_id=family["org"].id,
@@ -468,7 +485,7 @@ class TestKidToday:
     def test_a_card_with_an_open_request_shows_a_status_instead_of_buttons(
         self, client, db_session, family, rules
     ):
-        start = datetime.utcnow().replace(microsecond=0) + timedelta(hours=2)
+        start = _soon_today()
         row = ScheduledSession(
             child_id=family["kid"].id,
             provider_org_id=family["org"].id,
