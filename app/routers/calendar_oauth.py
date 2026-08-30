@@ -14,6 +14,7 @@ to be authorized on that OAuth client.
 
 import logging
 from datetime import datetime, timedelta
+from typing import Optional
 from urllib.parse import urlencode
 
 import httpx
@@ -56,17 +57,29 @@ def _redirect_uri() -> str:
 @router.get("/connect")
 async def connect(
     org_id: int,
+    calendar_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
-    """Send the signed-in parent to Google's consent screen for one org's calendar."""
+    """
+    Send the signed-in parent to Google's consent screen for one org's
+    calendar.
+
+    ``calendar_id`` is optional - most families want their own primary
+    calendar, the default if omitted, but a parent whose child's schedule
+    lives in a calendar they've added to their own Google account (a
+    secondary, non-primary calendar) can name that calendar's own ID here
+    instead.
+    """
     verify_parent_account(current_user)
 
     org = db.query(ProviderOrg).filter(ProviderOrg.id == org_id).first()
     if org is None:
         raise HTTPException(status_code=404, detail="Provider organisation not found")
 
-    state = create_calendar_connect_state(user_id=current_user.id, org_id=org_id)
+    state = create_calendar_connect_state(
+        user_id=current_user.id, org_id=org_id, calendar_id=(calendar_id or "").strip() or None
+    )
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": _redirect_uri(),
@@ -100,6 +113,7 @@ async def callback(
     payload = decode_calendar_connect_state(state)
     user_id = payload["user_id"]
     org_id = payload["org_id"]
+    requested_calendar_id = payload.get("calendar_id")
 
     parent = db.query(User).filter(User.id == user_id).first()
     if parent is None or parent.is_kid_account:
@@ -145,8 +159,13 @@ async def callback(
     # Without this, CalendarSyncService.adapter_for() has a token to use but
     # no calendar_provider/calendar_account_id to build an adapter from, so
     # the connection would sit granted forever without ever actually syncing.
+    # An explicitly requested calendar_id always wins - reconnecting to name
+    # a different calendar (e.g. switching off primary to a child's own,
+    # non-primary calendar) is the whole point of offering the field at all.
     org.calendar_provider = "google"
-    org.calendar_account_id = org.calendar_account_id or GOOGLE_PRIMARY_CALENDAR
+    org.calendar_account_id = (
+        requested_calendar_id or org.calendar_account_id or GOOGLE_PRIMARY_CALENDAR
+    )
     db.commit()
 
     await _pull_for_every_child(db, parent, org)
