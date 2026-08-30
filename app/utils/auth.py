@@ -146,7 +146,9 @@ CALENDAR_CONNECT_STATE_TYPE = "calendar_connect"
 CALENDAR_CONNECT_STATE_EXPIRE_MINUTES = 10
 
 
-def create_calendar_connect_state(user_id: int, org_id: int) -> str:
+def create_calendar_connect_state(
+    user_id: int, org_id: int, calendar_id: Optional[str] = None
+) -> str:
     """
     Sign a short-lived ``state`` value for the Google Calendar connect
     flow (``app/routers/calendar_oauth.py``).
@@ -157,10 +159,16 @@ def create_calendar_connect_state(user_id: int, org_id: int) -> str:
     valid Bearer token for anything in the app if it ever leaked. This
     token's own ``type`` makes it something ``get_current_user`` already
     refuses to accept.
+
+    ``calendar_id`` rides along here, not as a separate query param on the
+    callback, because the callback only trusts what this signed state
+    says - a bare query param would let anyone redirect a legitimate
+    connect at a calendar they chose, not the parent who started it.
     """
     to_encode = {
         "user_id": user_id,
         "org_id": org_id,
+        "calendar_id": calendar_id,
         "type": CALENDAR_CONNECT_STATE_TYPE,
         "exp": datetime.utcnow() + timedelta(minutes=CALENDAR_CONNECT_STATE_EXPIRE_MINUTES),
     }
