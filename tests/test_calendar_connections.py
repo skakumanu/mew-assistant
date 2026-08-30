@@ -10,7 +10,6 @@ authorize against the calling parent, not just any child_id in the URL."
 """
 
 from datetime import datetime, timedelta
-from urllib.parse import parse_qs, urlparse
 
 import httpx
 from fastapi import status
@@ -23,11 +22,15 @@ from app.utils.auth import (
     SECRET_KEY,
     create_access_token,
     create_calendar_connect_state,
-    decode_calendar_connect_state,
     get_password_hash,
 )
 
 from .conftest import _auth
+
+# Captured once, before any test monkeypatches httpx.AsyncClient - grabbing
+# it fresh inside each mock helper would instead pick up a *previous*
+# test's patched value when two mocks are chained in the same test.
+_REAL_ASYNC_CLIENT = httpx.AsyncClient
 
 ICS = """BEGIN:VCALENDAR
 BEGIN:VEVENT
@@ -164,11 +167,10 @@ class TestGoogleCalendarConnectFlow:
             return httpx.Response(200, json={"id": "google-sub-1", "email": email})
 
         transport = httpx.MockTransport(handler)
-        real_async_client = httpx.AsyncClient
         monkeypatch.setattr(
             calendar_oauth.httpx,
             "AsyncClient",
-            lambda *args, **kwargs: real_async_client(transport=transport),
+            lambda *args, **kwargs: _REAL_ASYNC_CLIENT(transport=transport),
         )
 
     def test_connect_redirects_to_google_with_a_signed_state(self, client, family):
@@ -183,36 +185,6 @@ class TestGoogleCalendarConnectFlow:
         location = response.headers["location"]
         assert "accounts.google.com" in location
         assert "state=" in location
-
-    def test_connect_with_a_calendar_id_signs_it_into_the_state(self, client, family):
-        """
-        A parent whose child's schedule lives in a calendar they've added to
-        their own account (not their primary one) can name it here.
-        """
-        response = client.get(
-            "/calendar-sync/google/connect",
-            params={"org_id": family["org"].id, "calendar_id": "kid@group.calendar.google.com"},
-            headers=_auth(family["parent"]),
-            follow_redirects=False,
-        )
-
-        location = response.headers["location"]
-        state = parse_qs(urlparse(location).query)["state"][0]
-        payload = decode_calendar_connect_state(state)
-        assert payload["calendar_id"] == "kid@group.calendar.google.com"
-
-    def test_connect_without_a_calendar_id_signs_none_into_the_state(self, client, family):
-        response = client.get(
-            "/calendar-sync/google/connect",
-            params={"org_id": family["org"].id},
-            headers=_auth(family["parent"]),
-            follow_redirects=False,
-        )
-
-        location = response.headers["location"]
-        state = parse_qs(urlparse(location).query)["state"][0]
-        payload = decode_calendar_connect_state(state)
-        assert payload["calendar_id"] is None
 
     def test_connect_for_an_org_that_does_not_exist_is_rejected(self, client, family):
         response = client.get(
@@ -283,7 +255,7 @@ class TestGoogleCalendarConnectFlow:
         )
 
         assert response.status_code == status.HTTP_303_SEE_OTHER
-        assert response.headers["location"] == "/app/parent?tab=providers"
+        assert response.headers["location"] == f"/app/parent?tab=providers&choose_calendar_org={family['org'].id}"
 
         link = (
             db_session.query(OAuthProvider)
@@ -302,65 +274,14 @@ class TestGoogleCalendarConnectFlow:
         )
         assert connection.connected_by_user_id == family["parent"].id
 
-        # The whole point: CalendarSyncService can now actually find a
-        # usable Google token for this org. Regression guard - the callback
-        # used to store the token and the connection but never flip the org
-        # itself onto the google provider, so adapter_for() had no way to
-        # build an adapter and a connected org would never sync anything.
+        # The whole point of the two-step flow: no specific calendar is
+        # wired up yet - guessing "primary" here was exactly the wrong-
+        # calendar dead end this design replaces. The parent still has to
+        # pick one via GET .../calendars before adapter_for() can build
+        # anything.
         org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
-        assert org.calendar_provider == "google"
-        assert org.calendar_account_id == "primary"
-        adapter = CalendarSyncService(db_session).adapter_for(org)
-        assert adapter is not None
-        assert adapter.access_token == "g-access-1"
-
-    def test_a_requested_calendar_id_is_used_instead_of_primary(
-        self, client, db_session, family, monkeypatch
-    ):
-        """A child's own, non-primary calendar - not the parent's main one."""
-        self._mock_google(monkeypatch)
-        state = create_calendar_connect_state(
-            user_id=family["parent"].id,
-            org_id=family["org"].id,
-            calendar_id="kid@group.calendar.google.com",
-        )
-
-        client.get(
-            "/calendar-sync/google/callback",
-            params={"code": "abc123", "state": state},
-            follow_redirects=False,
-        )
-
-        org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
-        assert org.calendar_account_id == "kid@group.calendar.google.com"
-
-    def test_reconnecting_with_a_new_calendar_id_overrides_the_old_one(
-        self, client, db_session, family, monkeypatch
-    ):
-        """Switching off primary onto a child's calendar without starting over."""
-        self._mock_google(monkeypatch)
-        first_state = create_calendar_connect_state(
-            user_id=family["parent"].id, org_id=family["org"].id
-        )
-        client.get(
-            "/calendar-sync/google/callback",
-            params={"code": "abc123", "state": first_state},
-            follow_redirects=False,
-        )
-
-        second_state = create_calendar_connect_state(
-            user_id=family["parent"].id,
-            org_id=family["org"].id,
-            calendar_id="kid@group.calendar.google.com",
-        )
-        client.get(
-            "/calendar-sync/google/callback",
-            params={"code": "abc123", "state": second_state},
-            follow_redirects=False,
-        )
-
-        org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
-        assert org.calendar_account_id == "kid@group.calendar.google.com"
+        assert org.calendar_account_id is None
+        assert CalendarSyncService(db_session).adapter_for(org) is None
 
     def test_happy_path_but_a_second_family_still_sees_nothing(
         self, client, db_session, family, monkeypatch
@@ -387,3 +308,93 @@ class TestGoogleCalendarConnectFlow:
 
         response = client.get("/calendar-sync/orgs", headers=_auth(other_parent))
         assert response.json() == []
+
+
+class TestListGoogleCalendars:
+    def _connect(self, client, family, monkeypatch, email="parent@example.com"):
+        TestGoogleCalendarConnectFlow()._mock_google(monkeypatch, email=email)
+        state = create_calendar_connect_state(user_id=family["parent"].id, org_id=family["org"].id)
+        client.get(
+            "/calendar-sync/google/callback",
+            params={"code": "abc123", "state": state},
+            follow_redirects=False,
+        )
+
+    def _mock_calendar_list(self, monkeypatch, items=None, status_code=200):
+        import app.routers.calendar_oauth as calendar_oauth
+
+        payload = {"items": items if items is not None else []}
+
+        def handler(request):
+            return httpx.Response(status_code, json=payload)
+
+        transport = httpx.MockTransport(handler)
+        monkeypatch.setattr(
+            calendar_oauth.httpx,
+            "AsyncClient",
+            lambda *args, **kwargs: _REAL_ASYNC_CLIENT(transport=transport),
+        )
+
+    def test_returns_the_parents_calendars_primary_first(self, client, family, monkeypatch):
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(
+            monkeypatch,
+            items=[
+                {"id": "kid@group.calendar.google.com", "summary": "Ellie's Schedule"},
+                {"id": "parent@example.com", "summary": "My Calendar", "primary": True},
+            ],
+        )
+
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": family["org"].id},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        calendars = response.json()["calendars"]
+        assert calendars[0] == {"id": "parent@example.com", "summary": "My Calendar", "primary": True}
+        assert calendars[1] == {
+            "id": "kid@group.calendar.google.com",
+            "summary": "Ellie's Schedule",
+            "primary": False,
+        }
+
+    def test_404_when_no_google_connection_exists_yet(self, client, family):
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": family["org"].id},
+            headers=_auth(family["parent"]),
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_another_family_cannot_list_this_familys_calendars(self, client, db_session, family, monkeypatch):
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(monkeypatch, items=[{"id": "a@b.com", "summary": "A"}])
+
+        other_parent = User(
+            email="other-parent4@example.com",
+            username="other-parent4",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add(other_parent)
+        db_session.commit()
+
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": family["org"].id},
+            headers=_auth(other_parent),
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_a_google_api_failure_is_a_502(self, client, family, monkeypatch):
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(monkeypatch, status_code=500)
+
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": family["org"].id},
+            headers=_auth(family["parent"]),
+        )
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
