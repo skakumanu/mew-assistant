@@ -271,10 +271,13 @@ class TestGoogleCalendarConnectFlow:
         assert connection.connected_by_user_id == family["parent"].id
 
         # The whole point: CalendarSyncService can now actually find a
-        # usable Google token for this org.
+        # usable Google token for this org. Regression guard - the callback
+        # used to store the token and the connection but never flip the org
+        # itself onto the google provider, so adapter_for() had no way to
+        # build an adapter and a connected org would never sync anything.
         org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
-        org.calendar_account_id = "primary"
-        db_session.commit()
+        assert org.calendar_provider == "google"
+        assert org.calendar_account_id == "primary"
         adapter = CalendarSyncService(db_session).adapter_for(org)
         assert adapter is not None
         assert adapter.access_token == "g-access-1"

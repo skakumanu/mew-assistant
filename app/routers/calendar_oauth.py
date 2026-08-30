@@ -23,7 +23,8 @@ from sqlalchemy.orm import Session as DbSession
 
 from ..database.connection import get_db
 from ..database.models import OAuthProvider, ProviderOrg, User
-from ..routers.calendar_sync import _upsert_connection
+from ..routers.calendar_sync import _resolve_child_ids, _upsert_connection
+from ..services.calendar_sync_service import CalendarSyncService
 from ..utils.auth import (
     create_calendar_connect_state,
     decode_calendar_connect_state,
@@ -32,6 +33,10 @@ from ..utils.auth import (
 )
 from ..utils.config import settings
 from ..utils.log_sanitizer import sanitize_email, sanitize_user_id
+
+# Google Calendar has one calendar per account worth reading here: the
+# "primary" one, whatever the provider's own account calls their calendar.
+GOOGLE_PRIMARY_CALENDAR = "primary"
 
 logger = logging.getLogger(__name__)
 
@@ -137,9 +142,34 @@ async def callback(
 
     _store_google_token(db, user_id=user_id, provider_user_id=user_info.get("id") or str(user_id), token_json=token_json)
     _upsert_connection(db, org_id=org.id, parent_id=user_id, connected_by_user_id=user_id)
+    # Without this, CalendarSyncService.adapter_for() has a token to use but
+    # no calendar_provider/calendar_account_id to build an adapter from, so
+    # the connection would sit granted forever without ever actually syncing.
+    org.calendar_provider = "google"
+    org.calendar_account_id = org.calendar_account_id or GOOGLE_PRIMARY_CALENDAR
     db.commit()
 
+    await _pull_for_every_child(db, parent, org)
+
     return RedirectResponse(url="/app/parent?tab=providers", status_code=303)
+
+
+async def _pull_for_every_child(db: DbSession, parent: User, org: ProviderOrg) -> None:
+    """
+    Pull right away, the same as connecting an ICS feed does, so the parent
+    who just clicked through Google's consent screen sees whether it
+    actually worked instead of an empty week until their next visit.
+
+    Best-effort: a slow or failing first pull is a worse experience than a
+    delayed one, but it must never turn a successful connect into an error
+    page - the connection itself is already saved by the time this runs.
+    """
+    service = CalendarSyncService(db)
+    for child_id in _resolve_child_ids(db, parent, None):
+        try:
+            await service.pull_org(org, child_id=child_id)
+        except Exception:
+            logger.exception("Initial pull after connecting org %s failed", org.id)
 
 
 def _store_google_token(db: DbSession, user_id: int, provider_user_id: str, token_json: dict) -> None:
