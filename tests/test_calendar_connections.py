@@ -10,6 +10,7 @@ authorize against the calling parent, not just any child_id in the URL."
 """
 
 from datetime import datetime, timedelta
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 from fastapi import status
@@ -22,6 +23,7 @@ from app.utils.auth import (
     SECRET_KEY,
     create_access_token,
     create_calendar_connect_state,
+    decode_calendar_connect_state,
     get_password_hash,
 )
 
@@ -182,6 +184,36 @@ class TestGoogleCalendarConnectFlow:
         assert "accounts.google.com" in location
         assert "state=" in location
 
+    def test_connect_with_a_calendar_id_signs_it_into_the_state(self, client, family):
+        """
+        A parent whose child's schedule lives in a calendar they've added to
+        their own account (not their primary one) can name it here.
+        """
+        response = client.get(
+            "/calendar-sync/google/connect",
+            params={"org_id": family["org"].id, "calendar_id": "kid@group.calendar.google.com"},
+            headers=_auth(family["parent"]),
+            follow_redirects=False,
+        )
+
+        location = response.headers["location"]
+        state = parse_qs(urlparse(location).query)["state"][0]
+        payload = decode_calendar_connect_state(state)
+        assert payload["calendar_id"] == "kid@group.calendar.google.com"
+
+    def test_connect_without_a_calendar_id_signs_none_into_the_state(self, client, family):
+        response = client.get(
+            "/calendar-sync/google/connect",
+            params={"org_id": family["org"].id},
+            headers=_auth(family["parent"]),
+            follow_redirects=False,
+        )
+
+        location = response.headers["location"]
+        state = parse_qs(urlparse(location).query)["state"][0]
+        payload = decode_calendar_connect_state(state)
+        assert payload["calendar_id"] is None
+
     def test_connect_for_an_org_that_does_not_exist_is_rejected(self, client, family):
         response = client.get(
             "/calendar-sync/google/connect",
@@ -281,6 +313,54 @@ class TestGoogleCalendarConnectFlow:
         adapter = CalendarSyncService(db_session).adapter_for(org)
         assert adapter is not None
         assert adapter.access_token == "g-access-1"
+
+    def test_a_requested_calendar_id_is_used_instead_of_primary(
+        self, client, db_session, family, monkeypatch
+    ):
+        """A child's own, non-primary calendar - not the parent's main one."""
+        self._mock_google(monkeypatch)
+        state = create_calendar_connect_state(
+            user_id=family["parent"].id,
+            org_id=family["org"].id,
+            calendar_id="kid@group.calendar.google.com",
+        )
+
+        client.get(
+            "/calendar-sync/google/callback",
+            params={"code": "abc123", "state": state},
+            follow_redirects=False,
+        )
+
+        org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
+        assert org.calendar_account_id == "kid@group.calendar.google.com"
+
+    def test_reconnecting_with_a_new_calendar_id_overrides_the_old_one(
+        self, client, db_session, family, monkeypatch
+    ):
+        """Switching off primary onto a child's calendar without starting over."""
+        self._mock_google(monkeypatch)
+        first_state = create_calendar_connect_state(
+            user_id=family["parent"].id, org_id=family["org"].id
+        )
+        client.get(
+            "/calendar-sync/google/callback",
+            params={"code": "abc123", "state": first_state},
+            follow_redirects=False,
+        )
+
+        second_state = create_calendar_connect_state(
+            user_id=family["parent"].id,
+            org_id=family["org"].id,
+            calendar_id="kid@group.calendar.google.com",
+        )
+        client.get(
+            "/calendar-sync/google/callback",
+            params={"code": "abc123", "state": second_state},
+            follow_redirects=False,
+        )
+
+        org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
+        assert org.calendar_account_id == "kid@group.calendar.google.com"
 
     def test_happy_path_but_a_second_family_still_sees_nothing(
         self, client, db_session, family, monkeypatch
