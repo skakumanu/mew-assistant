@@ -461,9 +461,12 @@
         onclick: function () { parent.connectIcs(org.id, icsInput.value, statusMsg); }
       });
 
-      var connectGoogleBtn = el('a', {
-        class: 'btn btn--quiet', href: '/calendar-sync/google/connect?org_id=' + org.id,
-        text: t('parent.connect_google')
+      var googleCalendarIdInput = el('input', {
+        type: 'text', placeholder: t('parent.google_calendar_id_placeholder')
+      });
+      var connectGoogleBtn = el('button', {
+        class: 'btn btn--quiet', type: 'button', text: t('parent.connect_google'),
+        onclick: function () { parent.connectGoogle(org.id, googleCalendarIdInput.value); }
       });
 
       var syncBtn = el('button', {
@@ -475,9 +478,16 @@
         el('h3', { class: 'provider-card__name', text: org.name }),
         el('p', { class: 'field-label', text: statusText }),
         el('div', { class: 'actions' }, [icsInput, connectIcsBtn]),
-        el('div', { class: 'actions' }, [connectGoogleBtn, syncBtn]),
+        el('div', { class: 'actions' }, [googleCalendarIdInput, connectGoogleBtn, syncBtn]),
         statusMsg
       ]);
+    },
+
+    connectGoogle: function (orgId, calendarId) {
+      var url = '/calendar-sync/google/connect?org_id=' + orgId;
+      var trimmed = (calendarId || '').trim();
+      if (trimmed) url += '&calendar_id=' + encodeURIComponent(trimmed);
+      window.location.href = url;
     },
 
     connectIcs: function (orgId, url, statusMsg) {

@@ -87,6 +87,7 @@
     "ics_url_placeholder": "الصق رابط تقويم (.ics)",
     "connect_ics": "ربط الخلاصة",
     "connect_google": "ربط تقويم Google",
+    "google_calendar_id_placeholder": "اختياري: معرّف تقويم معيّن إن لم يكن تقويمك الرئيسي",
     "sync_now": "مزامنة الآن",
     "sync_ok": "تمت المزامنة. تم تحديث {count}.",
     "sync_failed": "تعذّرت المزامنة: {error}"
