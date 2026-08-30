@@ -14,7 +14,6 @@ to be authorized on that OAuth client.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 from urllib.parse import urlencode
 
 import httpx
@@ -23,9 +22,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session as DbSession
 
 from ..database.connection import get_db
-from ..database.models import OAuthProvider, ProviderOrg, User
-from ..routers.calendar_sync import _resolve_child_ids, _upsert_connection
-from ..services.calendar_sync_service import CalendarSyncService
+from ..database.models import OAuthProvider, ProviderOrg, ProviderOrgConnection, User
+from ..routers.calendar_sync import _upsert_connection
 from ..utils.auth import (
     create_calendar_connect_state,
     decode_calendar_connect_state,
@@ -35,10 +33,6 @@ from ..utils.auth import (
 from ..utils.config import settings
 from ..utils.log_sanitizer import sanitize_email, sanitize_user_id
 
-# Google Calendar has one calendar per account worth reading here: the
-# "primary" one, whatever the provider's own account calls their calendar.
-GOOGLE_PRIMARY_CALENDAR = "primary"
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/calendar-sync/google", tags=["Calendar Sync"])
@@ -46,6 +40,7 @@ router = APIRouter(prefix="/calendar-sync/google", tags=["Calendar Sync"])
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+GOOGLE_CALENDAR_LIST_URL = "https://www.googleapis.com/calendar/v3/users/me/calendarList"
 CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
 
 
@@ -57,7 +52,6 @@ def _redirect_uri() -> str:
 @router.get("/connect")
 async def connect(
     org_id: int,
-    calendar_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: DbSession = Depends(get_db),
 ):
@@ -65,11 +59,10 @@ async def connect(
     Send the signed-in parent to Google's consent screen for one org's
     calendar.
 
-    ``calendar_id`` is optional - most families want their own primary
-    calendar, the default if omitted, but a parent whose child's schedule
-    lives in a calendar they've added to their own Google account (a
-    secondary, non-primary calendar) can name that calendar's own ID here
-    instead.
+    Which specific calendar gets synced is decided afterwards, not here -
+    see the callback below and GET .../calendars. Asking a non-technical
+    parent to already know a Calendar ID before they've even signed in is
+    exactly the friction this two-step shape avoids.
     """
     verify_parent_account(current_user)
 
@@ -77,9 +70,7 @@ async def connect(
     if org is None:
         raise HTTPException(status_code=404, detail="Provider organisation not found")
 
-    state = create_calendar_connect_state(
-        user_id=current_user.id, org_id=org_id, calendar_id=(calendar_id or "").strip() or None
-    )
+    state = create_calendar_connect_state(user_id=current_user.id, org_id=org_id)
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": _redirect_uri(),
@@ -113,7 +104,6 @@ async def callback(
     payload = decode_calendar_connect_state(state)
     user_id = payload["user_id"]
     org_id = payload["org_id"]
-    requested_calendar_id = payload.get("calendar_id")
 
     parent = db.query(User).filter(User.id == user_id).first()
     if parent is None or parent.is_kid_account:
@@ -156,39 +146,77 @@ async def callback(
 
     _store_google_token(db, user_id=user_id, provider_user_id=user_info.get("id") or str(user_id), token_json=token_json)
     _upsert_connection(db, org_id=org.id, parent_id=user_id, connected_by_user_id=user_id)
-    # Without this, CalendarSyncService.adapter_for() has a token to use but
-    # no calendar_provider/calendar_account_id to build an adapter from, so
-    # the connection would sit granted forever without ever actually syncing.
-    # An explicitly requested calendar_id always wins - reconnecting to name
-    # a different calendar (e.g. switching off primary to a child's own,
-    # non-primary calendar) is the whole point of offering the field at all.
-    org.calendar_provider = "google"
-    org.calendar_account_id = (
-        requested_calendar_id or org.calendar_account_id or GOOGLE_PRIMARY_CALENDAR
-    )
     db.commit()
 
-    await _pull_for_every_child(db, parent, org)
+    # calendar_provider/calendar_account_id stay unset until the parent
+    # actually picks a calendar below - guessing "primary" here was exactly
+    # the wrong-calendar dead end this two-step flow replaces.
+    return RedirectResponse(
+        url=f"/app/parent?tab=providers&choose_calendar_org={org.id}", status_code=303
+    )
 
-    return RedirectResponse(url="/app/parent?tab=providers", status_code=303)
 
-
-async def _pull_for_every_child(db: DbSession, parent: User, org: ProviderOrg) -> None:
+@router.get("/calendars")
+async def list_calendars(
+    org_id: int,
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
     """
-    Pull right away, the same as connecting an ICS feed does, so the parent
-    who just clicked through Google's consent screen sees whether it
-    actually worked instead of an empty week until their next visit.
-
-    Best-effort: a slow or failing first pull is a worse experience than a
-    delayed one, but it must never turn a successful connect into an error
-    page - the connection itself is already saved by the time this runs.
+    Every calendar the just-connected Google account can read - the
+    parent's own primary calendar and anything they've subscribed to,
+    including a child's calendar shared with them. Lets the parent pick by
+    name on the Providers tab instead of ever needing to know a raw
+    Calendar ID.
     """
-    service = CalendarSyncService(db)
-    for child_id in _resolve_child_ids(db, parent, None):
-        try:
-            await service.pull_org(org, child_id=child_id)
-        except Exception:
-            logger.exception("Initial pull after connecting org %s failed", org.id)
+    verify_parent_account(current_user)
+
+    connection = (
+        db.query(ProviderOrgConnection)
+        .filter(
+            ProviderOrgConnection.org_id == org_id,
+            ProviderOrgConnection.parent_id == current_user.id,
+            ProviderOrgConnection.connected_by_user_id.isnot(None),
+        )
+        .first()
+    )
+    if connection is None:
+        raise HTTPException(status_code=404, detail="No Google connection for this provider yet")
+
+    link = (
+        db.query(OAuthProvider)
+        .filter(
+            OAuthProvider.user_id == connection.connected_by_user_id,
+            OAuthProvider.provider == "google",
+        )
+        .first()
+    )
+    if link is None or not link.access_token:
+        raise HTTPException(status_code=404, detail="No Google token for this provider yet")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            GOOGLE_CALENDAR_LIST_URL,
+            headers={"Authorization": f"Bearer {link.access_token}"},
+            params={"minAccessRole": "reader"},
+        )
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail="Could not read your Google calendar list")
+
+    items = response.json().get("items", [])
+    calendars = [
+        {
+            "id": item["id"],
+            "summary": item.get("summary") or item["id"],
+            "primary": bool(item.get("primary")),
+        }
+        for item in items
+        if item.get("id")
+    ]
+    # A parent's own calendar first, then everything else in whatever
+    # order Google returned it - no reason to re-sort someone's own list.
+    calendars.sort(key=lambda c: not c["primary"])
+    return {"calendars": calendars}
 
 
 def _store_google_token(db: DbSession, user_id: int, provider_user_id: str, token_json: dict) -> None:

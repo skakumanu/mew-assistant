@@ -434,21 +434,22 @@
 
     loadProviders: function () {
       var host = document.getElementById('parent-providers');
+      var chooseOrgId = Number(new URLSearchParams(global.location.search).get('choose_calendar_org'));
       api('/calendar-sync/orgs').then(function (orgs) {
-        parent.renderProviders(host, orgs);
+        parent.renderProviders(host, orgs, chooseOrgId);
       }).catch(function () { failed(host); });
     },
 
-    renderProviders: function (host, orgs) {
+    renderProviders: function (host, orgs, chooseOrgId) {
       clear(host);
       if (!orgs.length) {
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_providers') }));
         return;
       }
-      orgs.forEach(function (org) { host.appendChild(parent.providerCard(org)); });
+      orgs.forEach(function (org) { host.appendChild(parent.providerCard(org, chooseOrgId)); });
     },
 
-    providerCard: function (org) {
+    providerCard: function (org, chooseOrgId) {
       var statusMsg = el('p', { class: 'log-row__meta' });
 
       var statusText = org.calendar_connected
@@ -461,12 +462,9 @@
         onclick: function () { parent.connectIcs(org.id, icsInput.value, statusMsg); }
       });
 
-      var googleCalendarIdInput = el('input', {
-        type: 'text', placeholder: t('parent.google_calendar_id_placeholder')
-      });
-      var connectGoogleBtn = el('button', {
-        class: 'btn btn--quiet', type: 'button', text: t('parent.connect_google'),
-        onclick: function () { parent.connectGoogle(org.id, googleCalendarIdInput.value); }
+      var connectGoogleBtn = el('a', {
+        class: 'btn btn--quiet', href: '/calendar-sync/google/connect?org_id=' + org.id,
+        text: t('parent.connect_google')
       });
 
       var syncBtn = el('button', {
@@ -474,20 +472,60 @@
         onclick: function () { parent.syncOrg(org.id, statusMsg); }
       });
 
-      return el('article', { class: 'provider-card' }, [
+      var card = el('article', { class: 'provider-card' }, [
         el('h3', { class: 'provider-card__name', text: org.name }),
         el('p', { class: 'field-label', text: statusText }),
         el('div', { class: 'actions' }, [icsInput, connectIcsBtn]),
-        el('div', { class: 'actions' }, [googleCalendarIdInput, connectGoogleBtn, syncBtn]),
+        el('div', { class: 'actions' }, [connectGoogleBtn, syncBtn]),
         statusMsg
       ]);
+
+      if (org.id === chooseOrgId) {
+        var pickerHost = el('div', { class: 'calendar-picker' });
+        card.insertBefore(pickerHost, statusMsg);
+        parent.loadCalendarPicker(org.id, pickerHost, statusMsg);
+      }
+
+      return card;
     },
 
-    connectGoogle: function (orgId, calendarId) {
-      var url = '/calendar-sync/google/connect?org_id=' + orgId;
-      var trimmed = (calendarId || '').trim();
-      if (trimmed) url += '&calendar_id=' + encodeURIComponent(trimmed);
-      window.location.href = url;
+    loadCalendarPicker: function (orgId, host, statusMsg) {
+      host.textContent = t('ui.loading');
+      api('/calendar-sync/google/calendars?org_id=' + orgId).then(function (data) {
+        parent.renderCalendarPicker(orgId, host, data.calendars || [], statusMsg);
+      }).catch(function () { host.textContent = t('ui.error'); });
+    },
+
+    renderCalendarPicker: function (orgId, host, calendars, statusMsg) {
+      clear(host);
+      if (!calendars.length) {
+        host.appendChild(el('p', { class: 'empty', text: t('parent.no_calendars_found') }));
+        return;
+      }
+      host.appendChild(el('p', { class: 'field-label', text: t('parent.choose_calendar') }));
+      var chips = calendars.map(function (cal) {
+        var label = cal.primary
+          ? t('parent.calendar_primary_label', { name: cal.summary })
+          : cal.summary;
+        return el('button', {
+          class: 'chip', type: 'button', text: label,
+          onclick: function () { parent.chooseGoogleCalendar(orgId, cal.id, host, statusMsg); }
+        });
+      });
+      host.appendChild(el('div', { class: 'chips' }, chips));
+    },
+
+    chooseGoogleCalendar: function (orgId, calendarId, pickerHost, statusMsg) {
+      statusMsg.textContent = t('ui.loading');
+      api('/calendar-sync/orgs/' + orgId + '/calendar', {
+        method: 'PUT', body: { calendar_provider: 'google', calendar_account_id: calendarId }
+      }).then(function (report) {
+        parent.showSyncReport(statusMsg, report);
+        clear(pickerHost);
+        var url = new URL(global.location.href);
+        url.searchParams.delete('choose_calendar_org');
+        global.history.replaceState(null, '', url.toString());
+      }).catch(function () { statusMsg.textContent = t('ui.error'); });
     },
 
     connectIcs: function (orgId, url, statusMsg) {
