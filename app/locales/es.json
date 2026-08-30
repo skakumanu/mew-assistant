@@ -87,7 +87,9 @@
     "ics_url_placeholder": "Pega la URL del calendario (.ics)",
     "connect_ics": "Conectar feed",
     "connect_google": "Conectar Google Calendar",
-    "google_calendar_id_placeholder": "Opcional: el ID de un calendario específico, si no es el principal",
+    "choose_calendar": "¿Qué calendario?",
+    "calendar_primary_label": "{name} (principal)",
+    "no_calendars_found": "No se encontraron calendarios en esa cuenta de Google.",
     "sync_now": "Sincronizar ahora",
     "sync_ok": "Sincronizado. {count} actualizados.",
     "sync_failed": "No se pudo sincronizar: {error}"
