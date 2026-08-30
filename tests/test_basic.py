@@ -35,6 +35,20 @@ def test_invalid_endpoint(client):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_a_browser_landing_on_the_bare_domain_goes_to_sign_in(client, monkeypatch):
+    """
+    Regression guard: `/` used to render its own hardcoded HTML with
+    "Sign in with Google/Microsoft" buttons pointing at /auth/simple/* -
+    routes that no longer exist since WorkOS AuthKit became the sign-in
+    front door. A real browser (no TESTING override, an HTML Accept
+    header) must be sent to the one entry point that still works.
+    """
+    monkeypatch.delenv("TESTING", raising=False)
+    response = client.get("/", headers={"Accept": "text/html"}, follow_redirects=False)
+    assert response.status_code in (302, 307)
+    assert response.headers["location"] == "/app/sign-in"
+
+
 def test_database_models_exist():
     """Test that database models module exists."""
     from app.database import models
