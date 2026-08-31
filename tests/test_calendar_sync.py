@@ -13,6 +13,7 @@ import pytest
 
 from app.database.models import (
     ChangeKind,
+    KidCalendarConnection,
     OAuthProvider,
     ProviderOrg,
     ProviderOrgConnection,
@@ -349,6 +350,62 @@ class TestPull:
             .one()
         )
         assert gone.is_cancelled is True
+
+    @pytest.mark.asyncio
+    async def test_a_pull_mirrors_into_a_connected_kid_calendar_too(
+        self, db_session, synced_org, monkeypatch
+    ):
+        """
+        A provider rescheduling on THEIR OWN calendar must reach a kid's
+        personal calendar too - not just parent-approval-driven changes,
+        which go through change_request_service's own hook instead.
+        """
+        db_session.add(
+            OAuthProvider(
+                user_id=synced_org["parent"].id,
+                provider="google",
+                provider_user_id="g-1",
+                access_token="token",
+            )
+        )
+        db_session.add(
+            KidCalendarConnection(
+                child_id=synced_org["kid"].id,
+                parent_id=synced_org["parent"].id,
+                connected_by_user_id=synced_org["parent"].id,
+                calendar_provider="google",
+                calendar_account_id="kid@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        calls = {"n": 0}
+
+        def kid_handler(request):
+            calls["n"] += 1
+            return httpx.Response(200, json={"id": f"kid-evt-{calls['n']}"})
+
+        import app.services.calendar_sync_service as module
+
+        real = module.GoogleCalendarAdapter
+
+        def patched(*args, **kwargs):
+            kwargs["client"] = httpx.AsyncClient(transport=httpx.MockTransport(kid_handler))
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(module, "GoogleCalendarAdapter", patched)
+
+        _serve(monkeypatch, ICS)
+        await CalendarSyncService(db_session).pull_org(
+            synced_org["org"], child_id=synced_org["kid"].id, now=datetime(2026, 9, 1)
+        )
+
+        # Two sessions were created by the pull (the cancelled one is
+        # skipped) - each should have been mirrored into the kid's own
+        # calendar and gotten its own kid_calendar_event_id.
+        rows = db_session.query(ScheduledSession).all()
+        assert calls["n"] == 2
+        assert all(row.kid_calendar_event_id for row in rows)
 
     @pytest.mark.asyncio
     async def test_a_disconnected_calendar_reports_rather_than_raising(
