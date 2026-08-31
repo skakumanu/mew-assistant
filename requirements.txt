@@ -44,4 +44,4 @@ python-dateutil==2.9.0.post0
 pytz==2024.2
 bleach==6.4.0
 pytest-asyncio==0.23.8
-pytest-benchmark==5.2.3
+pytest-benchmark==5.3.0
