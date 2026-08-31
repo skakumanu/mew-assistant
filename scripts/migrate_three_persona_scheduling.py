@@ -112,10 +112,14 @@ def add_approval_columns(dry_run: bool) -> None:
         logger.info("Added approval_requests.%s", name)
 
 
-# Columns added to tables this migration created in an earlier run.
+# Columns added after their table already existed - create_all() only ever
+# creates missing tables, never alters an existing one's columns.
 LATE_COLUMNS = {
     "rule_sets": {
         "caregiver_term": {"postgresql": "VARCHAR(20)", "sqlite": "VARCHAR(20)"},
+    },
+    "scheduled_sessions": {
+        "kid_calendar_event_id": {"postgresql": "VARCHAR(255)", "sqlite": "VARCHAR(255)"},
     },
 }
 
