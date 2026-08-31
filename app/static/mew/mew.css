@@ -488,6 +488,8 @@ a:hover { color: var(--green-hover); }
 }
 .btn--send:hover { background: var(--green-hover); }
 .provider-note { font-size: 12px; color: #948C82; line-height: 1.5; }
+.provider-note p { margin: 0 0 6px; }
+.provider-note ul { margin: 0; padding-left: 18px; }
 .provider-banner { border-radius: 16px; padding: 13px 15px; font-size: 14px; line-height: 1.45; }
 .provider-banner--ok { background: var(--green-tint); border: 1px solid var(--green-edge); color: #24483A; }
 .provider-banner--sent { background: var(--amber-tint); border: 1px solid var(--amber-edge); color: var(--amber-text); }
