@@ -120,6 +120,32 @@ class GoogleCalendarAdapter(CalendarAdapter):
         )
         return True
 
+    async def create_event(
+        self,
+        title: str,
+        start_utc: datetime,
+        duration_minutes: int,
+        location: Optional[str] = None,
+    ) -> Optional[str]:
+        body: Dict[str, Any] = {
+            "summary": title,
+            "start": {"dateTime": _rfc3339(start_utc), "timeZone": "UTC"},
+            "end": {
+                "dateTime": _rfc3339(start_utc + timedelta(minutes=duration_minutes)),
+                "timeZone": "UTC",
+            },
+        }
+        if location is not None:
+            body["location"] = location
+
+        created = await self._request(
+            "POST",
+            f"/calendars/{_quote(self.calendar_id)}/events",
+            json=body,
+            params={"sendUpdates": "all"},
+        )
+        return created.get("id")
+
     # -- transport --------------------------------------------------------
 
     async def _request(

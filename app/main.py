@@ -66,6 +66,7 @@ from .routers import (
     calendar_web_router,
     change_requests_router,
     debug_router,
+    kid_calendar_oauth_router,
     kid_router,
     message_router,
     mew_ui_router,
@@ -111,6 +112,7 @@ for _caregiver_prefix in ("/parent", "/guardian"):
 app.include_router(provider_router, tags=["provider"])
 app.include_router(calendar_sync_router, tags=["calendar-sync"])
 app.include_router(calendar_oauth_router, tags=["calendar-sync"])
+app.include_router(kid_calendar_oauth_router, tags=["calendar-sync"])
 
 # Attention, not authority: batching and history, never a decision.
 app.include_router(smart_approval_router, tags=["smart-approval"])
