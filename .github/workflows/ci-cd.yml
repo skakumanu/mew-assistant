@@ -61,7 +61,7 @@ jobs:
         flake8 app tests --count --exit-zero --max-complexity=10 --max-line-length=119 --statistics
 
   osv_scan:
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.3"
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.1"
     permissions:
       actions: read
       security-events: write
