@@ -462,6 +462,19 @@
         onclick: function () { parent.connectIcs(org.id, icsInput.value, statusMsg); }
       });
 
+      var icsHelpBody = el('div', { class: 'provider-note', hidden: true }, [
+        el('p', { text: t('parent.ics_help_intro') }),
+        el('ul', {}, [
+          el('li', { text: t('parent.ics_help_google') }),
+          el('li', { text: t('parent.ics_help_outlook') }),
+          el('li', { text: t('parent.ics_help_apple') })
+        ])
+      ]);
+      var icsHelpToggle = el('button', {
+        class: 'btn btn--quiet', type: 'button', text: t('parent.ics_help_toggle'),
+        onclick: function () { icsHelpBody.hidden = !icsHelpBody.hidden; }
+      });
+
       var connectGoogleBtn = el('a', {
         class: 'btn btn--quiet', href: '/calendar-sync/google/connect?org_id=' + org.id,
         text: t('parent.connect_google')
@@ -475,7 +488,8 @@
       var card = el('article', { class: 'provider-card' }, [
         el('h3', { class: 'provider-card__name', text: org.name }),
         el('p', { class: 'field-label', text: statusText }),
-        el('div', { class: 'actions' }, [icsInput, connectIcsBtn]),
+        el('div', { class: 'actions' }, [icsInput, connectIcsBtn, icsHelpToggle]),
+        icsHelpBody,
         el('div', { class: 'actions' }, [connectGoogleBtn, syncBtn]),
         statusMsg
       ]);
