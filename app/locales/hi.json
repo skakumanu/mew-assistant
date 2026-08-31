@@ -97,7 +97,14 @@
     "no_calendars_found": "उस Google खाते में कोई कैलेंडर नहीं मिला।",
     "sync_now": "अभी सिंक करें",
     "sync_ok": "सिंक हो गया। {count} अपडेट हुए।",
-    "sync_failed": "सिंक नहीं हो सका: {error}"
+    "sync_failed": "सिंक नहीं हो सका: {error}",
+    "tab_kid_calendars": "आपके बच्चे का अपना कैलेंडर",
+    "kid_calendars_intro": "अपने बच्चे का अपना Google कैलेंडर जोड़ें और उनका शेड्यूल वहाँ अपने आप दिखने लगेगा, बाकी सब चीज़ों के साथ जो वे पहले से देखते हैं।",
+    "no_kids_yet": "अभी कोई बच्चा नहीं है। सेटअप से एक जोड़ें, या जोड़ने के बाद वापस आएं।",
+    "kid_calendar_connected": "जुड़ा हुआ है।",
+    "kid_calendar_not_connected": "अभी तक नहीं जुड़ा।",
+    "connect_kid_google": "उनका Google कैलेंडर जोड़ें",
+    "kid_calendar_connect_ok": "जुड़ गया। उनका शेड्यूल वहाँ दिखने लगेगा।"
   },
   "kid": {
     "my_day": "मेरा दिन",

@@ -76,3 +76,13 @@ class CalendarAdapter(ABC):
     async def cancel_event(self, external_id: str) -> bool:
         """Cancel an event. Returns False when this calendar cannot be written to."""
         return False
+
+    async def create_event(
+        self,
+        title: str,
+        start_utc: datetime,
+        duration_minutes: int,
+        location: Optional[str] = None,
+    ) -> Optional[str]:
+        """Create a new event. Returns its external id, or None if this calendar cannot be written to."""
+        return None

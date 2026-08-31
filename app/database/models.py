@@ -809,6 +809,39 @@ class ProviderOrgConnection(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class KidCalendarConnection(Base):
+    """
+    A parent's push target: their kid's own personal calendar.
+
+    Distinct from ``ProviderOrgConnection`` - this is one-way (Mew writes
+    to it, never reads from it) and belongs to a ``User`` (the kid), not a
+    ``ProviderOrg``. The unique constraint on ``child_id`` alone (not
+    ``(child_id, parent_id)``) is deliberate: a kid has exactly one push
+    target, so a co-parent reconnecting it updates this same row rather
+    than creating a sibling one.
+    """
+
+    __tablename__ = "kid_calendar_connections"
+    __table_args__ = (
+        UniqueConstraint("child_id", name="uq_kid_calendar_connection_child"),
+        {"extend_existing": True},
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    child_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # Who authorised Google access for this connection - used to find the
+    # token in OAuthProvider. See ProviderOrgConnection's own comment for
+    # why this is usually-but-not-always the same as parent_id.
+    connected_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    calendar_provider = Column(String(50), nullable=True)  # "google" only, for now
+    calendar_account_id = Column(String(255), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class ProviderPerson(Base):
     """An individual therapist inside a provider organisation."""
 
@@ -853,6 +886,11 @@ class ScheduledSession(Base):
 
     source = Column(String(20), default=SessionSource.CALENDAR.value, nullable=False)
     external_event_id = Column(String(255), nullable=True)
+    # The mirrored copy of this session in the kid's OWN personal calendar,
+    # if one is connected (KidCalendarConnection) - a different external
+    # calendar and a different id than external_event_id above, which is
+    # always the provider org's copy.
+    kid_calendar_event_id = Column(String(255), nullable=True)
 
     is_cancelled = Column(Boolean, default=False, nullable=False)
     # Drives the "updated" pill in the parent's week view.

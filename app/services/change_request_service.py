@@ -627,17 +627,27 @@ class ChangeRequestService:
         """
         from .calendar_sync_service import CalendarSyncService
 
+        service = CalendarSyncService(self.db)
+
         try:
-            pushed = await CalendarSyncService(self.db).push(session, kind)
+            pushed = await service.push(session, kind)
         except Exception as exc:  # a calendar never breaks the loop
             logger.warning("Calendar write-back failed for session %s: %s", session.id, exc)
-            return
+            pushed = False
 
         if not pushed:
             logger.info(
                 "Session %s changed in Mew but not written back (no writable calendar)",
                 session.id,
             )
+
+        # Independent of the provider write-back above: a kid's own
+        # calendar, if connected, mirrors every change too. One failing
+        # must never block the other.
+        try:
+            await service.push_to_kid_calendar(session, kind)
+        except Exception as exc:  # a calendar never breaks the loop
+            logger.warning("Kid calendar write-back failed for session %s: %s", session.id, exc)
 
     def _notify_requester(
         self,
