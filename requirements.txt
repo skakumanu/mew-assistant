@@ -41,7 +41,7 @@ twilio==9.11.0
 # Other
 requests==2.33.0
 python-dateutil==2.9.0.post0
-pytz==2024.2
+pytz==2026.3.post1
 bleach==6.4.0
 pytest-asyncio==0.23.8
 pytest-benchmark==5.2.3
