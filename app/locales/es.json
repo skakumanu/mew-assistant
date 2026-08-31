@@ -97,7 +97,14 @@
     "no_calendars_found": "No se encontraron calendarios en esa cuenta de Google.",
     "sync_now": "Sincronizar ahora",
     "sync_ok": "Sincronizado. {count} actualizados.",
-    "sync_failed": "No se pudo sincronizar: {error}"
+    "sync_failed": "No se pudo sincronizar: {error}",
+    "tab_kid_calendars": "El calendario de tu hijo/a",
+    "kid_calendars_intro": "Conecta el Google Calendar propio de tu hijo/a y su horario aparecerá ahí automáticamente, junto a todo lo demás que ya ve.",
+    "no_kids_yet": "Aún no hay hijos. Añade uno desde la configuración, o vuelve cuando lo hagas.",
+    "kid_calendar_connected": "Conectado.",
+    "kid_calendar_not_connected": "Aún no conectado.",
+    "connect_kid_google": "Conectar su Google Calendar",
+    "kid_calendar_connect_ok": "Conectado. Su horario empezará a aparecer ahí."
   },
   "kid": {
     "my_day": "Mi día",

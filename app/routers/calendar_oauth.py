@@ -41,7 +41,13 @@ GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 GOOGLE_CALENDAR_LIST_URL = "https://www.googleapis.com/calendar/v3/users/me/calendarList"
-CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
+# Read/write, not calendar.readonly: this same scope is also requested by
+# kid_calendar_oauth.py, which needs to WRITE to a kid's own calendar. One
+# scope shared by both flows is simpler than tracking which token can do
+# what - and this also fixes a latent bug, since CalendarSyncService.push()
+# already calls update_event()/cancel_event() on a provider's calendar
+# using a token that, until now, only ever had read access.
+CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar"
 
 
 def _redirect_uri() -> str:

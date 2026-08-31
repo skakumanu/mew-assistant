@@ -8,6 +8,7 @@ from .calendar_oauth import router as calendar_oauth_router
 from .calendar_sync import router as calendar_sync_router
 from .calendar_web import router as calendar_web_router
 from .debug_page import router as debug_router
+from .kid_calendar_oauth import router as kid_calendar_oauth_router
 from .kid_friendly import router as kid_router
 from .message import router as message_router
 from .mew_ui import router as mew_ui_router
@@ -42,6 +43,7 @@ __all__ = [
     "provider_router",
     "calendar_sync_router",
     "calendar_oauth_router",
+    "kid_calendar_oauth_router",
     "smart_approval_router",
     "notifications_router",
     "onboarding_setup_router",

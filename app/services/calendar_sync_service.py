@@ -21,12 +21,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session as DbSession
 
 from ..database.models import (
     ChangeKind,
+    KidCalendarConnection,
     OAuthProvider,
     ProviderOrg,
     ProviderOrgConnection,
@@ -186,15 +187,26 @@ class CalendarSyncService:
 
         result = SyncResult()
         seen: List[str] = []
+        touched: List[Tuple[ScheduledSession, ChangeKind]] = []
 
         for event in events:
             seen.append(event.external_id)
-            self._upsert(event, org, child_id, result)
+            self._upsert(event, org, child_id, result, touched)
 
         # An event that vanished from the feed was cancelled at the source.
-        self._cancel_missing(org, child_id, window_start, window_end, seen, result)
+        self._cancel_missing(org, child_id, window_start, window_end, seen, result, touched)
 
         self.db.commit()
+
+        # A provider rescheduling on their OWN calendar should reach a kid's
+        # personal calendar too, not just parent-approval-driven changes
+        # (change_request_service.py's own hook covers those separately).
+        for session, kind in touched:
+            try:
+                await self.push_to_kid_calendar(session, kind)
+            except Exception:
+                logger.exception("Kid calendar mirror failed for session %s", session.id)
+
         return result
 
     def _upsert(
@@ -203,6 +215,7 @@ class CalendarSyncService:
         org: ProviderOrg,
         child_id: int,
         result: SyncResult,
+        touched: List[Tuple[ScheduledSession, ChangeKind]],
     ) -> None:
         existing = (
             self.db.query(ScheduledSession)
@@ -218,26 +231,27 @@ class CalendarSyncService:
             if event.cancelled:
                 result.skipped += 1
                 return
-            self.db.add(
-                ScheduledSession(
-                    child_id=child_id,
-                    provider_org_id=org.id,
-                    title=event.title,
-                    activity_type=_activity_for(org),
-                    start_utc=event.start_utc,
-                    duration_minutes=event.duration_minutes,
-                    location=event.location,
-                    source=SessionSource.CALENDAR.value,
-                    external_event_id=event.external_id,
-                )
+            new_session = ScheduledSession(
+                child_id=child_id,
+                provider_org_id=org.id,
+                title=event.title,
+                activity_type=_activity_for(org),
+                start_utc=event.start_utc,
+                duration_minutes=event.duration_minutes,
+                location=event.location,
+                source=SessionSource.CALENDAR.value,
+                external_event_id=event.external_id,
             )
+            self.db.add(new_session)
             result.created += 1
+            touched.append((new_session, ChangeKind.MOVE))
             return
 
         if event.cancelled:
             if not existing.is_cancelled:
                 existing.is_cancelled = True
                 result.cancelled += 1
+                touched.append((existing, ChangeKind.CANCEL))
             else:
                 result.skipped += 1
             return
@@ -260,6 +274,7 @@ class CalendarSyncService:
         # Deliberately NOT last_changed_at: that pill means "your rules
         # handled a request", not "the provider edited their own calendar".
         result.updated += 1
+        touched.append((existing, ChangeKind.MOVE))
 
     def _cancel_missing(
         self,
@@ -269,6 +284,7 @@ class CalendarSyncService:
         window_end: datetime,
         seen: List[str],
         result: SyncResult,
+        touched: List[Tuple[ScheduledSession, ChangeKind]],
     ) -> None:
         rows = (
             self.db.query(ScheduledSession)
@@ -287,6 +303,7 @@ class CalendarSyncService:
             if row.external_event_id not in seen:
                 row.is_cancelled = True
                 result.cancelled += 1
+                touched.append((row, ChangeKind.CANCEL))
 
     # ------------------------------------------------------------------
     # push
@@ -325,6 +342,97 @@ class CalendarSyncService:
             # change the rules allowed.
             logger.warning("Calendar write-back failed for session %s: %s", session.id, exc)
             return False
+
+    async def push_to_kid_calendar(self, session: ScheduledSession, kind: ChangeKind) -> bool:
+        """
+        Mirror this session into the kid's OWN personal calendar, if a
+        parent has connected one.
+
+        Independent of push() above: this always targets the kid's own
+        calendar (KidCalendarConnection), never the provider org's, and
+        works even for a session with no external_event_id at all (one
+        entered by hand) - the mirror is for the kid to see, not the
+        provider. Create/update/cancel is decided purely from whether
+        session.kid_calendar_event_id is already set, since that is the
+        only thing that identifies the mirrored event afterward.
+        """
+        connection = (
+            self.db.query(KidCalendarConnection)
+            .filter(KidCalendarConnection.child_id == session.child_id)
+            .first()
+        )
+        if connection is None or not connection.calendar_account_id:
+            return False
+
+        adapter = self._google_adapter_for_kid(connection)
+        if adapter is None or not adapter.writable:
+            return False
+
+        try:
+            if kind is ChangeKind.CANCEL:
+                if not session.kid_calendar_event_id:
+                    return False
+                cancelled = await adapter.cancel_event(session.kid_calendar_event_id)
+                if cancelled:
+                    session.kid_calendar_event_id = None
+                    self.db.commit()
+                return cancelled
+
+            if session.kid_calendar_event_id:
+                return await adapter.update_event(
+                    external_id=session.kid_calendar_event_id,
+                    start_utc=session.start_utc,
+                    duration_minutes=session.duration_minutes,
+                    location=session.location,
+                )
+
+            new_id = await adapter.create_event(
+                title=session.title,
+                start_utc=session.start_utc,
+                duration_minutes=session.duration_minutes,
+                location=session.location,
+            )
+            if not new_id:
+                return False
+            session.kid_calendar_event_id = new_id
+            self.db.commit()
+            return True
+        except CalendarSyncError as exc:
+            logger.warning("Kid calendar write-back failed for session %s: %s", session.id, exc)
+            return False
+
+    def _google_adapter_for_kid(
+        self, connection: KidCalendarConnection
+    ) -> Optional[GoogleCalendarAdapter]:
+        """Same token-lookup shape as _google_adapter, keyed on a kid's own connection."""
+        if connection.connected_by_user_id is None:
+            return None
+
+        link = (
+            self.db.query(OAuthProvider)
+            .filter(
+                OAuthProvider.provider == "google",
+                OAuthProvider.user_id == connection.connected_by_user_id,
+                OAuthProvider.access_token.isnot(None),
+            )
+            .first()
+        )
+        if link is None:
+            logger.info("Kid %s has no usable Google token", connection.child_id)
+            return None
+
+        def persist(access_token: str, expires_at: Optional[datetime]) -> None:
+            link.access_token = access_token
+            link.token_expires_at = expires_at
+            self.db.commit()
+
+        return GoogleCalendarAdapter(
+            access_token=link.access_token,
+            calendar_id=connection.calendar_account_id,
+            refresh_token=link.refresh_token,
+            expires_at=link.token_expires_at,
+            on_token_refreshed=persist,
+        )
 
 
 def _activity_for(org: ProviderOrg) -> str:

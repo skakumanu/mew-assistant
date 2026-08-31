@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session as DbSession
 
 from ..database import get_db
-from ..database.models import ProviderOrg, ProviderOrgConnection, User
+from ..database.models import KidCalendarConnection, ProviderOrg, ProviderOrgConnection, User
 from ..services.calendar_sync_service import CalendarSyncService
 from ..utils.auth import get_current_user, verify_parent_account
 
@@ -228,3 +228,67 @@ async def list_my_orgs(
         )
         for org in rows
     ]
+
+
+class ConnectKidCalendar(BaseModel):
+    """Point a kid's push target at the personal calendar the parent picked."""
+
+    calendar_provider: str  # google only, for now
+    calendar_account_id: str  # a Google calendar id
+
+
+class KidCalendarConnectionOut(BaseModel):
+    """What connecting a kid's own calendar actually did - no pull happens here."""
+
+    child_id: int
+    ok: bool
+    calendar_connected: bool
+
+
+@router.put("/kids/{child_id}/calendar", response_model=KidCalendarConnectionOut)
+async def connect_kid_calendar(
+    child_id: int,
+    payload: ConnectKidCalendar,
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """
+    Point a kid's personal-calendar push target at the calendar the parent
+    picked. Push-only: nothing is pulled from it, so unlike connecting a
+    provider's calendar this never imports anything - the mirror only
+    starts filling in from the next approved change or provider sync.
+    """
+    verify_parent_account(current_user)
+
+    provider = payload.calendar_provider.strip().lower()
+    if provider != "google":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="calendar_provider must be 'google'",
+        )
+
+    child = db.query(User).filter(User.id == child_id).first()
+    if child is None or child.parent_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your child")
+
+    connection = _upsert_kid_connection(db, child_id=child.id, parent_id=current_user.id)
+    connection.calendar_provider = provider
+    connection.calendar_account_id = payload.calendar_account_id.strip()
+    db.commit()
+
+    return KidCalendarConnectionOut(child_id=child.id, ok=True, calendar_connected=True)
+
+
+def _upsert_kid_connection(
+    db: DbSession, child_id: int, parent_id: int, connected_by_user_id: Optional[int] = None
+) -> KidCalendarConnection:
+    """Find-or-create a kid's push-target row. One per kid - see the model's own docstring."""
+    connection = (
+        db.query(KidCalendarConnection).filter(KidCalendarConnection.child_id == child_id).first()
+    )
+    if connection is None:
+        connection = KidCalendarConnection(child_id=child_id, parent_id=parent_id)
+        db.add(connection)
+    if connected_by_user_id is not None:
+        connection.connected_by_user_id = connected_by_user_id
+    return connection

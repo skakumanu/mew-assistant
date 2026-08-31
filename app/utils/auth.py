@@ -146,10 +146,14 @@ CALENDAR_CONNECT_STATE_TYPE = "calendar_connect"
 CALENDAR_CONNECT_STATE_EXPIRE_MINUTES = 10
 
 
-def create_calendar_connect_state(user_id: int, org_id: int) -> str:
+def create_calendar_connect_state(
+    user_id: int, org_id: Optional[int] = None, child_id: Optional[int] = None
+) -> str:
     """
-    Sign a short-lived ``state`` value for the Google Calendar connect
-    flow (``app/routers/calendar_oauth.py``).
+    Sign a short-lived ``state`` value for a Google Calendar connect flow -
+    either a provider org's calendar (``app/routers/calendar_oauth.py``) or
+    a kid's own personal calendar (``app/routers/kid_calendar_oauth.py``).
+    Exactly one of ``org_id``/``child_id`` must be given.
 
     This is NOT ``create_access_token``: that always stamps ``type:
     "access"``, which would make a state value - sitting in a URL, visible
@@ -158,12 +162,18 @@ def create_calendar_connect_state(user_id: int, org_id: int) -> str:
     token's own ``type`` makes it something ``get_current_user`` already
     refuses to accept.
     """
+    if (org_id is None) == (child_id is None):
+        raise ValueError("create_calendar_connect_state needs exactly one of org_id/child_id")
+
     to_encode = {
         "user_id": user_id,
-        "org_id": org_id,
         "type": CALENDAR_CONNECT_STATE_TYPE,
         "exp": datetime.utcnow() + timedelta(minutes=CALENDAR_CONNECT_STATE_EXPIRE_MINUTES),
     }
+    if org_id is not None:
+        to_encode["org_id"] = org_id
+    else:
+        to_encode["child_id"] = child_id
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
