@@ -97,7 +97,14 @@
     "no_calendars_found": "No calendars found on that Google account.",
     "sync_now": "Sync now",
     "sync_ok": "Synced. {count} updated.",
-    "sync_failed": "Couldn't sync: {error}"
+    "sync_failed": "Couldn't sync: {error}",
+    "tab_kid_calendars": "Your kid's own calendar",
+    "kid_calendars_intro": "Connect your kid's own Google Calendar and their schedule will show up there automatically, right alongside everything else they already see.",
+    "no_kids_yet": "No kids yet. Add one from setup, or come back once you have.",
+    "kid_calendar_connected": "Connected.",
+    "kid_calendar_not_connected": "Not connected yet.",
+    "connect_kid_google": "Connect their Google Calendar",
+    "kid_calendar_connect_ok": "Connected. Their schedule will start appearing there."
   },
   "kid": {
     "my_day": "My day",

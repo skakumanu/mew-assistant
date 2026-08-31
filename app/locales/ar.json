@@ -97,7 +97,14 @@
     "no_calendars_found": "لم يتم العثور على أي تقويم في ذلك الحساب.",
     "sync_now": "مزامنة الآن",
     "sync_ok": "تمت المزامنة. تم تحديث {count}.",
-    "sync_failed": "تعذّرت المزامنة: {error}"
+    "sync_failed": "تعذّرت المزامنة: {error}",
+    "tab_kid_calendars": "تقويم طفلك الخاص",
+    "kid_calendars_intro": "اربط تقويم Google الخاص بطفلك وسيظهر جدوله هناك تلقائيًا، إلى جانب كل شيء آخر يراه بالفعل.",
+    "no_kids_yet": "لا يوجد أطفال بعد. أضف واحدًا من الإعداد، أو عد بعد إضافته.",
+    "kid_calendar_connected": "متصل.",
+    "kid_calendar_not_connected": "غير متصل بعد.",
+    "connect_kid_google": "ربط تقويم Google الخاص به",
+    "kid_calendar_connect_ok": "تم الربط. سيبدأ جدوله بالظهور هناك."
   },
   "kid": {
     "my_day": "يومي",
