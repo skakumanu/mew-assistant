@@ -275,7 +275,33 @@ class TestConnectKidCalendarEndpoint:
         )
         assert response.status_code == status.HTTP_200_OK
         body = response.json()
-        assert body == {"child_id": family["kid"].id, "ok": True, "calendar_connected": True}
+        assert body == {
+            "child_id": family["kid"].id,
+            "ok": True,
+            "calendar_connected": True,
+            "calendar_display_name": None,
+        }
+
+    def test_calendar_display_name_is_saved_and_returned(self, client, family):
+        """
+        A raw calendar id means nothing on the Providers tab - this is the
+        human-readable name shown instead, so it must round-trip through
+        both this save response and the kid/list endpoint the card renders
+        from.
+        """
+        response = client.put(
+            f"/calendar-sync/kids/{family['kid'].id}/calendar",
+            json={
+                "calendar_provider": "google",
+                "calendar_account_id": "kid@group.calendar.google.com",
+                "calendar_display_name": "Sindhu's Calendar",
+            },
+            headers=_auth(family["parent"]),
+        )
+        assert response.json()["calendar_display_name"] == "Sindhu's Calendar"
+
+        listed = client.get("/calendar-sync/google/kid/list", headers=_auth(family["parent"])).json()
+        assert listed[0]["calendar_display_name"] == "Sindhu's Calendar"
 
     def test_a_parent_cannot_point_another_familys_kid(self, client, db_session, family):
         other_parent = User(
