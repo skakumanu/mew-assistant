@@ -83,6 +83,7 @@
     "providers_intro": "Connect the calendar each provider already keeps, so their sessions show up here on their own.",
     "no_providers": "No providers yet. Add one from setup, or come back once you have.",
     "calendar_connected": "Connected via {provider}.",
+    "calendar_connected_named": "Connected to {name} via {provider}.",
     "calendar_not_connected": "Not connected yet.",
     "ics_url_placeholder": "Paste a calendar feed URL (.ics)",
     "connect_ics": "Connect feed",
@@ -102,6 +103,7 @@
     "kid_calendars_intro": "Connect your kid's own Google Calendar and their schedule will show up there automatically, right alongside everything else they already see.",
     "no_kids_yet": "No kids yet. Add one from setup, or come back once you have.",
     "kid_calendar_connected": "Connected.",
+    "kid_calendar_connected_named": "Connected to {name}.",
     "kid_calendar_not_connected": "Not connected yet.",
     "connect_kid_google": "Connect their Google Calendar",
     "kid_calendar_connect_ok": "Connected. Their schedule will start appearing there."

@@ -769,6 +769,11 @@ class ProviderOrg(Base):
     # The calendar the org already works in - no portal login is introduced.
     calendar_provider = Column(String(50), nullable=True)  # google/microsoft/apple/calendly/ics
     calendar_account_id = Column(String(255), nullable=True)
+    # A raw calendar_account_id ("skakumanu@gmail.com" is a primary
+    # calendar's real id, not a placeholder) is meaningless to a parent
+    # glancing at the Providers tab - this is the human-readable name shown
+    # instead, exactly as Google's own picker labelled it when they chose it.
+    calendar_display_name = Column(String(255), nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -838,6 +843,7 @@ class KidCalendarConnection(Base):
 
     calendar_provider = Column(String(50), nullable=True)  # "google" only, for now
     calendar_account_id = Column(String(255), nullable=True)
+    calendar_display_name = Column(String(255), nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

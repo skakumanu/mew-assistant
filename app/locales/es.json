@@ -83,6 +83,7 @@
     "providers_intro": "Conecta el calendario que cada proveedor ya usa, para que sus sesiones aparezcan aquí solas.",
     "no_providers": "Aún no hay proveedores. Añade uno desde la configuración, o vuelve cuando lo hagas.",
     "calendar_connected": "Conectado vía {provider}.",
+    "calendar_connected_named": "Conectado a {name} vía {provider}.",
     "calendar_not_connected": "Aún no conectado.",
     "ics_url_placeholder": "Pega la URL del calendario (.ics)",
     "connect_ics": "Conectar feed",
@@ -102,6 +103,7 @@
     "kid_calendars_intro": "Conecta el Google Calendar propio de tu hijo/a y su horario aparecerá ahí automáticamente, junto a todo lo demás que ya ve.",
     "no_kids_yet": "Aún no hay hijos. Añade uno desde la configuración, o vuelve cuando lo hagas.",
     "kid_calendar_connected": "Conectado.",
+    "kid_calendar_connected_named": "Conectado a {name}.",
     "kid_calendar_not_connected": "Aún no conectado.",
     "connect_kid_google": "Conectar su Google Calendar",
     "kid_calendar_connect_ok": "Conectado. Su horario empezará a aparecer ahí."
