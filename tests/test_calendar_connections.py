@@ -16,6 +16,7 @@ from fastapi import status
 from jose import jwt
 
 from app.database.models import OAuthProvider, ProviderOrg, ProviderOrgConnection, User
+from app.integrations.calendar_sync.google import GoogleCalendarAdapter
 from app.services.calendar_sync_service import CalendarSyncService
 from app.utils.auth import (
     ALGORITHM,
@@ -114,6 +115,29 @@ class TestConnectOrgCalendar:
             .one()
         )
         assert connection is not None
+
+    def test_calendar_display_name_is_saved_and_listed(self, client, family, monkeypatch):
+        """
+        A raw calendar_account_id (a primary calendar's own email address,
+        or an opaque group-calendar id) tells a parent nothing on the
+        Providers tab - this is the human-readable name shown instead, so
+        it must round-trip through save and the /orgs listing.
+        """
+        _serve_ics(monkeypatch)
+
+        response = client.put(
+            f"/calendar-sync/orgs/{family['org'].id}/calendar",
+            json={
+                "calendar_provider": "ics",
+                "calendar_account_id": "https://example.test/feed.ics",
+                "calendar_display_name": "Sindhu's Calendar",
+            },
+            headers=_auth(family["parent"]),
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        listed = client.get("/calendar-sync/orgs", headers=_auth(family["parent"])).json()
+        assert listed[0]["calendar_display_name"] == "Sindhu's Calendar"
 
 
 class TestListMyOrgs:
@@ -308,6 +332,123 @@ class TestGoogleCalendarConnectFlow:
 
         response = client.get("/calendar-sync/orgs", headers=_auth(other_parent))
         assert response.json() == []
+
+
+class TestGoogleAdapterFamilyScoping:
+    """
+    ProviderOrg is global (matched by name), so two unrelated families can
+    both hold a ProviderOrgConnection on the very same org row. Before this
+    was fixed, _google_adapter() picked whichever connected_by_user_id's
+    token its query happened to find first - meaning a pull for one
+    family could silently use another family's Google token.
+    """
+
+    def test_pull_uses_this_familys_token_not_another_familys(self, db_session, family):
+        org = family["org"]
+        org.calendar_account_id = "shared-calendar-id"
+        db_session.commit()
+
+        parent_a = family["parent"]
+        db_session.add(
+            OAuthProvider(
+                user_id=parent_a.id, provider="google", provider_user_id="a", access_token="token-A"
+            )
+        )
+        db_session.add(
+            ProviderOrgConnection(org_id=org.id, parent_id=parent_a.id, connected_by_user_id=parent_a.id)
+        )
+        db_session.commit()
+
+        parent_b = User(
+            email="parent-b@example.com",
+            username="parent-b",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add(parent_b)
+        db_session.commit()
+        db_session.add(
+            OAuthProvider(
+                user_id=parent_b.id, provider="google", provider_user_id="b", access_token="token-B"
+            )
+        )
+        db_session.add(
+            ProviderOrgConnection(org_id=org.id, parent_id=parent_b.id, connected_by_user_id=parent_b.id)
+        )
+        db_session.commit()
+
+        service = CalendarSyncService(db_session)
+        adapter_for_b = service.adapter_for(org, parent_id=parent_b.id)
+        assert adapter_for_b.access_token == "token-B"
+
+        adapter_for_a = service.adapter_for(org, parent_id=parent_a.id)
+        assert adapter_for_a.access_token == "token-A"
+
+    async def test_pull_org_derives_the_scope_from_child_id_automatically(
+        self, db_session, family, monkeypatch
+    ):
+        """A caller with no explicit parent_id (every real caller passes child_id
+        already) still gets the right family's token, via the child's own
+        parent_id - not just whichever token the query finds first."""
+        org = family["org"]
+        org.calendar_account_id = "shared-calendar-id"
+        db_session.commit()
+
+        parent_a = family["parent"]
+        db_session.add(
+            OAuthProvider(
+                user_id=parent_a.id, provider="google", provider_user_id="a", access_token="token-A"
+            )
+        )
+        db_session.add(
+            ProviderOrgConnection(org_id=org.id, parent_id=parent_a.id, connected_by_user_id=parent_a.id)
+        )
+        db_session.commit()
+
+        parent_b = User(
+            email="parent-b2@example.com",
+            username="parent-b2",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add(parent_b)
+        db_session.commit()
+        kid_b = User(
+            email="kid-b2@example.com",
+            username="kid-b2",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+            is_kid_account=True,
+            parent_id=parent_b.id,
+        )
+        db_session.add(kid_b)
+        db_session.commit()
+        db_session.add(
+            OAuthProvider(
+                user_id=parent_b.id, provider="google", provider_user_id="b", access_token="token-B"
+            )
+        )
+        db_session.add(
+            ProviderOrgConnection(org_id=org.id, parent_id=parent_b.id, connected_by_user_id=parent_b.id)
+        )
+        db_session.commit()
+
+        seen_tokens = []
+        real_init = GoogleCalendarAdapter.__init__
+
+        def capture_init(self, access_token, **kwargs):
+            seen_tokens.append(access_token)
+            return real_init(self, access_token, **kwargs)
+
+        async def fake_list_events(self, start, end):
+            return []
+
+        monkeypatch.setattr(GoogleCalendarAdapter, "__init__", capture_init)
+        monkeypatch.setattr(GoogleCalendarAdapter, "list_events", fake_list_events)
+
+        await CalendarSyncService(db_session).pull_org(org, child_id=kid_b.id)
+
+        assert seen_tokens == ["token-B"]
 
 
 class TestListGoogleCalendars:

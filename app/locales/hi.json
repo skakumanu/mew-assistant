@@ -83,6 +83,7 @@
     "providers_intro": "हर प्रदाता जो कैलेंडर पहले से रखता है उसे जोड़ें, ताकि उनके सत्र यहाँ अपने आप दिखें।",
     "no_providers": "अभी कोई प्रदाता नहीं है। सेटअप से एक जोड़ें, या जोड़ने के बाद वापस आएं।",
     "calendar_connected": "{provider} के ज़रिए जुड़ा हुआ है।",
+    "calendar_connected_named": "{name} से {provider} के ज़रिए जुड़ा हुआ है।",
     "calendar_not_connected": "अभी तक नहीं जुड़ा।",
     "ics_url_placeholder": "कैलेंडर फ़ीड URL पेस्ट करें (.ics)",
     "connect_ics": "फ़ीड जोड़ें",
@@ -102,6 +103,7 @@
     "kid_calendars_intro": "अपने बच्चे का अपना Google कैलेंडर जोड़ें और उनका शेड्यूल वहाँ अपने आप दिखने लगेगा, बाकी सब चीज़ों के साथ जो वे पहले से देखते हैं।",
     "no_kids_yet": "अभी कोई बच्चा नहीं है। सेटअप से एक जोड़ें, या जोड़ने के बाद वापस आएं।",
     "kid_calendar_connected": "जुड़ा हुआ है।",
+    "kid_calendar_connected_named": "{name} से जुड़ा हुआ है।",
     "kid_calendar_not_connected": "अभी तक नहीं जुड़ा।",
     "connect_kid_google": "उनका Google कैलेंडर जोड़ें",
     "kid_calendar_connect_ok": "जुड़ गया। उनका शेड्यूल वहाँ दिखने लगेगा।"

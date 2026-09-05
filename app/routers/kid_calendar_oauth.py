@@ -100,6 +100,9 @@ async def list_kids(
             "calendar_connected": bool(
                 connections.get(kid.id) and connections[kid.id].calendar_account_id
             ),
+            "calendar_display_name": (
+                connections[kid.id].calendar_display_name if kid.id in connections else None
+            ),
         }
         for kid in kids
     ]

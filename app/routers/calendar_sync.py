@@ -108,6 +108,11 @@ class ConnectCalendar(BaseModel):
 
     calendar_provider: str  # google | ics
     calendar_account_id: str  # a Google calendar id, or an ICS feed URL
+    # The human-readable name Google's own picker showed for this calendar
+    # ("Sindhu's Calendar"), so the Providers tab can show what's actually
+    # connected instead of just "Connected via google." - a raw calendar id
+    # like a primary calendar's own email address tells a parent nothing.
+    calendar_display_name: Optional[str] = None
 
 
 @router.put("/orgs/{org_id}/calendar", response_model=SyncReport)
@@ -140,6 +145,9 @@ async def connect_org_calendar(
 
     org.calendar_provider = provider
     org.calendar_account_id = payload.calendar_account_id.strip()
+    org.calendar_display_name = (
+        payload.calendar_display_name.strip() if payload.calendar_display_name else None
+    )
     _upsert_connection(db, org_id=org.id, parent_id=current_user.id)
     db.commit()
 
@@ -198,6 +206,7 @@ class ProviderOrgOut(BaseModel):
     name: str
     kind: str
     calendar_provider: Optional[str] = None
+    calendar_display_name: Optional[str] = None
     calendar_connected: bool = False
 
 
@@ -224,6 +233,7 @@ async def list_my_orgs(
             name=org.name,
             kind=org.kind,
             calendar_provider=org.calendar_provider,
+            calendar_display_name=org.calendar_display_name,
             calendar_connected=bool(org.calendar_provider and org.calendar_account_id),
         )
         for org in rows
@@ -235,6 +245,7 @@ class ConnectKidCalendar(BaseModel):
 
     calendar_provider: str  # google only, for now
     calendar_account_id: str  # a Google calendar id
+    calendar_display_name: Optional[str] = None
 
 
 class KidCalendarConnectionOut(BaseModel):
@@ -243,6 +254,7 @@ class KidCalendarConnectionOut(BaseModel):
     child_id: int
     ok: bool
     calendar_connected: bool
+    calendar_display_name: Optional[str] = None
 
 
 @router.put("/kids/{child_id}/calendar", response_model=KidCalendarConnectionOut)
@@ -274,9 +286,17 @@ async def connect_kid_calendar(
     connection = _upsert_kid_connection(db, child_id=child.id, parent_id=current_user.id)
     connection.calendar_provider = provider
     connection.calendar_account_id = payload.calendar_account_id.strip()
+    connection.calendar_display_name = (
+        payload.calendar_display_name.strip() if payload.calendar_display_name else None
+    )
     db.commit()
 
-    return KidCalendarConnectionOut(child_id=child.id, ok=True, calendar_connected=True)
+    return KidCalendarConnectionOut(
+        child_id=child.id,
+        ok=True,
+        calendar_connected=True,
+        calendar_display_name=connection.calendar_display_name,
+    )
 
 
 def _upsert_kid_connection(
