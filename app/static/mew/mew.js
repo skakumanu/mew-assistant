@@ -455,7 +455,9 @@
       var statusMsg = el('p', { class: 'log-row__meta' });
 
       var statusText = org.calendar_connected
-        ? t('parent.calendar_connected', { provider: org.calendar_provider })
+        ? (org.calendar_display_name
+          ? t('parent.calendar_connected_named', { name: org.calendar_display_name, provider: org.calendar_provider })
+          : t('parent.calendar_connected', { provider: org.calendar_provider }))
         : t('parent.calendar_not_connected');
 
       var icsInput = el('input', { type: 'text', placeholder: t('parent.ics_url_placeholder') });
@@ -526,7 +528,9 @@
     kidCalendarCard: function (kidRow, chooseKidId) {
       var statusMsg = el('p', { class: 'log-row__meta' });
       var statusText = kidRow.calendar_connected
-        ? t('parent.kid_calendar_connected')
+        ? (kidRow.calendar_display_name
+          ? t('parent.kid_calendar_connected_named', { name: kidRow.calendar_display_name })
+          : t('parent.kid_calendar_connected'))
         : t('parent.kid_calendar_not_connected');
 
       var connectGoogleBtn = el('a', {
@@ -576,20 +580,21 @@
           : cal.summary;
         return el('button', {
           class: 'chip', type: 'button', text: label,
-          onclick: function () { parent.chooseGoogleCalendar(target, cal.id, host, statusMsg); }
+          onclick: function () { parent.chooseGoogleCalendar(target, cal.id, cal.summary, host, statusMsg); }
         });
       });
       host.appendChild(el('div', { class: 'chips' }, chips));
     },
 
-    chooseGoogleCalendar: function (target, calendarId, pickerHost, statusMsg) {
+    chooseGoogleCalendar: function (target, calendarId, calendarName, pickerHost, statusMsg) {
       statusMsg.textContent = t('ui.loading');
       var url = target.kind === 'kid'
         ? '/calendar-sync/kids/' + target.id + '/calendar'
         : '/calendar-sync/orgs/' + target.id + '/calendar';
       var queryParam = target.kind === 'kid' ? 'choose_kid_calendar' : 'choose_calendar_org';
       api(url, {
-        method: 'PUT', body: { calendar_provider: 'google', calendar_account_id: calendarId }
+        method: 'PUT',
+        body: { calendar_provider: 'google', calendar_account_id: calendarId, calendar_display_name: calendarName }
       }).then(function (report) {
         if (target.kind === 'kid') {
           statusMsg.textContent = t('parent.kid_calendar_connect_ok');

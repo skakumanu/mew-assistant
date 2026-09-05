@@ -33,6 +33,7 @@ from ..database.models import (
     ProviderOrgConnection,
     ScheduledSession,
     SessionSource,
+    User,
 )
 from ..integrations.calendar_sync import (
     CalendarAdapter,
@@ -77,12 +78,16 @@ class CalendarSyncService:
     # adapters
     # ------------------------------------------------------------------
 
-    def adapter_for(self, org: ProviderOrg) -> Optional[CalendarAdapter]:
+    def adapter_for(
+        self, org: ProviderOrg, parent_id: Optional[int] = None
+    ) -> Optional[CalendarAdapter]:
         """
         Build the adapter this organisation's calendar needs.
 
         Returns None when the org has not connected one - a perfectly normal
-        state for a family entering sessions by hand.
+        state for a family entering sessions by hand. ``parent_id``, when
+        known, scopes the Google token lookup to this family - see
+        ``_google_adapter`` for why that matters.
         """
         provider = (org.calendar_provider or "").strip().lower()
         account = org.calendar_account_id
@@ -94,13 +99,13 @@ class CalendarSyncService:
             return IcsFeedAdapter(url=account)
 
         if provider == "google":
-            return self._google_adapter(org, account)
+            return self._google_adapter(org, account, parent_id)
 
         logger.warning("Provider org %s has an unsupported calendar provider %r", org.id, provider)
         return None
 
     def _google_adapter(
-        self, org: ProviderOrg, calendar_id: str
+        self, org: ProviderOrg, calendar_id: str, parent_id: Optional[int] = None
     ) -> Optional[GoogleCalendarAdapter]:
         """
         Google needs a person's token - specifically, whoever granted Mew
@@ -112,16 +117,20 @@ class CalendarSyncService:
         (provider.py, change_request_service.py) to grant that org's whole
         roster and session list - a parent's own connection must never
         satisfy that check.
+
+        ``ProviderOrg`` is global - matched by name, not per-family - so
+        without filtering on ``parent_id`` too, a second family who happens
+        to reference an org with the same name would silently share (or
+        steal) whichever family's token this query finds first. Callers
+        that know which family this pull/push is for must pass it.
         """
-        user_ids = [
-            row.connected_by_user_id
-            for row in self.db.query(ProviderOrgConnection)
-            .filter(
-                ProviderOrgConnection.org_id == org.id,
-                ProviderOrgConnection.connected_by_user_id.isnot(None),
-            )
-            .all()
-        ]
+        query = self.db.query(ProviderOrgConnection).filter(
+            ProviderOrgConnection.org_id == org.id,
+            ProviderOrgConnection.connected_by_user_id.isnot(None),
+        )
+        if parent_id is not None:
+            query = query.filter(ProviderOrgConnection.parent_id == parent_id)
+        user_ids = [row.connected_by_user_id for row in query.all()]
         if not user_ids:
             logger.info("Provider org %s has nobody with a linked account", org.id)
             return None
@@ -164,14 +173,22 @@ class CalendarSyncService:
         days_back: int = DEFAULT_PULL_DAYS_BACK,
         days_ahead: int = DEFAULT_PULL_DAYS_AHEAD,
         now: Optional[datetime] = None,
+        parent_id: Optional[int] = None,
     ) -> SyncResult:
         """
         Mirror one organisation's calendar into this child's schedule.
 
         Idempotent: events are matched on ``external_event_id``, so running it
-        twice changes nothing the second time.
+        twice changes nothing the second time. ``parent_id``, when the
+        caller has it (it always should - a pull is always on some family's
+        behalf), scopes which family's Google token gets used; see
+        ``_google_adapter``'s own docstring for why that matters.
         """
-        adapter = self.adapter_for(org)
+        if parent_id is None:
+            child = self.db.query(User).filter(User.id == child_id).first()
+            parent_id = child.parent_id if child else None
+
+        adapter = self.adapter_for(org, parent_id)
         if adapter is None:
             return SyncResult(error="no calendar connected")
 
@@ -324,7 +341,8 @@ class CalendarSyncService:
         if org is None:
             return False
 
-        adapter = self.adapter_for(org)
+        child = self.db.query(User).filter(User.id == session.child_id).first()
+        adapter = self.adapter_for(org, child.parent_id if child else None)
         if adapter is None or not adapter.writable:
             return False
 
