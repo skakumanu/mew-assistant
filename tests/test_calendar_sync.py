@@ -6,6 +6,7 @@ calendar says so. These cover the parsing, the mirroring and the push, with
 no network - the adapters take an injected client.
 """
 
+import json
 from datetime import datetime
 
 import httpx
@@ -232,6 +233,54 @@ class TestGoogleAdapter:
             with pytest.raises(CalendarSyncError):
                 await adapter.list_events(datetime(2026, 9, 1), datetime(2026, 10, 1))
 
+    @pytest.mark.asyncio
+    async def test_creating_an_event_tags_it_as_mews_own_mirror(self):
+        seen = {}
+
+        def handler(request):
+            seen["body"] = json.loads(request.read())
+            return httpx.Response(200, json={"id": "new-evt"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            adapter = GoogleCalendarAdapter("token", client=client)
+            new_id = await adapter.create_event(
+                "Mirror", datetime(2026, 9, 10, 21, 0), 60
+            )
+
+        assert new_id == "new-evt"
+        assert seen["body"]["extendedProperties"]["private"]["mew_kid_calendar_mirror"] == "true"
+
+    @pytest.mark.asyncio
+    async def test_a_tagged_mirror_event_is_never_returned_by_a_pull(self):
+        """
+        The one guard against the push/pull feedback loop: an event Mew
+        itself wrote (tagged by create_event) must never come back out of
+        list_events, even if it lives on the very calendar being pulled.
+        """
+        payload = {
+            "items": [
+                {
+                    "id": "real-1",
+                    "summary": "Real class",
+                    "start": {"dateTime": "2026-09-10T21:00:00Z"},
+                    "end": {"dateTime": "2026-09-10T23:00:00Z"},
+                },
+                {
+                    "id": "mirror-1",
+                    "summary": "Real class",
+                    "start": {"dateTime": "2026-09-10T21:00:00Z"},
+                    "end": {"dateTime": "2026-09-10T23:00:00Z"},
+                    "extendedProperties": {"private": {"mew_kid_calendar_mirror": "true"}},
+                },
+            ]
+        }
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+        async with httpx.AsyncClient(transport=transport) as client:
+            adapter = GoogleCalendarAdapter("token", client=client)
+            events = await adapter.list_events(datetime(2026, 9, 1), datetime(2026, 10, 1))
+
+        assert [e.external_id for e in events] == ["real-1"]
+
 
 def _event(uid, start):
     return {
@@ -449,6 +498,97 @@ class TestPull:
         rows = db_session.query(ScheduledSession).all()
         assert calls["n"] == 2
         assert all(row.kid_calendar_event_id for row in rows)
+
+    @pytest.mark.asyncio
+    async def test_a_pushed_mirror_is_never_pulled_back_in_as_a_new_session(
+        self, db_session, synced_org, monkeypatch
+    ):
+        """
+        Regression test for a real production incident: a family had
+        pointed a kid's push target at the SAME Google Calendar a provider
+        org pulls from. Without the mirror tag, push would create an event
+        on that calendar, the very next pull would see it as a brand new
+        external event, create a second session for it, push a mirror of
+        THAT too, and so on forever - the two directions feeding each
+        other and duplicating the class on Google Calendar every sync.
+        """
+        org = synced_org["org"]
+        org.calendar_provider = "google"
+        org.calendar_account_id = "shared@group.calendar.google.com"
+        parent = synced_org["parent"]
+        db_session.add(
+            OAuthProvider(
+                user_id=parent.id,
+                provider="google",
+                provider_user_id="g-1",
+                access_token="token",
+            )
+        )
+        db_session.add(
+            ProviderOrgConnection(org_id=org.id, parent_id=parent.id, connected_by_user_id=parent.id)
+        )
+        db_session.add(
+            KidCalendarConnection(
+                child_id=synced_org["kid"].id,
+                parent_id=parent.id,
+                connected_by_user_id=parent.id,
+                calendar_provider="google",
+                # The exact bug: the kid's own push target is the SAME
+                # calendar the org pulls from.
+                calendar_account_id="shared@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        calendar_items = [
+            {
+                "id": "real-class-1",
+                "summary": "ENGL-1000 Hybrid",
+                "status": "confirmed",
+                "start": {"dateTime": "2026-09-10T21:00:00Z"},
+                "end": {"dateTime": "2026-09-10T23:00:00Z"},
+            }
+        ]
+        created = {"n": 0}
+
+        def handler(request):
+            if request.method == "GET":
+                return httpx.Response(200, json={"items": calendar_items})
+            created["n"] += 1
+            new_id = f"mirror-{created['n']}"
+            body = json.loads(request.read())
+            calendar_items.append(
+                {
+                    "id": new_id,
+                    "summary": body.get("summary"),
+                    "status": "confirmed",
+                    "start": body["start"],
+                    "end": body["end"],
+                    "extendedProperties": body.get("extendedProperties", {}),
+                }
+            )
+            return httpx.Response(200, json={"id": new_id})
+
+        import app.services.calendar_sync_service as module
+
+        real = module.GoogleCalendarAdapter
+
+        def patched(*args, **kwargs):
+            kwargs["client"] = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(module, "GoogleCalendarAdapter", patched)
+
+        service = CalendarSyncService(db_session)
+        await service.pull_org(org, child_id=synced_org["kid"].id, now=datetime(2026, 9, 1))
+        # A second sync must not re-ingest the mirror event the first one wrote.
+        await service.pull_org(org, child_id=synced_org["kid"].id, now=datetime(2026, 9, 1))
+
+        rows = db_session.query(ScheduledSession).all()
+        assert len(rows) == 1
+        assert rows[0].external_event_id == "real-class-1"
+        assert rows[0].kid_calendar_event_id == "mirror-1"
+        assert created["n"] == 1
 
     @pytest.mark.asyncio
     async def test_a_disconnected_calendar_reports_rather_than_raising(
