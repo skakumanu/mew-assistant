@@ -82,6 +82,7 @@
     "tab_providers": "Providers",
     "providers_intro": "Connect the calendar each provider already keeps, so their sessions show up here on their own.",
     "no_providers": "No providers yet. Add one from setup, or come back once you have.",
+    "direction_pull_tag": "Reads sessions in",
     "calendar_connected": "Connected via {provider}.",
     "calendar_connected_named": "Connected to {name} via {provider}.",
     "calendar_not_connected": "Not connected yet.",
@@ -93,6 +94,7 @@
     "ics_help_outlook": "Outlook / Microsoft 365: Calendar → Settings → \"Shared calendars\" → \"Publish a calendar\"",
     "ics_help_apple": "Apple Calendar (iCloud): open the calendar's sharing settings → turn on \"Public Calendar\" → copy the link",
     "connect_google": "Connect Google Calendar",
+    "picker_hint_pull": "Mew will read {name}'s sessions from whichever calendar you pick below — it never changes that calendar.",
     "choose_calendar": "Which calendar?",
     "calendar_primary_label": "{name} (main)",
     "no_calendars_found": "No calendars found on that Google account.",
@@ -102,10 +104,12 @@
     "tab_kid_calendars": "Your kid's own calendar",
     "kid_calendars_intro": "Connect your kid's own Google Calendar and their schedule will show up there automatically, right alongside everything else they already see.",
     "no_kids_yet": "No kids yet. Add one from setup, or come back once you have.",
+    "direction_push_tag": "Sends schedule out",
     "kid_calendar_connected": "Connected.",
     "kid_calendar_connected_named": "Connected to {name}.",
     "kid_calendar_not_connected": "Not connected yet.",
     "connect_kid_google": "Connect their Google Calendar",
+    "picker_hint_push": "Mew will send {name}'s Mew schedule to whichever calendar you pick below — it never reads from that calendar.",
     "kid_calendar_connect_ok": "Connected. Their schedule will start appearing there."
   },
   "kid": {
