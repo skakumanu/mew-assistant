@@ -17,7 +17,9 @@ from ..database.models import ProviderPerson, ScheduledSession, User
 from ..schemas.change_request import ProviderSessionOut
 from ..services.change_request_service import ChangeRequestService
 from ..services.presenter import Presenter
+from ..services.ruleset_service import RuleSetService
 from ..utils.auth import get_current_user
+from ..utils.locale import to_local
 from ..utils.locale_context import translator_for
 
 router = APIRouter(prefix="/provider", tags=["Service Provider"])
@@ -81,12 +83,22 @@ async def get_provider_sessions(
     )
     roster = [{"id": p.id, "display_name": p.display_name} for p in people]
 
+    # The roster can span several children, and a family's chosen timezone
+    # lives on their own RuleSet - look each one up once, not per row.
+    rule_service = RuleSetService(db)
+    tz_by_child: dict = {}
+
+    def _tz(cid: int) -> str:
+        if cid not in tz_by_child:
+            tz_by_child[cid] = rule_service.timezone_for_child(cid)
+        return tz_by_child[cid]
+
     out: List[ProviderSessionOut] = []
     for row in query.all():
         out.append(
             ProviderSessionOut(
                 session=presenter.session(row),
-                when_label=translator.when(row.start_utc),
+                when_label=translator.when(to_local(row.start_utc, _tz(row.child_id))),
                 waiting_on_parent=service.pending_for_session(row.id) is not None,
                 people=roster,
             )
