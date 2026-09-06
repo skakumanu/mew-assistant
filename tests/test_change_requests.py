@@ -19,25 +19,29 @@ from app.database.models import (
     User,
 )
 from app.utils.auth import get_password_hash
+from app.utils.locale import DEFAULT_TIMEZONE, Translator, from_local, to_local
 
 from .conftest import _auth
 
 
 def _soon_today(hours=2):
     """
-    A moment `hours` from now, clamped to stay on today's date.
+    A moment `hours` from now, clamped to stay on today's date in the
+    family's own timezone - the `rules` fixture never sets one explicitly,
+    so it's whatever a fresh RuleSet defaults to (DEFAULT_TIMEZONE).
 
     Plain `datetime.utcnow() + timedelta(hours=hours)` rolls into tomorrow
-    whenever the suite happens to run within `hours` of UTC midnight -
-    /kid/today filters strictly to [midnight, midnight+1) - so a session
-    "in 2 hours" would silently fall outside "today" and the test would
-    fail for no reason connected to the code under test.
+    whenever the suite happens to run within `hours` of that timezone's own
+    midnight - /kid/today filters strictly to that family's own
+    [midnight, midnight+1) - so a session "in 2 hours" would silently fall
+    outside "today" and the test would fail for no reason connected to the
+    code under test.
     """
-    now = datetime.utcnow().replace(microsecond=0)
-    start = now + timedelta(hours=hours)
-    if start.date() != now.date():
-        start = now.replace(hour=23, minute=59, second=0)
-    return start
+    now_local = to_local(datetime.utcnow().replace(microsecond=0), DEFAULT_TIMEZONE)
+    start_local = now_local + timedelta(hours=hours)
+    if start_local.date() != now_local.date():
+        start_local = now_local.replace(hour=23, minute=59, second=0)
+    return from_local(start_local, DEFAULT_TIMEZONE)
 
 
 class TestAutoApply:
@@ -407,6 +411,53 @@ class TestParentViews:
         ]
 
         assert moved and moved[0]["changed"] is True
+
+    def test_the_week_groups_an_evening_class_by_the_familys_own_day(
+        self, client, db_session, family, rules
+    ):
+        """
+        A class stored just after midnight UTC is still evening-of-the-day-
+        before for a family in Pacific time. Grouping by the UTC calendar
+        date - the bug this guards against - would silently put it a day
+        too late in the Week tab.
+        """
+        rules.timezone = "America/Los_Angeles"
+        db_session.commit()
+
+        # A few days out, at 1am UTC: always the previous evening in
+        # Pacific time regardless of DST, and far enough out that the test
+        # doesn't depend on what day it happens to run.
+        start_utc = (datetime.utcnow() + timedelta(days=3)).replace(
+            hour=1, minute=0, second=0, microsecond=0
+        )
+        local_date = to_local(start_utc, "America/Los_Angeles").date()
+        assert local_date != start_utc.date()  # the fixture only proves anything if these differ
+
+        row = ScheduledSession(
+            child_id=family["kid"].id,
+            provider_org_id=family["org"].id,
+            title="ENGL-1000 Hybrid",
+            activity_type="school",
+            start_utc=start_utc,
+            duration_minutes=120,
+        )
+        db_session.add(row)
+        db_session.commit()
+
+        week = client.get(
+            "/parent/week", params={"days": 10}, headers=_auth(family["parent"])
+        ).json()
+
+        correct_day = next(d for d in week if d["date"] == local_date.isoformat())
+        wrong_day = next((d for d in week if d["date"] == start_utc.date().isoformat()), None)
+
+        assert "ENGL-1000 Hybrid" in [s["title"] for s in correct_day["sessions"]]
+        if wrong_day is not None:
+            assert "ENGL-1000 Hybrid" not in [s["title"] for s in wrong_day["sessions"]]
+
+        matched = next(s for s in correct_day["sessions"] if s["title"] == "ENGL-1000 Hybrid")
+        expected_time_label = Translator("en").time(to_local(start_utc, "America/Los_Angeles"))
+        assert matched["time_label"] == expected_time_label
 
 
 class TestAuthorisation:
