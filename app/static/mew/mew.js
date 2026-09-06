@@ -446,9 +446,46 @@
       clear(host);
       if (!orgs.length) {
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_providers') }));
-        return;
+      } else {
+        orgs.forEach(function (org) { host.appendChild(parent.providerCard(org, chooseOrgId)); });
       }
-      orgs.forEach(function (org) { host.appendChild(parent.providerCard(org, chooseOrgId)); });
+      host.appendChild(parent.addProviderForm());
+    },
+
+    // A family's roster of providers grows over time - the setup wizard
+    // only ever runs once, so this is the only way to add a second (or
+    // fifth) provider afterward.
+    addProviderForm: function () {
+      var nameInput = el('input', { type: 'text', placeholder: t('parent.add_provider_name_placeholder') });
+      var kindSelect = el('select', {}, [
+        el('option', { value: 'aba', text: t('parent.kind_aba') }),
+        el('option', { value: 'speech', text: t('parent.kind_speech') }),
+        el('option', { value: 'ot', text: t('parent.kind_ot') }),
+        el('option', { value: 'school', text: t('parent.kind_school') }),
+        el('option', { value: 'transport', text: t('parent.kind_transport') }),
+        el('option', { value: 'other', text: t('parent.kind_other') })
+      ]);
+      kindSelect.value = 'other';
+      var statusMsg = el('p', { class: 'log-row__meta' });
+      var addBtn = el('button', {
+        class: 'btn btn--primary', type: 'button', text: t('parent.add_provider'),
+        onclick: function () {
+          var name = (nameInput.value || '').trim();
+          if (!name) return;
+          statusMsg.textContent = t('ui.loading');
+          api('/onboarding/providers', { method: 'POST', body: { name: name, kind: kindSelect.value } })
+            .then(function () {
+              nameInput.value = '';
+              parent.loadProviders();
+            })
+            .catch(function () { statusMsg.textContent = t('ui.error'); });
+        }
+      });
+      return el('article', { class: 'provider-card' }, [
+        el('p', { class: 'field-label', text: t('parent.add_provider_heading') }),
+        el('div', { class: 'actions' }, [nameInput, kindSelect, addBtn]),
+        statusMsg
+      ]);
     },
 
     providerCard: function (org, chooseOrgId) {
@@ -521,9 +558,36 @@
       clear(host);
       if (!kids.length) {
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_kids_yet') }));
-        return;
+      } else {
+        kids.forEach(function (kidRow) { host.appendChild(parent.kidCalendarCard(kidRow, chooseKidId)); });
       }
-      kids.forEach(function (kidRow) { host.appendChild(parent.kidCalendarCard(kidRow, chooseKidId)); });
+      host.appendChild(parent.addKidForm());
+    },
+
+    // Families with more than one kid on Mew usually add the second one
+    // well after their own first setup - this is the only place to do that.
+    addKidForm: function () {
+      var nameInput = el('input', { type: 'text', placeholder: t('parent.add_kid_name_placeholder') });
+      var statusMsg = el('p', { class: 'log-row__meta' });
+      var addBtn = el('button', {
+        class: 'btn btn--primary', type: 'button', text: t('parent.add_kid'),
+        onclick: function () {
+          var name = (nameInput.value || '').trim();
+          if (!name) return;
+          statusMsg.textContent = t('ui.loading');
+          api('/onboarding/kids', { method: 'POST', body: { display_name: name } })
+            .then(function () {
+              nameInput.value = '';
+              parent.loadKidCalendars();
+            })
+            .catch(function () { statusMsg.textContent = t('ui.error'); });
+        }
+      });
+      return el('article', { class: 'provider-card' }, [
+        el('p', { class: 'field-label', text: t('parent.add_kid_heading') }),
+        el('div', { class: 'actions' }, [nameInput, addBtn]),
+        statusMsg
+      ]);
     },
 
     kidCalendarCard: function (kidRow, chooseKidId) {
