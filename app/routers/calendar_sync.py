@@ -144,7 +144,8 @@ async def connect_org_calendar(
         )
 
     account_id = payload.calendar_account_id.strip()
-    if provider == "google" and _google_calendar_in_use_by_family(
+    unchanged = org.calendar_provider == provider and org.calendar_account_id == account_id
+    if provider == "google" and not unchanged and _google_calendar_in_use_by_family(
         db, current_user.id, account_id, exclude_org_id=org.id
     ):
         raise HTTPException(
@@ -342,7 +343,15 @@ async def connect_kid_calendar(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your child")
 
     account_id = payload.calendar_account_id.strip()
-    if _google_calendar_in_use_by_family(
+    existing = (
+        db.query(KidCalendarConnection).filter(KidCalendarConnection.child_id == child.id).first()
+    )
+    unchanged = (
+        existing is not None
+        and existing.calendar_provider == provider
+        and existing.calendar_account_id == account_id
+    )
+    if not unchanged and _google_calendar_in_use_by_family(
         db, current_user.id, account_id, exclude_child_id=child.id
     ):
         raise HTTPException(
