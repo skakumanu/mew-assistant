@@ -15,7 +15,13 @@ import httpx
 from fastapi import status
 from jose import jwt
 
-from app.database.models import OAuthProvider, ProviderOrg, ProviderOrgConnection, User
+from app.database.models import (
+    KidCalendarConnection,
+    OAuthProvider,
+    ProviderOrg,
+    ProviderOrgConnection,
+    User,
+)
 from app.integrations.calendar_sync.google import GoogleCalendarAdapter
 from app.services.calendar_sync_service import CalendarSyncService
 from app.utils.auth import (
@@ -138,6 +144,61 @@ class TestConnectOrgCalendar:
 
         listed = client.get("/calendar-sync/orgs", headers=_auth(family["parent"])).json()
         assert listed[0]["calendar_display_name"] == "Sindhu's Calendar"
+
+    def test_pointing_at_a_calendar_the_family_already_pushes_to_is_rejected(
+        self, client, db_session, family
+    ):
+        """
+        The other half of the same production incident, from the pull
+        side: a provider org's pull source must not be pointed at a
+        calendar a kid already pushes to - same loop, same fix.
+        """
+        db_session.add(
+            KidCalendarConnection(
+                child_id=family["kid"].id,
+                parent_id=family["parent"].id,
+                connected_by_user_id=family["parent"].id,
+                calendar_provider="google",
+                calendar_account_id="shared@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        response = client.put(
+            f"/calendar-sync/orgs/{family['org'].id}/calendar",
+            json={
+                "calendar_provider": "google",
+                "calendar_account_id": "shared@group.calendar.google.com",
+            },
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
+        assert org.calendar_account_id is None
+
+    def test_an_ics_pull_source_never_collides_with_a_kids_google_push_target(
+        self, client, db_session, family, monkeypatch
+    ):
+        """The collision check is Google-specific - an ICS URL can never match one."""
+        db_session.add(
+            KidCalendarConnection(
+                child_id=family["kid"].id,
+                parent_id=family["parent"].id,
+                calendar_provider="google",
+                calendar_account_id="https://example.test/feed.ics",
+            )
+        )
+        db_session.commit()
+        _serve_ics(monkeypatch)
+
+        response = client.put(
+            f"/calendar-sync/orgs/{family['org'].id}/calendar",
+            json={"calendar_provider": "ics", "calendar_account_id": "https://example.test/feed.ics"},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
 
 
 class TestListMyOrgs:
