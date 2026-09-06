@@ -278,6 +278,12 @@ class CalendarSyncService:
             or existing.duration_minutes != event.duration_minutes
             or existing.title != event.title
             or existing.location != event.location
+            # A row cancelled by an earlier pull (e.g. one that briefly ran
+            # against the wrong calendar) must be revived the moment the
+            # event is seen again, even when nothing else about it changed -
+            # otherwise it stays invisible forever, since nothing else here
+            # would ever touch it again.
+            or existing.is_cancelled
         )
         if not changed:
             result.skipped += 1
