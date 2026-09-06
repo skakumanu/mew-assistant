@@ -82,6 +82,7 @@
     "tab_providers": "مقدّمو الخدمة",
     "providers_intro": "اربط التقويم الذي يستخدمه كل مقدّم خدمة بالفعل، لتظهر جلساته هنا تلقائيًا.",
     "no_providers": "لا يوجد مقدّمو خدمة بعد. أضف واحدًا من الإعداد، أو عد بعد إضافته.",
+    "direction_pull_tag": "يجلب الجلسات إلى هنا",
     "calendar_connected": "متصل عبر {provider}.",
     "calendar_connected_named": "متصل بـ {name} عبر {provider}.",
     "calendar_not_connected": "غير متصل بعد.",
@@ -93,6 +94,7 @@
     "ics_help_outlook": "Outlook / Microsoft 365: التقويم ← الإعدادات ← \"التقاويم المشتركة\" ← \"نشر تقويم\"",
     "ics_help_apple": "تقويم Apple (iCloud): افتح إعدادات مشاركة التقويم ← فعّل \"تقويم عام\" ← انسخ الرابط",
     "connect_google": "ربط تقويم Google",
+    "picker_hint_pull": "سيقرأ Mew جلسات {name} من التقويم الذي تختاره أدناه — ولن يغيّر ذلك التقويم أبدًا.",
     "choose_calendar": "أي تقويم؟",
     "calendar_primary_label": "{name} (الرئيسي)",
     "no_calendars_found": "لم يتم العثور على أي تقويم في ذلك الحساب.",
@@ -102,10 +104,12 @@
     "tab_kid_calendars": "تقويم طفلك الخاص",
     "kid_calendars_intro": "اربط تقويم Google الخاص بطفلك وسيظهر جدوله هناك تلقائيًا، إلى جانب كل شيء آخر يراه بالفعل.",
     "no_kids_yet": "لا يوجد أطفال بعد. أضف واحدًا من الإعداد، أو عد بعد إضافته.",
+    "direction_push_tag": "يرسل الجدول إلى الخارج",
     "kid_calendar_connected": "متصل.",
     "kid_calendar_connected_named": "متصل بـ {name}.",
     "kid_calendar_not_connected": "غير متصل بعد.",
     "connect_kid_google": "ربط تقويم Google الخاص به",
+    "picker_hint_push": "سيرسل Mew جدول {name} في Mew إلى التقويم الذي تختاره أدناه — ولن يقرأ من ذلك التقويم أبدًا.",
     "kid_calendar_connect_ok": "تم الربط. سيبدأ جدوله بالظهور هناك."
   },
   "kid": {
