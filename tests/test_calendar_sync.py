@@ -352,6 +352,49 @@ class TestPull:
         assert gone.is_cancelled is True
 
     @pytest.mark.asyncio
+    async def test_a_cancelled_session_is_revived_once_the_event_reappears(
+        self, db_session, synced_org, monkeypatch
+    ):
+        """
+        A session cancelled by one pull (e.g. one that briefly ran against
+        the wrong calendar) must come back the moment a later pull sees the
+        same event again - even when nothing about the event itself
+        changed, since that is exactly the case a naive "did anything
+        change" check would otherwise skip forever.
+        """
+        _serve(monkeypatch, ICS)
+        service = CalendarSyncService(db_session)
+        await service.pull_org(
+            synced_org["org"], child_id=synced_org["kid"].id, now=datetime(2026, 9, 1)
+        )
+
+        without_speech = ICS.replace("UID:speech-002", "UID:speech-002-renamed")
+        _serve(monkeypatch, without_speech)
+        await service.pull_org(
+            synced_org["org"], child_id=synced_org["kid"].id, now=datetime(2026, 9, 1)
+        )
+
+        cancelled = (
+            db_session.query(ScheduledSession)
+            .filter(ScheduledSession.external_event_id == "speech-002")
+            .one()
+        )
+        assert cancelled.is_cancelled is True
+
+        _serve(monkeypatch, ICS)
+        result = await service.pull_org(
+            synced_org["org"], child_id=synced_org["kid"].id, now=datetime(2026, 9, 1)
+        )
+
+        revived = (
+            db_session.query(ScheduledSession)
+            .filter(ScheduledSession.external_event_id == "speech-002")
+            .one()
+        )
+        assert revived.is_cancelled is False
+        assert result.updated >= 1
+
+    @pytest.mark.asyncio
     async def test_a_pull_mirrors_into_a_connected_kid_calendar_too(
         self, db_session, synced_org, monkeypatch
     ):
