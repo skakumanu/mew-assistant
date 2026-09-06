@@ -187,6 +187,60 @@ async def connect_org_calendar(
     )
 
 
+def _family_calendar_usage_map(
+    db: DbSession,
+    parent_id: int,
+    exclude_org_id: Optional[int] = None,
+    exclude_child_id: Optional[int] = None,
+) -> dict:
+    """
+    Every Google calendar this family already has in use, keyed by calendar
+    id, naming who's using it and in which direction.
+
+    This is the same information _google_calendar_in_use_by_family checks
+    for, but returned instead of collapsed into a bool - it lets a calendar
+    picker show a conflict BEFORE a save is attempted, rather than a parent
+    only discovering it from a rejected PUT after they've already picked.
+    ``exclude_org_id``/``exclude_child_id`` leave the entity being edited
+    out of its own results, the same reasoning as the collision check.
+    """
+    usage: dict = {}
+
+    org_query = (
+        db.query(ProviderOrg)
+        .join(ProviderOrgConnection, ProviderOrgConnection.org_id == ProviderOrg.id)
+        .filter(
+            ProviderOrgConnection.parent_id == parent_id,
+            ProviderOrg.calendar_provider == "google",
+            ProviderOrg.calendar_account_id.isnot(None),
+        )
+    )
+    if exclude_org_id is not None:
+        org_query = org_query.filter(ProviderOrg.id != exclude_org_id)
+    for org in org_query.all():
+        usage[org.calendar_account_id] = {"kind": "org", "name": org.name, "direction": "pull"}
+
+    kid_query = db.query(KidCalendarConnection).filter(
+        KidCalendarConnection.parent_id == parent_id,
+        KidCalendarConnection.calendar_provider == "google",
+        KidCalendarConnection.calendar_account_id.isnot(None),
+    )
+    if exclude_child_id is not None:
+        kid_query = kid_query.filter(KidCalendarConnection.child_id != exclude_child_id)
+    kid_rows = kid_query.all()
+    if kid_rows:
+        kids_by_id = {
+            kid.id: kid
+            for kid in db.query(User).filter(User.id.in_([row.child_id for row in kid_rows])).all()
+        }
+        for row in kid_rows:
+            kid = kids_by_id.get(row.child_id)
+            name = (kid.display_name or kid.username) if kid else "your kid"
+            usage[row.calendar_account_id] = {"kind": "kid", "name": name, "direction": "push"}
+
+    return usage
+
+
 def _google_calendar_in_use_by_family(
     db: DbSession,
     parent_id: int,
@@ -208,28 +262,10 @@ def _google_calendar_in_use_by_family(
     ``exclude_org_id``/``exclude_child_id`` let a no-op re-save of the same
     value to the same record through, rather than flagging it against itself.
     """
-    org_query = (
-        db.query(ProviderOrg)
-        .join(ProviderOrgConnection, ProviderOrgConnection.org_id == ProviderOrg.id)
-        .filter(
-            ProviderOrgConnection.parent_id == parent_id,
-            ProviderOrg.calendar_provider == "google",
-            ProviderOrg.calendar_account_id == calendar_account_id,
-        )
+    usage = _family_calendar_usage_map(
+        db, parent_id, exclude_org_id=exclude_org_id, exclude_child_id=exclude_child_id
     )
-    if exclude_org_id is not None:
-        org_query = org_query.filter(ProviderOrg.id != exclude_org_id)
-    if org_query.first() is not None:
-        return True
-
-    kid_query = db.query(KidCalendarConnection).filter(
-        KidCalendarConnection.parent_id == parent_id,
-        KidCalendarConnection.calendar_provider == "google",
-        KidCalendarConnection.calendar_account_id == calendar_account_id,
-    )
-    if exclude_child_id is not None:
-        kid_query = kid_query.filter(KidCalendarConnection.child_id != exclude_child_id)
-    return kid_query.first() is not None
+    return calendar_account_id in usage
 
 
 def _upsert_connection(
