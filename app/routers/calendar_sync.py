@@ -143,8 +143,21 @@ async def connect_org_calendar(
             status_code=status.HTTP_404_NOT_FOUND, detail="Provider organisation not found"
         )
 
+    account_id = payload.calendar_account_id.strip()
+    if provider == "google" and _google_calendar_in_use_by_family(
+        db, current_user.id, account_id, exclude_org_id=org.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This calendar is already connected as a kid's push target for your "
+                "family. Pulling from the same calendar a push writes to creates a "
+                "sync loop - pick a different calendar for this provider."
+            ),
+        )
+
     org.calendar_provider = provider
-    org.calendar_account_id = payload.calendar_account_id.strip()
+    org.calendar_account_id = account_id
     org.calendar_display_name = (
         payload.calendar_display_name.strip() if payload.calendar_display_name else None
     )
@@ -171,6 +184,51 @@ async def connect_org_calendar(
         skipped=skipped,
         error=error,
     )
+
+
+def _google_calendar_in_use_by_family(
+    db: DbSession,
+    parent_id: int,
+    calendar_account_id: str,
+    exclude_org_id: Optional[int] = None,
+    exclude_child_id: Optional[int] = None,
+) -> bool:
+    """
+    True when this family already points a provider's pull source OR a
+    kid's push target at this exact Google calendar.
+
+    Pointing both directions at the same calendar is what caused a real
+    production incident: a pull sees every event a push just mirrored onto
+    that calendar as a brand-new external event, mirrors it again, and the
+    two directions feed each other forever. The mirror-tagging fix in
+    GoogleCalendarAdapter stops that loop from growing without bound, but
+    this is the cheaper fix - refuse the collision at the door so nobody
+    hits the loop, or even the milder "class shows twice" annoyance, again.
+    ``exclude_org_id``/``exclude_child_id`` let a no-op re-save of the same
+    value to the same record through, rather than flagging it against itself.
+    """
+    org_query = (
+        db.query(ProviderOrg)
+        .join(ProviderOrgConnection, ProviderOrgConnection.org_id == ProviderOrg.id)
+        .filter(
+            ProviderOrgConnection.parent_id == parent_id,
+            ProviderOrg.calendar_provider == "google",
+            ProviderOrg.calendar_account_id == calendar_account_id,
+        )
+    )
+    if exclude_org_id is not None:
+        org_query = org_query.filter(ProviderOrg.id != exclude_org_id)
+    if org_query.first() is not None:
+        return True
+
+    kid_query = db.query(KidCalendarConnection).filter(
+        KidCalendarConnection.parent_id == parent_id,
+        KidCalendarConnection.calendar_provider == "google",
+        KidCalendarConnection.calendar_account_id == calendar_account_id,
+    )
+    if exclude_child_id is not None:
+        kid_query = kid_query.filter(KidCalendarConnection.child_id != exclude_child_id)
+    return kid_query.first() is not None
 
 
 def _upsert_connection(
@@ -283,9 +341,23 @@ async def connect_kid_calendar(
     if child is None or child.parent_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your child")
 
+    account_id = payload.calendar_account_id.strip()
+    if _google_calendar_in_use_by_family(
+        db, current_user.id, account_id, exclude_child_id=child.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This calendar is already connected as a provider's pull source for "
+                "your family. Pushing this kid's schedule to the same calendar a "
+                "pull reads from creates a sync loop - pick a different calendar "
+                "for this kid."
+            ),
+        )
+
     connection = _upsert_kid_connection(db, child_id=child.id, parent_id=current_user.id)
     connection.calendar_provider = provider
-    connection.calendar_account_id = payload.calendar_account_id.strip()
+    connection.calendar_account_id = account_id
     connection.calendar_display_name = (
         payload.calendar_display_name.strip() if payload.calendar_display_name else None
     )

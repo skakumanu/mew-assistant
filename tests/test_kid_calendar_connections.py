@@ -19,6 +19,7 @@ from app.database.models import (
     ChangeKind,
     KidCalendarConnection,
     OAuthProvider,
+    ProviderOrgConnection,
     ScheduledSession,
     User,
 )
@@ -327,6 +328,108 @@ class TestConnectKidCalendarEndpoint:
             headers=_auth(family["parent"]),
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_pointing_at_a_calendar_the_family_already_pulls_from_is_rejected(
+        self, client, db_session, family
+    ):
+        """
+        Regression guard for a real production incident: a kid's push
+        target pointed at the same calendar a provider org pulls from,
+        which fed a pull-creates-a-session/push-mirrors-it/pull-sees-the-
+        mirror loop that duplicated a class in Google Calendar on every
+        sync. This must be refused at the door, not merely survived.
+        """
+        org = family["org"]
+        org.calendar_provider = "google"
+        org.calendar_account_id = "shared@group.calendar.google.com"
+        db_session.add(
+            ProviderOrgConnection(
+                org_id=org.id, parent_id=family["parent"].id, connected_by_user_id=family["parent"].id
+            )
+        )
+        db_session.commit()
+
+        response = client.put(
+            f"/calendar-sync/kids/{family['kid'].id}/calendar",
+            json={
+                "calendar_provider": "google",
+                "calendar_account_id": "shared@group.calendar.google.com",
+            },
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            db_session.query(KidCalendarConnection)
+            .filter(KidCalendarConnection.child_id == family["kid"].id)
+            .first()
+            is None
+        )
+
+    def test_resaving_the_same_calendar_to_the_same_kid_is_not_a_false_collision(
+        self, client, family
+    ):
+        """The exclude-this-record check must not flag a record against itself."""
+        payload = {
+            "calendar_provider": "google",
+            "calendar_account_id": "kid@group.calendar.google.com",
+        }
+        first = client.put(
+            f"/calendar-sync/kids/{family['kid'].id}/calendar",
+            json=payload,
+            headers=_auth(family["parent"]),
+        )
+        second = client.put(
+            f"/calendar-sync/kids/{family['kid'].id}/calendar",
+            json=payload,
+            headers=_auth(family["parent"]),
+        )
+
+        assert first.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_200_OK
+
+    def test_another_familys_matching_calendar_does_not_block_this_one(
+        self, client, db_session, family
+    ):
+        """The collision check is scoped per family, not global."""
+        other_parent = User(
+            email="other-parent5@example.com",
+            username="other-parent5",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add(other_parent)
+        db_session.commit()
+        other_kid = User(
+            email="other-kid5@example.com",
+            username="other-kid5",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+            is_kid_account=True,
+            parent_id=other_parent.id,
+        )
+        db_session.add(other_kid)
+        db_session.commit()
+        db_session.add(
+            KidCalendarConnection(
+                child_id=other_kid.id,
+                parent_id=other_parent.id,
+                calendar_provider="google",
+                calendar_account_id="shared@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        response = client.put(
+            f"/calendar-sync/kids/{family['kid'].id}/calendar",
+            json={
+                "calendar_provider": "google",
+                "calendar_account_id": "shared@group.calendar.google.com",
+            },
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
 
 
 class TestPushToKidCalendar:
