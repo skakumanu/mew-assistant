@@ -31,7 +31,7 @@ from ..schemas.change_request import (
     PendingRequestOut,
     SessionOut,
 )
-from ..utils.locale import Translator
+from ..utils.locale import DEFAULT_TIMEZONE, Translator, to_local
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,7 @@ class Presenter:
         db,
         caregiver_term: str = DEFAULT_CAREGIVER_TERM,
         advisor=None,
+        timezone: str = DEFAULT_TIMEZONE,
     ):
         self.t = translator
         self.db = db
@@ -59,6 +60,12 @@ class Presenter:
         # Whether this family reads "parent" or "guardian". Same persona,
         # same permissions - only the word on screen differs.
         self.caregiver_term = caregiver_term
+        # Every stored moment is UTC; this is the family's own timezone, so
+        # every rendered sentence below shows their wall-clock time instead.
+        self.timezone = timezone
+
+    def _local(self, moment):
+        return to_local(moment, self.timezone)
 
     # -- sessions ---------------------------------------------------------
 
@@ -92,7 +99,7 @@ class Presenter:
                 AlternativeOut(
                     index=index,
                     start=start,
-                    label=self.t.option_label(start),
+                    label=self.t.option_label(self._local(start)),
                     note=self.t.t("parent.closest" if index == 0 else "parent.also_fits"),
                 )
             )
@@ -113,7 +120,7 @@ class Presenter:
         if kind == ChangeKind.CANCEL.value:
             headline = self.t.t("parent.headline_skip", title=title)
         else:
-            when = self.t.when(request.new_start_utc) if request.new_start_utc else ""
+            when = self.t.when(self._local(request.new_start_utc)) if request.new_start_utc else ""
             headline = self.t.t("parent.headline_move", title=title, when=when)
 
         detail = self._detail(request, session, kind)
@@ -161,7 +168,7 @@ class Presenter:
     ) -> str:
         if session is None:
             return ""
-        when = self.t.when(session.start_utc)
+        when = self.t.when(self._local(session.start_utc))
         person = session.person.display_name if session.person else ""
 
         if kind == ChangeKind.CANCEL.value:
@@ -230,12 +237,14 @@ class Presenter:
             moment = _parse(value) if name in ("when", "day", "time") else None
             if moment is None:
                 out[name] = value
-            elif name == "day":
-                out[name] = self.t.day_name(moment)
+                continue
+            local_moment = self._local(moment)
+            if name == "day":
+                out[name] = self.t.day_name(local_moment)
             elif name == "time":
-                out[name] = self.t.time(moment)
+                out[name] = self.t.time(local_moment)
             else:
-                out[name] = self.t.when(moment)
+                out[name] = self.t.when(local_moment)
         return out
 
     # -- kid --------------------------------------------------------------

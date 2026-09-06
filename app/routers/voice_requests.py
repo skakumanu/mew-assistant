@@ -28,7 +28,9 @@ from ..database.models import ChangeKind, ScheduledSession, User
 from ..schemas.change_request import ChangeRequestOut
 from ..services.change_request_service import ChangeRequestService
 from ..services.presenter import Presenter
+from ..services.ruleset_service import RuleSetService
 from ..utils.auth import get_current_user
+from ..utils.locale import to_local
 from ..utils.locale_context import translator_for
 
 logger = logging.getLogger(__name__)
@@ -57,11 +59,13 @@ class VoiceReadback(BaseModel):
     speak: str
 
 
-def _readback(translator, session: ScheduledSession, payload: VoiceChangeRequest) -> str:
+def _readback(
+    translator, session: ScheduledSession, payload: VoiceChangeRequest, tz_name: str
+) -> str:
     """The sentence the person hears back, built from locale templates."""
     if payload.kind == ChangeKind.CANCEL.value:
         return translator.t("parent.headline_skip", title=session.title)
-    when = translator.when(payload.new_start or session.start_utc)
+    when = translator.when(to_local(payload.new_start or session.start_utc, tz_name))
     return translator.t("parent.headline_move", title=session.title, when=when)
 
 
@@ -96,10 +100,11 @@ async def submit_spoken_request(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    tz_name = RuleSetService(db).timezone_for_child(session.child_id)
 
     if not payload.confirmed:
         # Nothing is written until the person has heard what they asked for.
-        sentence = _readback(translator, session, payload)
+        sentence = _readback(translator, session, payload, tz_name)
         return VoiceReadback(confirmed=False, readback=sentence, speak=sentence)
 
     service = ChangeRequestService(db)
@@ -121,7 +126,7 @@ async def submit_spoken_request(
             else translator.t(
                 "kid.done",
                 title=outcome.session.title,
-                time=translator.time(outcome.session.start_utc),
+                time=translator.time(to_local(outcome.session.start_utc, tz_name)),
             )
         )
     else:
