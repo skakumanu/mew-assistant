@@ -491,6 +491,7 @@
 
       var card = el('article', { class: 'provider-card' }, [
         el('h3', { class: 'provider-card__name', text: org.name }),
+        el('p', { class: 'direction-tag direction-tag--pull', text: t('parent.direction_pull_tag') }),
         el('p', { class: 'field-label', text: statusText }),
         el('div', { class: 'actions' }, [icsInput, connectIcsBtn, icsHelpToggle]),
         icsHelpBody,
@@ -501,7 +502,7 @@
       if (org.id === chooseOrgId) {
         var pickerHost = el('div', { class: 'calendar-picker' });
         card.insertBefore(pickerHost, statusMsg);
-        parent.loadCalendarPicker({ kind: 'org', id: org.id }, pickerHost, statusMsg);
+        parent.loadCalendarPicker({ kind: 'org', id: org.id, name: org.name }, pickerHost, statusMsg);
       }
 
       return card;
@@ -540,6 +541,7 @@
 
       var card = el('article', { class: 'provider-card' }, [
         el('h3', { class: 'provider-card__name', text: kidRow.name }),
+        el('p', { class: 'direction-tag direction-tag--push', text: t('parent.direction_push_tag') }),
         el('p', { class: 'field-label', text: statusText }),
         el('div', { class: 'actions' }, [connectGoogleBtn]),
         statusMsg
@@ -548,15 +550,17 @@
       if (kidRow.id === chooseKidId) {
         var pickerHost = el('div', { class: 'calendar-picker' });
         card.insertBefore(pickerHost, statusMsg);
-        parent.loadCalendarPicker({ kind: 'kid', id: kidRow.id }, pickerHost, statusMsg);
+        parent.loadCalendarPicker({ kind: 'kid', id: kidRow.id, name: kidRow.name }, pickerHost, statusMsg);
       }
 
       return card;
     },
 
-    // target is { kind: 'org'|'kid', id }: which picker/save endpoint to
-    // use. A provider's calendar is a read source (existing picker), a
-    // kid's is a push target (new one) - same chip-list UI either way.
+    // target is { kind: 'org'|'kid', id, name }: which picker/save endpoint
+    // to use, and whose name to put in the direction hint below. A
+    // provider's calendar is a read source (pull), a kid's is a push
+    // target - same chip-list UI either way, which is exactly why the
+    // hint matters: nothing else on this screen says which one you're in.
     loadCalendarPicker: function (target, host, statusMsg) {
       host.textContent = t('ui.loading');
       var url = target.kind === 'kid'
@@ -573,6 +577,8 @@
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_calendars_found') }));
         return;
       }
+      var hintKey = target.kind === 'kid' ? 'parent.picker_hint_push' : 'parent.picker_hint_pull';
+      host.appendChild(el('p', { class: 'calendar-picker__hint', text: t(hintKey, { name: target.name }) }));
       host.appendChild(el('p', { class: 'field-label', text: t('parent.choose_calendar') }));
       var chips = calendars.map(function (cal) {
         var label = cal.primary
