@@ -16,8 +16,10 @@ from app.utils.locale import (
     LOCALE_DIR,
     Translator,
     available_locales,
+    from_local,
     load_locale,
     resolve_locale,
+    to_local,
 )
 
 PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
@@ -147,3 +149,35 @@ class TestRendering:
 
     def test_a_missing_locale_falls_back_to_english(self):
         assert load_locale("zz") == load_locale("en")
+
+
+class TestTimezoneConversion:
+    """
+    Every stored moment is UTC; to_local/from_local are the only place that
+    turns it into, and back out of, a family's own wall clock.
+    """
+
+    def test_an_evening_class_crosses_into_the_previous_utc_day(self):
+        # 5pm Pacific Daylight Time on the 10th is already the 11th in UTC -
+        # exactly the case that broke the Week tab's day grouping.
+        midnight_utc_the_11th = datetime(2026, 9, 11, 0, 0)
+
+        local = to_local(midnight_utc_the_11th, "America/Los_Angeles")
+
+        assert local == datetime(2026, 9, 10, 17, 0)
+
+    def test_from_local_is_the_inverse_of_to_local(self):
+        moment = datetime(2026, 9, 11, 0, 0)
+
+        local = to_local(moment, "America/Los_Angeles")
+        assert from_local(local, "America/Los_Angeles") == moment
+
+    def test_an_unknown_timezone_leaves_the_moment_unconverted_rather_than_raising(self):
+        moment = datetime(2026, 9, 11, 0, 0)
+
+        assert to_local(moment, "Not/A_Real_Zone") == moment
+        assert from_local(moment, "Not/A_Real_Zone") == moment
+
+    def test_none_passes_through_both_directions(self):
+        assert to_local(None, "America/Los_Angeles") is None
+        assert from_local(None, "America/Los_Angeles") is None

@@ -13,6 +13,7 @@ import pytest
 from app.database.models import ApprovalRule, Family, RuleSet, User, WeeklyCap
 from app.services.ruleset_service import RuleSetService
 from app.utils.auth import get_password_hash
+from app.utils.locale import DEFAULT_TIMEZONE
 
 
 @pytest.fixture
@@ -182,3 +183,42 @@ class TestBackfill:
         ruleset = RuleSetService(db_session).get_or_create(parent.id)
 
         assert ruleset.latest_end == time(18, 0)
+
+
+class TestTimezone:
+    """
+    Every stored moment is UTC; RuleSet.timezone is the only place a
+    family's own wall clock is recorded, and these are the two lookups
+    that turn it back into that wall clock for display.
+    """
+
+    def test_falls_back_to_the_default_with_no_ruleset_yet(self, db_session, parent):
+        assert RuleSetService(db_session).timezone(parent.id) == DEFAULT_TIMEZONE
+
+    def test_reads_the_stored_value_once_a_ruleset_exists(self, db_session, parent):
+        ruleset = RuleSetService(db_session).get_or_create(parent.id)
+        ruleset.timezone = "America/Los_Angeles"
+        db_session.commit()
+
+        assert RuleSetService(db_session).timezone(parent.id) == "America/Los_Angeles"
+
+    def test_timezone_for_child_looks_up_the_childs_own_parent(self, db_session, parent):
+        kid = User(
+            email="kid-tz@example.com",
+            username="kid-tz",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+            is_kid_account=True,
+            parent_id=parent.id,
+        )
+        db_session.add(kid)
+        db_session.commit()
+
+        ruleset = RuleSetService(db_session).get_or_create(parent.id, kid.id)
+        ruleset.timezone = "America/Los_Angeles"
+        db_session.commit()
+
+        assert RuleSetService(db_session).timezone_for_child(kid.id) == "America/Los_Angeles"
+
+    def test_timezone_for_child_falls_back_for_an_unknown_child(self, db_session):
+        assert RuleSetService(db_session).timezone_for_child(999999) == DEFAULT_TIMEZONE
