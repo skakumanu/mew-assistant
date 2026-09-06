@@ -82,6 +82,7 @@
     "tab_providers": "Proveedores",
     "providers_intro": "Conecta el calendario que cada proveedor ya usa, para que sus sesiones aparezcan aquí solas.",
     "no_providers": "Aún no hay proveedores. Añade uno desde la configuración, o vuelve cuando lo hagas.",
+    "direction_pull_tag": "Trae sesiones aquí",
     "calendar_connected": "Conectado vía {provider}.",
     "calendar_connected_named": "Conectado a {name} vía {provider}.",
     "calendar_not_connected": "Aún no conectado.",
@@ -93,6 +94,7 @@
     "ics_help_outlook": "Outlook / Microsoft 365: Calendario → Configuración → \"Calendarios compartidos\" → \"Publicar un calendario\"",
     "ics_help_apple": "Calendario de Apple (iCloud): abre la configuración para compartir del calendario → activa \"Calendario público\" → copia el enlace",
     "connect_google": "Conectar Google Calendar",
+    "picker_hint_pull": "Mew leerá las sesiones de {name} desde el calendario que elijas abajo — nunca modifica ese calendario.",
     "choose_calendar": "¿Qué calendario?",
     "calendar_primary_label": "{name} (principal)",
     "no_calendars_found": "No se encontraron calendarios en esa cuenta de Google.",
@@ -102,10 +104,12 @@
     "tab_kid_calendars": "El calendario de tu hijo/a",
     "kid_calendars_intro": "Conecta el Google Calendar propio de tu hijo/a y su horario aparecerá ahí automáticamente, junto a todo lo demás que ya ve.",
     "no_kids_yet": "Aún no hay hijos. Añade uno desde la configuración, o vuelve cuando lo hagas.",
+    "direction_push_tag": "Envía el horario fuera",
     "kid_calendar_connected": "Conectado.",
     "kid_calendar_connected_named": "Conectado a {name}.",
     "kid_calendar_not_connected": "Aún no conectado.",
     "connect_kid_google": "Conectar su Google Calendar",
+    "picker_hint_push": "Mew enviará el horario de Mew de {name} al calendario que elijas abajo — nunca lee de ese calendario.",
     "kid_calendar_connect_ok": "Conectado. Su horario empezará a aparecer ahí."
   },
   "kid": {
