@@ -17,7 +17,9 @@ from ..database.models import ChangeKind, User
 from ..schemas.change_request import ChangeRequestIn, ChangeRequestOut
 from ..services.change_request_service import ChangeRequestService
 from ..services.presenter import Presenter
+from ..services.ruleset_service import RuleSetService
 from ..utils.auth import get_current_user
+from ..utils.locale import to_local
 from ..utils.locale_context import translator_for
 
 logger = logging.getLogger(__name__)
@@ -61,7 +63,8 @@ async def submit_change_request(
     session_out = presenter.session(outcome.session)
 
     if outcome.auto_applied:
-        message = _applied_message(translator, outcome, kind, current_user)
+        tz_name = RuleSetService(db).timezone_for_child(outcome.session.child_id)
+        message = _applied_message(translator, outcome, kind, current_user, tz_name)
         return ChangeRequestOut(
             auto_applied=True,
             session=session_out,
@@ -87,7 +90,9 @@ async def submit_change_request(
     )
 
 
-def _applied_message(translator, outcome, kind: ChangeKind, actor: User) -> str:
+def _applied_message(
+    translator, outcome, kind: ChangeKind, actor: User, tz_name: str
+) -> str:
     """
     The confirmation the requester reads.
 
@@ -95,10 +100,9 @@ def _applied_message(translator, outcome, kind: ChangeKind, actor: User) -> str:
     told plainly that both calendars are already updated.
     """
     session = outcome.session
+    local_start = to_local(session.start_utc, tz_name)
     if actor.is_kid_account:
         if kind is ChangeKind.CANCEL:
             return translator.t("kid.parent_yes_skip", title=session.title)
-        return translator.t(
-            "kid.done", title=session.title, time=translator.time(session.start_utc)
-        )
-    return translator.t("provider.confirmed", when=translator.when(session.start_utc))
+        return translator.t("kid.done", title=session.title, time=translator.time(local_start))
+    return translator.t("provider.confirmed", when=translator.when(local_start))
