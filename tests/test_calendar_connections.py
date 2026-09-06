@@ -177,6 +177,46 @@ class TestConnectOrgCalendar:
         org = db_session.query(ProviderOrg).filter(ProviderOrg.id == family["org"].id).first()
         assert org.calendar_account_id is None
 
+    def test_resaving_a_pre_existing_collision_unchanged_is_not_blocked(
+        self, client, db_session, family
+    ):
+        """
+        Regression guard: a family can have this collision already sitting
+        in their data from before the safeguard shipped (or from before a
+        kid's push target was actually moved away). Re-saving the org's own
+        existing value - a plain reconnect/re-auth, nothing about the
+        configuration changing - must not be treated as a NEW collision
+        being created, even though the collision itself is real.
+        """
+        org = family["org"]
+        org.calendar_provider = "google"
+        org.calendar_account_id = "shared@group.calendar.google.com"
+        db_session.add(
+            ProviderOrgConnection(
+                org_id=org.id, parent_id=family["parent"].id, connected_by_user_id=family["parent"].id
+            )
+        )
+        db_session.add(
+            KidCalendarConnection(
+                child_id=family["kid"].id,
+                parent_id=family["parent"].id,
+                calendar_provider="google",
+                calendar_account_id="shared@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        response = client.put(
+            f"/calendar-sync/orgs/{org.id}/calendar",
+            json={
+                "calendar_provider": "google",
+                "calendar_account_id": "shared@group.calendar.google.com",
+            },
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
     def test_an_ics_pull_source_never_collides_with_a_kids_google_push_target(
         self, client, db_session, family, monkeypatch
     ):
