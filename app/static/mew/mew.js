@@ -441,12 +441,61 @@
 
     loadProviders: function () {
       var host = document.getElementById('parent-providers');
+      var kidHost = document.getElementById('parent-kid-calendars');
+      var summaryHost = document.getElementById('parent-shared-calendars');
       var chooseOrgId = Number(new URLSearchParams(global.location.search).get('choose_calendar_org'));
-      api('/calendar-sync/orgs').then(function (orgs) {
-        parent.renderProviders(host, orgs, chooseOrgId);
-      }).catch(function () { failed(host); });
+      var chooseKidId = Number(new URLSearchParams(global.location.search).get('choose_kid_calendar'));
 
-      parent.loadKidCalendars();
+      // Both lists are fetched together so the shared-calendar summary
+      // below can compare them - loading either alone can't tell you
+      // whether a provider and a kid happen to point at the same one.
+      Promise.all([api('/calendar-sync/orgs'), api('/calendar-sync/google/kid/list')])
+        .then(function (results) {
+          var orgs = results[0];
+          var kids = results[1];
+          parent.renderProviders(host, orgs, chooseOrgId);
+          if (kidHost) parent.renderKidCalendars(kidHost, kids, chooseKidId);
+          if (summaryHost) parent.renderSharedCalendarSummary(summaryHost, orgs, kids);
+        })
+        .catch(function () { failed(host); });
+    },
+
+    // A calendar shared between a provider's pull source and a kid's push
+    // target is exactly the setup that caused real duplicate events in
+    // production (see calendar_sync.py's _family_calendar_usage_map) - this
+    // surfaces it plainly on the tab itself, not only inside a picker
+    // someone has to open first.
+    renderSharedCalendarSummary: function (host, orgs, kids) {
+      clear(host);
+      var groups = {};
+      orgs.forEach(function (org) {
+        if (!org.calendar_connected || !org.calendar_display_name) return;
+        (groups[org.calendar_display_name] = groups[org.calendar_display_name] || [])
+          .push({ name: org.name, direction: 'pull' });
+      });
+      kids.forEach(function (kid) {
+        if (!kid.calendar_connected || !kid.calendar_display_name) return;
+        (groups[kid.calendar_display_name] = groups[kid.calendar_display_name] || [])
+          .push({ name: kid.name, direction: 'push' });
+      });
+
+      var sharedNames = Object.keys(groups).filter(function (name) { return groups[name].length > 1; });
+      if (!sharedNames.length) return;
+
+      var rows = sharedNames.map(function (calendarName) {
+        var entries = groups[calendarName].map(function (entry) {
+          return entry.name + ' (' + t('parent.direction_' + entry.direction + '_tag') + ')';
+        }).join(', ');
+        return el('p', { class: 'shared-calendar__row' }, [
+          el('strong', { text: calendarName }),
+          el('span', { text: ' — ' + entries })
+        ]);
+      });
+
+      host.appendChild(el('div', { class: 'shared-calendar-panel' }, [
+        el('p', { class: 'field-label', text: t('parent.shared_calendar_heading') }),
+        el('p', { class: 'provider-note', text: t('parent.shared_calendar_intro') })
+      ].concat(rows)));
     },
 
     renderProviders: function (host, orgs, chooseOrgId) {
@@ -552,15 +601,6 @@
       return card;
     },
 
-    loadKidCalendars: function () {
-      var host = document.getElementById('parent-kid-calendars');
-      if (!host) return;
-      var chooseKidId = Number(new URLSearchParams(global.location.search).get('choose_kid_calendar'));
-      api('/calendar-sync/google/kid/list').then(function (kids) {
-        parent.renderKidCalendars(host, kids, chooseKidId);
-      }).catch(function () { failed(host); });
-    },
-
     renderKidCalendars: function (host, kids, chooseKidId) {
       clear(host);
       if (!kids.length) {
@@ -585,7 +625,7 @@
           api('/onboarding/kids', { method: 'POST', body: { display_name: name } })
             .then(function () {
               nameInput.value = '';
-              parent.loadKidCalendars();
+              parent.loadProviders();
             })
             .catch(function () { statusMsg.textContent = t('ui.error'); });
         }
@@ -650,17 +690,45 @@
       }
       var hintKey = target.kind === 'kid' ? 'parent.picker_hint_push' : 'parent.picker_hint_pull';
       host.appendChild(el('p', { class: 'calendar-picker__hint', text: t(hintKey, { name: target.name }) }));
+
+      // A calendar already claimed elsewhere in the family is shown, not
+      // hidden - just not clickable, with the same reason the save would
+      // otherwise only surface after a rejected PUT (see calendar_sync.py's
+      // _family_calendar_usage_map). Catching this before the click is the
+      // whole point: it was exactly what dogfooding this feature couldn't do.
+      var available = calendars.filter(function (cal) { return !cal.in_use_by; });
+      var unavailable = calendars.filter(function (cal) { return !!cal.in_use_by; });
+
       host.appendChild(el('p', { class: 'field-label', text: t('parent.choose_calendar') }));
-      var chips = calendars.map(function (cal) {
-        var label = cal.primary
-          ? t('parent.calendar_primary_label', { name: cal.summary })
-          : cal.summary;
-        return el('button', {
-          class: 'chip', type: 'button', text: label,
-          onclick: function () { parent.chooseGoogleCalendar(target, cal.id, cal.summary, host, statusMsg); }
+      if (available.length) {
+        var chips = available.map(function (cal) {
+          var label = cal.primary
+            ? t('parent.calendar_primary_label', { name: cal.summary })
+            : cal.summary;
+          return el('button', {
+            class: 'chip', type: 'button', text: label,
+            onclick: function () { parent.chooseGoogleCalendar(target, cal.id, cal.summary, host, statusMsg); }
+          });
         });
-      });
-      host.appendChild(el('div', { class: 'chips' }, chips));
+        host.appendChild(el('div', { class: 'chips' }, chips));
+      }
+
+      if (unavailable.length) {
+        var rows = unavailable.map(function (cal) {
+          var label = cal.primary
+            ? t('parent.calendar_primary_label', { name: cal.summary })
+            : cal.summary;
+          var directionLabel = t('parent.direction_' + cal.in_use_by.direction + '_tag');
+          return el('div', { class: 'calendar-picker__unavailable' }, [
+            el('span', { class: 'chip chip--disabled', text: label }),
+            el('span', {
+              class: 'calendar-picker__unavailable-reason',
+              text: t('parent.calendar_in_use_by', { name: cal.in_use_by.name, direction: directionLabel })
+            })
+          ]);
+        });
+        host.appendChild(el('div', { class: 'calendar-picker__unavailable-list' }, rows));
+      }
     },
 
     chooseGoogleCalendar: function (target, calendarId, calendarName, pickerHost, statusMsg) {

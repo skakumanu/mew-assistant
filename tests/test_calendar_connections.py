@@ -595,11 +595,17 @@ class TestListGoogleCalendars:
 
         assert response.status_code == status.HTTP_200_OK
         calendars = response.json()["calendars"]
-        assert calendars[0] == {"id": "parent@example.com", "summary": "My Calendar", "primary": True}
+        assert calendars[0] == {
+            "id": "parent@example.com",
+            "summary": "My Calendar",
+            "primary": True,
+            "in_use_by": None,
+        }
         assert calendars[1] == {
             "id": "kid@group.calendar.google.com",
             "summary": "Ellie's Schedule",
             "primary": False,
+            "in_use_by": None,
         }
 
     def test_404_when_no_google_connection_exists_yet(self, client, family):
@@ -640,3 +646,104 @@ class TestListGoogleCalendars:
             headers=_auth(family["parent"]),
         )
         assert response.status_code == status.HTTP_502_BAD_GATEWAY
+
+    def test_a_calendar_already_used_by_a_kid_is_flagged(
+        self, client, db_session, family, monkeypatch
+    ):
+        """
+        The whole point of surfacing this in the list: a parent should see
+        this BEFORE picking it, not learn it from a rejected PUT afterward.
+        """
+        db_session.add(
+            KidCalendarConnection(
+                child_id=family["kid"].id,
+                parent_id=family["parent"].id,
+                calendar_provider="google",
+                calendar_account_id="shared@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(
+            monkeypatch,
+            items=[{"id": "shared@group.calendar.google.com", "summary": "Shared"}],
+        )
+
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": family["org"].id},
+            headers=_auth(family["parent"]),
+        )
+
+        calendar = response.json()["calendars"][0]
+        assert calendar["in_use_by"] == {
+            "kind": "kid",
+            "name": family["kid"].display_name,
+            "direction": "push",
+        }
+
+    def test_the_orgs_own_current_calendar_is_not_flagged_against_itself(
+        self, client, family, monkeypatch
+    ):
+        org = family["org"]
+        org.calendar_provider = "google"
+        org.calendar_account_id = "mine@group.calendar.google.com"
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(
+            monkeypatch,
+            items=[{"id": "mine@group.calendar.google.com", "summary": "Mine"}],
+        )
+
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": org.id},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.json()["calendars"][0]["in_use_by"] is None
+
+    def test_another_familys_kid_usage_does_not_leak_into_this_list(
+        self, client, db_session, family, monkeypatch
+    ):
+        other_parent = User(
+            email="other-parent6@example.com",
+            username="other-parent6",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+        )
+        db_session.add(other_parent)
+        db_session.commit()
+        other_kid = User(
+            email="other-kid6@example.com",
+            username="other-kid6",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+            is_kid_account=True,
+            parent_id=other_parent.id,
+        )
+        db_session.add(other_kid)
+        db_session.commit()
+        db_session.add(
+            KidCalendarConnection(
+                child_id=other_kid.id,
+                parent_id=other_parent.id,
+                calendar_provider="google",
+                calendar_account_id="shared@group.calendar.google.com",
+            )
+        )
+        db_session.commit()
+
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(
+            monkeypatch,
+            items=[{"id": "shared@group.calendar.google.com", "summary": "Shared"}],
+        )
+
+        response = client.get(
+            "/calendar-sync/google/calendars",
+            params={"org_id": family["org"].id},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.json()["calendars"][0]["in_use_by"] is None
