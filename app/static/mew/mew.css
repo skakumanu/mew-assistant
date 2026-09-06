@@ -298,6 +298,22 @@ a:hover { color: var(--green-hover); }
 .calendar-picker__hint {
   font-size: 13px; line-height: 1.5; color: var(--body); margin: 0 0 8px;
 }
+.calendar-picker__unavailable-list {
+  display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+}
+.calendar-picker__unavailable {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.calendar-picker__unavailable-reason {
+  font-size: 12px; color: var(--muted); line-height: 1.4;
+}
+
+.shared-calendar-panel {
+  border: 1px solid var(--amber-edge); background: var(--amber-tint);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+}
+.shared-calendar-panel .field-label { color: var(--amber-text); }
+.shared-calendar__row { font-size: 13px; line-height: 1.5; margin: 4px 0 0; color: var(--body); }
 
 /* ----------------------------------------------------------- parent: log */
 
@@ -490,6 +506,10 @@ a:hover { color: var(--green-hover); }
   background: #fff; border: 1px solid #E2DCD3; color: var(--body);
 }
 .chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; }
+.chip--disabled {
+  cursor: default; background: var(--border-4); border-color: var(--border-4);
+  color: var(--muted);
+}
 .therapist-row {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
   padding: 12px 13px; border-radius: 12px; cursor: pointer;

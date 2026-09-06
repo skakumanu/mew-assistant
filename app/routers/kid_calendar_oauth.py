@@ -31,6 +31,7 @@ from ..routers.calendar_oauth import (
     GOOGLE_TOKEN_URL,
     _store_google_token,
 )
+from ..routers.calendar_sync import _family_calendar_usage_map
 from ..utils.auth import (
     create_calendar_connect_state,
     decode_calendar_connect_state,
@@ -248,4 +249,11 @@ async def list_calendars(
         if item.get("id")
     ]
     calendars.sort(key=lambda c: not c["primary"])
+
+    # Same conflict preview as the provider picker (calendar_oauth.py) -
+    # excluding this kid's own current connection.
+    usage = _family_calendar_usage_map(db, current_user.id, exclude_child_id=child.id)
+    for cal in calendars:
+        cal["in_use_by"] = usage.get(cal["id"])
+
     return {"calendars": calendars}
