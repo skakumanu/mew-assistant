@@ -129,7 +129,14 @@
         requireSignIn();
         throw new Error('unauthenticated');
       }
-      if (!response.ok) throw new Error('http ' + response.status);
+      if (!response.ok) {
+        return response.json().catch(function () { return null; }).then(function (body) {
+          var err = new Error((body && body.detail) || ('http ' + response.status));
+          err.status = response.status;
+          err.detail = body && body.detail;
+          throw err;
+        });
+      }
       return response.status === 204 ? null : response.json();
     });
   }
@@ -675,7 +682,9 @@
         var url2 = new URL(global.location.href);
         url2.searchParams.delete(queryParam);
         global.history.replaceState(null, '', url2.toString());
-      }).catch(function () { statusMsg.textContent = t('ui.error'); });
+      }).catch(function (err) {
+        statusMsg.textContent = (err && err.detail) || t('ui.error');
+      });
     },
 
     connectIcs: function (orgId, url, statusMsg) {
