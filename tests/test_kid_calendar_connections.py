@@ -266,6 +266,64 @@ class TestListKidCalendars:
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_a_calendar_already_used_by_an_org_is_flagged(
+        self, client, db_session, family, monkeypatch
+    ):
+        """
+        Same conflict preview as the provider picker (calendar_oauth.py) -
+        a parent should see this before picking, not learn it from a
+        rejected PUT afterward.
+        """
+        org = family["org"]
+        org.calendar_provider = "google"
+        org.calendar_account_id = "shared@group.calendar.google.com"
+        db_session.add(
+            ProviderOrgConnection(
+                org_id=org.id, parent_id=family["parent"].id, connected_by_user_id=family["parent"].id
+            )
+        )
+        db_session.commit()
+
+        self._connect(client, family, monkeypatch)
+        self._mock_calendar_list(
+            monkeypatch,
+            items=[{"id": "shared@group.calendar.google.com", "summary": "Shared"}],
+        )
+
+        response = client.get(
+            "/calendar-sync/google/kid/calendars",
+            params={"child_id": family["kid"].id},
+            headers=_auth(family["parent"]),
+        )
+
+        calendar = response.json()["calendars"][0]
+        assert calendar["in_use_by"] == {"kind": "org", "name": org.name, "direction": "pull"}
+
+    def test_the_kids_own_current_calendar_is_not_flagged_against_itself(
+        self, client, db_session, family, monkeypatch
+    ):
+        self._connect(client, family, monkeypatch)
+        connection = (
+            db_session.query(KidCalendarConnection)
+            .filter(KidCalendarConnection.child_id == family["kid"].id)
+            .one()
+        )
+        connection.calendar_provider = "google"
+        connection.calendar_account_id = "mine@group.calendar.google.com"
+        db_session.commit()
+        self._mock_calendar_list(
+            monkeypatch,
+            items=[{"id": "mine@group.calendar.google.com", "summary": "Mine"}],
+        )
+
+        response = client.get(
+            "/calendar-sync/google/kid/calendars",
+            params={"child_id": family["kid"].id},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.json()["calendars"][0]["in_use_by"] is None
+
 
 class TestConnectKidCalendarEndpoint:
     def test_a_parent_can_point_their_kids_push_target_at_a_calendar(self, client, family):
