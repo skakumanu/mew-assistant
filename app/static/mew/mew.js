@@ -154,7 +154,7 @@
   // ----------------------------------------------------------- parent
 
   var parent = {
-    state: { tab: 'inbox' },
+    state: { tab: 'inbox', weekOpen: null, weekDraft: null },
 
     start: function () {
       Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
@@ -319,35 +319,114 @@
     loadWeek: function () {
       var host = document.getElementById('pane-week');
       api('/parent/week').then(function (days) {
-        clear(host);
-        days.forEach(function (day) {
-          var rows = day.sessions.map(function (session) {
-            var children = [
-              el('span', { class: 'session-row__rail', 'aria-hidden': 'true' }),
-              el('div', { class: 'session-row__body' }, [
-                el('p', { class: 'session-row__title', text: session.title }),
-                el('p', {
-                  class: 'session-row__meta',
-                  text: session.time_label + ' · ' + (session.provider_person_name || '')
-                })
-              ])
-            ];
-            if (session.changed) {
-              children.push(el('span', { class: 'pill', text: t('parent.updated') }));
-            }
-            return el('div', { class: 'session-row' }, children);
-          });
-          if (day.empty) {
-            rows.push(el('p', { class: 'day__free', text: t('parent.free') }));
-          }
-          host.appendChild(el('section', { class: 'day' }, [
-            el('div', { class: 'day__head' }, [
-              el('h3', { class: 'day__name', text: day.name }),
-              el('span', { class: 'day__date', text: day.label })
-            ])
-          ].concat(rows)));
-        });
+        parent.state.weekDays = days;
+        parent.renderWeek(days);
       }).catch(function () { failed(host); });
+    },
+
+    renderWeek: function (days) {
+      var host = document.getElementById('pane-week');
+      clear(host);
+      days.forEach(function (day) {
+        var rows = day.sessions.map(function (session) { return parent.sessionRow(session); });
+        if (day.empty) {
+          rows.push(el('p', { class: 'day__free', text: t('parent.free') }));
+        }
+        host.appendChild(el('section', { class: 'day' }, [
+          el('div', { class: 'day__head' }, [
+            el('h3', { class: 'day__name', text: day.name }),
+            el('span', { class: 'day__date', text: day.label })
+          ])
+        ].concat(rows)));
+      });
+    },
+
+    sessionRow: function (session) {
+      var open = parent.state.weekOpen === session.id;
+
+      var head = el('button', {
+        class: 'session-row', type: 'button', 'aria-expanded': String(open),
+        onclick: function () {
+          if (open) {
+            parent.state.weekOpen = null;
+          } else {
+            parent.state.weekOpen = session.id;
+            parent.state.weekDraft = { newStart: new Date(session.start_utc) };
+          }
+          parent.renderWeek(parent.state.weekDays);
+        }
+      }, [
+        el('span', { class: 'session-row__rail', 'aria-hidden': 'true' }),
+        el('div', { class: 'session-row__body' }, [
+          el('p', { class: 'session-row__title', text: session.title }),
+          el('p', {
+            class: 'session-row__meta',
+            text: session.time_label + ' · ' + (session.provider_person_name || '')
+          })
+        ])
+      ].concat(session.changed ? [el('span', { class: 'pill', text: t('parent.updated') })] : [])
+        .concat([el('span', {
+          class: 'session-row__action',
+          text: open ? t('parent.close_edit') : t('parent.edit_session')
+        })]));
+
+      var wrapper = [head];
+      if (open) wrapper.push(parent.sessionForm(session));
+      return el('div', { class: 'session-row-wrap' }, wrapper);
+    },
+
+    sessionForm: function (session) {
+      var draft = parent.state.weekDraft;
+
+      function localInputValue(date) {
+        var offsetMs = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+      }
+
+      var timeInput = el('input', {
+        type: 'datetime-local', class: 'week-edit__input',
+        value: localInputValue(draft.newStart),
+        onchange: function (event) {
+          var value = event.target.value;
+          if (value) draft.newStart = new Date(value);
+        }
+      });
+
+      return el('div', { class: 'week-edit' }, [
+        el('div', {}, [
+          el('p', { class: 'field-label', text: t('parent.new_time_label') }),
+          timeInput
+        ]),
+        el('div', { class: 'actions' }, [
+          el('button', {
+            class: 'btn btn--primary', type: 'button', text: t('parent.move_session'),
+            onclick: function () { parent.requestChange(session, 'move', draft.newStart); }
+          }),
+          el('button', {
+            class: 'btn btn--quiet', type: 'button', text: t('parent.cancel_session'),
+            onclick: function () {
+              if (!global.confirm(t('parent.cancel_session_confirm', { title: session.title }))) return;
+              parent.requestChange(session, 'cancel', null);
+            }
+          })
+        ])
+      ]);
+    },
+
+    requestChange: function (session, kind, newStart) {
+      api('/requests', {
+        method: 'POST',
+        body: {
+          session_id: session.id,
+          kind: kind,
+          new_start: newStart ? newStart.toISOString() : null
+        }
+      }).then(function (result) {
+        announce(result.message);
+        parent.state.weekOpen = null;
+        parent.load();
+        parent.loadWeek();
+      }).catch(function (err) { announce((err && err.detail) || t('ui.error')); });
     },
 
     loadRules: function () {

@@ -125,7 +125,13 @@
     "kid_calendar_not_connected": "غير متصل بعد.",
     "connect_kid_google": "ربط تقويم Google الخاص به",
     "picker_hint_push": "سيرسل Mew جدول {name} في Mew إلى التقويم الذي تختاره أدناه — ولن يقرأ من ذلك التقويم أبدًا.",
-    "kid_calendar_connect_ok": "تم الربط. سيبدأ جدوله بالظهور هناك."
+    "kid_calendar_connect_ok": "تم الربط. سيبدأ جدوله بالظهور هناك.",
+    "edit_session": "تعديل هذا",
+    "close_edit": "إغلاق",
+    "new_time_label": "الوقت الجديد",
+    "move_session": "نقل",
+    "cancel_session": "إلغاء الجلسة",
+    "cancel_session_confirm": "إلغاء {title}؟ لا يمكن التراجع عن هذا من هنا."
   },
   "kid": {
     "my_day": "يومي",

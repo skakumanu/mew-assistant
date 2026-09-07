@@ -510,6 +510,96 @@ class TestAuthorisation:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+class TestParentInitiated:
+    """
+    A parent is also an authorised actor on `POST /requests` - the Week tab
+    proposes changes through this same, single write path rather than a
+    separate parent-only endpoint.
+    """
+
+    def test_a_compliant_parent_move_is_applied_immediately(
+        self, client, db_session, family, rules, session_row
+    ):
+        new_start = session_row.start_utc.replace(hour=16, minute=0)
+
+        response = client.post(
+            "/requests",
+            json={
+                "session_id": session_row.id,
+                "kind": "move",
+                "new_start": new_start.isoformat(),
+            },
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["auto_applied"] is True
+
+        db_session.refresh(session_row)
+        assert session_row.start_utc == new_start
+
+        request = (
+            db_session.query(ApprovalRequest)
+            .filter(ApprovalRequest.id == body["request_id"])
+            .one()
+        )
+        assert request.requested_by == "parent"
+
+    def test_a_parent_cancel_is_parked_when_the_rule_requires_approval(
+        self, client, db_session, family, rules, session_row
+    ):
+        """
+        Cancellation still goes through the same rule engine even when the
+        parent themselves is asking - `cancellation_needs_approval` parks it
+        with a reason code rather than special-casing the parent's own ask.
+        """
+        response = client.post(
+            "/requests",
+            json={"session_id": session_row.id, "kind": "cancel"},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["auto_applied"] is False
+        assert "cancel_needs_approval" in body["reason_codes"]
+
+        request = (
+            db_session.query(ApprovalRequest)
+            .filter(ApprovalRequest.id == body["request_id"])
+            .one()
+        )
+        assert request.requested_by == "parent"
+        assert request.status == ApprovalStatus.PENDING
+
+    def test_a_parent_cannot_touch_another_familys_session(
+        self, client, db_session, family, rules, session_row
+    ):
+        outsider_parent = User(
+            email="other-parent@example.com",
+            username="other_parent",
+            hashed_password=get_password_hash("password123"),
+            is_active=True,
+            is_kid_account=False,
+            display_name="Other Parent",
+        )
+        db_session.add(outsider_parent)
+        db_session.commit()
+
+        response = client.post(
+            "/requests",
+            json={
+                "session_id": session_row.id,
+                "kind": "move",
+                "new_start": session_row.start_utc.replace(hour=16).isoformat(),
+            },
+            headers=_auth(outsider_parent),
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 class TestKidToday:
     def test_today_lists_the_days_cards(self, client, db_session, family, rules):
         start = _soon_today()
