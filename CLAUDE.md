@@ -85,10 +85,9 @@ keys) are set via `flyctl secrets set`, not committed anywhere. CI needs a
 `FLY_API_TOKEN` repository secret to deploy.
 
 Before touching deploy config, know that this repo *also* still has legacy
-Azure IaC and docs (`infrastructure/azure/`, root `*.bicep` files,
-`docs/DEPLOYMENT_GUIDE.md`, etc.) — those are dormant and no longer wired
-into CI, kept for reference/teardown only. Don't resurrect them without
-checking with the repo owner first.
+Azure IaC (`infrastructure/azure/`, root `*.bicep` files) — dormant and no
+longer wired into CI, kept for reference/teardown only. Don't resurrect it
+without checking with the repo owner first.
 
 ## Before committing
 
