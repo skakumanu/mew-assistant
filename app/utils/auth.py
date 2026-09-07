@@ -12,10 +12,10 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
+import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt
-from jose.exceptions import ExpiredSignatureError, JWTError
+from jwt import ExpiredSignatureError, InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
@@ -183,7 +183,7 @@ def decode_calendar_connect_state(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="This connection link has expired")
-    except JWTError:
+    except InvalidTokenError:
         raise HTTPException(status_code=400, detail="Invalid connection link")
 
     if payload.get("type") != CALENDAR_CONNECT_STATE_TYPE:
@@ -202,7 +202,7 @@ def decode_token(token: str) -> dict:
         Decoded token payload
 
     Raises:
-        JWTError: If token is invalid or expired
+        InvalidTokenError: If token is invalid or expired
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -214,7 +214,7 @@ def decode_token(token: str) -> dict:
             detail="Token has expired. Please sign in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except JWTError as e:
+    except InvalidTokenError as e:
         logger.error(f"Invalid JWT: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -282,7 +282,7 @@ async def get_current_user(
         if payload.get("type") != "access":
             logger.error(f"Invalid token type: {payload.get('type')}")
             raise credentials_exception
-    except JWTError as e:
+    except InvalidTokenError as e:
         logger.error(f"JWT decode error: {str(e)}")
         raise credentials_exception
 
