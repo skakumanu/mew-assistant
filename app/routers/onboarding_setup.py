@@ -131,6 +131,64 @@ async def set_up_family(
     return SetupOut(child_id=child.id, ruleset_id=ruleset.id, providers=orgs)
 
 
+class AddProviderIn(BaseModel):
+    """A provider added any time after setup, from the Providers tab."""
+
+    name: str = Field(..., max_length=200)
+    kind: str = Field("other", description="aba | speech | ot | school | transport | other")
+
+
+class AddProviderOut(BaseModel):
+    id: int
+    name: str
+    kind: str
+
+
+@router.post("/providers", response_model=AddProviderOut)
+async def add_provider(
+    payload: AddProviderIn,
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """
+    Add one more provider to this family - the setup wizard is only ever
+    seen once, but a family's roster of providers grows over time. Same
+    idempotent-by-name upsert setup itself uses, so adding a name twice
+    just reconnects it rather than duplicating it.
+    """
+    verify_parent_account(current_user)
+    org = _upsert_org(db, ProviderOrgIn(name=payload.name, kind=payload.kind))
+    _upsert_connection(db, org_id=org.id, parent_id=current_user.id)
+    db.commit()
+    return AddProviderOut(id=org.id, name=org.name, kind=org.kind)
+
+
+class AddKidIn(BaseModel):
+    """A child added any time after setup, from the Providers tab."""
+
+    display_name: str = Field(..., max_length=100)
+    age: Optional[int] = Field(None, ge=0, le=25)
+
+
+class AddKidOut(BaseModel):
+    id: int
+    name: str
+
+
+@router.post("/kids", response_model=AddKidOut)
+async def add_kid(
+    payload: AddKidIn,
+    current_user: User = Depends(get_current_user),
+    db: DbSession = Depends(get_db),
+):
+    """Add another child to this family - most families with more than one
+    kid on Mew add the second one well after their own first setup."""
+    verify_parent_account(current_user)
+    child = _upsert_child(db, current_user, ChildIn(display_name=payload.display_name, age=payload.age))
+    RuleSetService(db).get_or_create(current_user.id, child.id)
+    return AddKidOut(id=child.id, name=child.display_name)
+
+
 def _upsert_child(db: DbSession, caregiver: User, spec: ChildIn) -> User:
     """
     Find or create the child.
