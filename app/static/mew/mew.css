@@ -341,18 +341,33 @@ a:hover { color: var(--green-hover); }
 .day__date { font-size: 12px; color: #948C82; }
 .day__free { font-size: 13px; color: var(--ghost); }
 
+.session-row-wrap { display: flex; flex-direction: column; gap: 0; }
 .session-row {
-  display: flex; gap: 12px; padding: 12px 13px;
+  display: flex; align-items: center; gap: 12px; padding: 12px 13px;
   border: 1px solid var(--border-3); border-radius: 14px; background: var(--surface-2);
+  width: 100%; font-family: inherit; text-align: start; cursor: pointer;
 }
-.session-row__rail { width: 3px; border-radius: 2px; background: var(--green); flex: none; }
+.session-row[aria-expanded="true"] { border-radius: 14px 14px 0 0; }
+.session-row__rail { width: 3px; align-self: stretch; border-radius: 2px; background: var(--green); flex: none; }
 .session-row__body { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .session-row__title { font-size: 15px; font-weight: 600; }
 .session-row__meta { font-size: 13px; color: var(--body); }
+.session-row__action {
+  font-size: 13px; font-weight: 600; color: var(--green); white-space: nowrap; flex: none;
+}
 .pill {
   align-self: flex-start; font-size: 11px; font-weight: 600;
   padding: 4px 8px; border-radius: 999px;
-  background: var(--green-tint); color: var(--green);
+  background: var(--green-tint); color: var(--green); flex: none;
+}
+.week-edit {
+  padding: 13px 14px 14px; display: flex; flex-direction: column; gap: 12px;
+  border: 1px solid var(--border-3); border-top: 0;
+  border-radius: 0 0 14px 14px; background: #fff; margin-top: -1px;
+}
+.week-edit__input {
+  font-family: inherit; font-size: 14px; padding: 10px 12px;
+  border-radius: 10px; border: 1px solid var(--border-2); width: 100%;
 }
 
 /* --------------------------------------------------------- parent: rules */
