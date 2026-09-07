@@ -60,6 +60,7 @@ async def parent_screen(
         term = "guardian" if request.url.path.endswith("/guardian") else DEFAULT_CAREGIVER_TERM
 
     return templates.TemplateResponse(
+        request,
         "mew/parent.html",
         _context(
             request,
@@ -81,14 +82,14 @@ async def setup_wizard_screen(request: Request, db: DbSession = Depends(get_db))
     redirects to sign-in if the session cookie is missing or expired.
     """
     translator = translator_for(request.headers.get("accept-language"), None, db)
-    return templates.TemplateResponse("mew/setup_wizard.html", _context(request, translator))
+    return templates.TemplateResponse(request, "mew/setup_wizard.html", _context(request, translator))
 
 
 @router.get("/kid", response_class=HTMLResponse)
 async def kid_screen(request: Request, db: DbSession = Depends(get_db)):
     """Today's cards, two buttons, no rules and no emoji."""
     translator = translator_for(request.headers.get("accept-language"), None, db)
-    return templates.TemplateResponse("mew/kid.html", _context(request, translator))
+    return templates.TemplateResponse(request, "mew/kid.html", _context(request, translator))
 
 
 @router.get("/provider", response_class=HTMLResponse)
@@ -101,6 +102,7 @@ async def provider_screen(
     """The provider's own sessions, and one form to propose a change."""
     translator = translator_for(request.headers.get("accept-language"), None, db)
     return templates.TemplateResponse(
+        request,
         "mew/provider.html",
         _context(
             request,
@@ -133,6 +135,7 @@ async def sign_in_screen(
     if error:
         translator = translator_for(request.headers.get("accept-language"), None, db)
         return templates.TemplateResponse(
+            request,
             "mew/sign_in.html",
             _context(request, translator, next_path=_safe_next(next), error=error),
         )
