@@ -1,3 +1,10 @@
+> **Historical / superseded.** This document describes an earlier
+> version of Mew Assistant's role-based access control setup that no
+> longer matches the current app. Kept for historical reference only —
+> see `app/database/models.py`'s `UserRole` enum for the roles that
+> exist today. Do not follow these steps for the app as it exists
+> today.
+
 # RBAC System Implementation - Complete ✅
 
 ## Overview
