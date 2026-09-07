@@ -240,6 +240,99 @@ class TestSetup:
         assert org["calendar_error"]
 
 
+class TestAddProviderAndKid:
+    """
+    The setup wizard only ever runs once, but a family's roster of
+    providers and kids grows over time - these are the endpoints behind
+    the Providers tab's "add another" forms, so they must work the same
+    way setup itself does: idempotent by name, parent-only.
+    """
+
+    def test_a_parent_can_add_a_second_provider(self, client, db_session, family):
+        response = client.post(
+            "/onboarding/providers",
+            json={"name": "Willow Speech", "kind": "speech"},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["name"] == "Willow Speech"
+        assert body["kind"] == "speech"
+
+        connection = (
+            db_session.query(ProviderOrgConnection)
+            .filter(
+                ProviderOrgConnection.org_id == body["id"],
+                ProviderOrgConnection.parent_id == family["parent"].id,
+            )
+            .one()
+        )
+        assert connection is not None
+
+    def test_adding_the_same_provider_name_twice_does_not_duplicate(self, client, family):
+        payload = {"name": "Willow Speech", "kind": "speech"}
+
+        first = client.post("/onboarding/providers", json=payload, headers=_auth(family["parent"]))
+        second = client.post("/onboarding/providers", json=payload, headers=_auth(family["parent"]))
+
+        assert first.json()["id"] == second.json()["id"]
+
+    def test_a_kid_cannot_add_a_provider(self, client, family):
+        response = client.post(
+            "/onboarding/providers",
+            json={"name": "Willow Speech", "kind": "speech"},
+            headers=_auth(family["kid"]),
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_a_parent_can_add_a_second_kid(self, client, db_session, family):
+        response = client.post(
+            "/onboarding/kids",
+            json={"display_name": "Marcus", "age": 8},
+            headers=_auth(family["parent"]),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["name"] == "Marcus"
+
+        child = db_session.query(User).filter(User.id == body["id"]).one()
+        assert child.is_kid_account is True
+        assert child.parent_id == family["parent"].id
+
+        ruleset = (
+            db_session.query(RuleSet)
+            .filter(RuleSet.parent_id == family["parent"].id, RuleSet.child_id == child.id)
+            .first()
+        )
+        assert ruleset is not None
+
+    def test_adding_the_same_kid_name_twice_does_not_duplicate(self, client, db_session, family):
+        payload = {"display_name": "Marcus"}
+
+        first = client.post("/onboarding/kids", json=payload, headers=_auth(family["parent"]))
+        second = client.post("/onboarding/kids", json=payload, headers=_auth(family["parent"]))
+
+        assert first.json()["id"] == second.json()["id"]
+        assert (
+            db_session.query(User)
+            .filter(User.parent_id == family["parent"].id, User.display_name == "Marcus")
+            .count()
+            == 1
+        )
+
+    def test_a_kid_cannot_add_a_kid(self, client, family):
+        response = client.post(
+            "/onboarding/kids",
+            json={"display_name": "Marcus"},
+            headers=_auth(family["kid"]),
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
 class TestSignIn:
     def test_get_redirects_to_workos(self, client):
         """No password form anymore - WorkOS's hosted UI is the whole flow."""
