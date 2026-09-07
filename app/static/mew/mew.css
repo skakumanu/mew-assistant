@@ -277,10 +277,43 @@ a:hover { color: var(--green-hover); }
   padding: 16px; display: flex; flex-direction: column; gap: 10px;
 }
 .provider-card__name { font-size: 16px; font-weight: 600; }
-.provider-card input[type="text"] {
+.provider-card input[type="text"],
+.provider-card select {
   font-family: inherit; font-size: 14px; padding: 10px 12px;
   border-radius: 12px; border: 1px solid var(--border-2); min-height: 42px; flex: 1;
+  background: #fff; color: var(--ink);
 }
+
+/* Two calendar flows share the exact same chip-picker UI, in opposite
+   directions (read a provider's calendar in, vs write a kid's schedule
+   out) - this tag is the one thing on the card itself that says which. */
+.direction-tag {
+  display: inline-flex; width: fit-content; align-items: center;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  padding: 3px 10px; border-radius: 999px; margin: 0;
+}
+.direction-tag--pull { background: var(--green-tint); color: var(--green); border: 1px solid var(--green-edge); }
+.direction-tag--push { background: var(--indigo-tint); color: var(--indigo); border: 1px solid var(--indigo-edge); }
+
+.calendar-picker__hint {
+  font-size: 13px; line-height: 1.5; color: var(--body); margin: 0 0 8px;
+}
+.calendar-picker__unavailable-list {
+  display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+}
+.calendar-picker__unavailable {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.calendar-picker__unavailable-reason {
+  font-size: 12px; color: var(--muted); line-height: 1.4;
+}
+
+.shared-calendar-panel {
+  border: 1px solid var(--amber-edge); background: var(--amber-tint);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+}
+.shared-calendar-panel .field-label { color: var(--amber-text); }
+.shared-calendar__row { font-size: 13px; line-height: 1.5; margin: 4px 0 0; color: var(--body); }
 
 /* ----------------------------------------------------------- parent: log */
 
@@ -308,18 +341,33 @@ a:hover { color: var(--green-hover); }
 .day__date { font-size: 12px; color: #948C82; }
 .day__free { font-size: 13px; color: var(--ghost); }
 
+.session-row-wrap { display: flex; flex-direction: column; gap: 0; }
 .session-row {
-  display: flex; gap: 12px; padding: 12px 13px;
+  display: flex; align-items: center; gap: 12px; padding: 12px 13px;
   border: 1px solid var(--border-3); border-radius: 14px; background: var(--surface-2);
+  width: 100%; font-family: inherit; text-align: start; cursor: pointer;
 }
-.session-row__rail { width: 3px; border-radius: 2px; background: var(--green); flex: none; }
+.session-row[aria-expanded="true"] { border-radius: 14px 14px 0 0; }
+.session-row__rail { width: 3px; align-self: stretch; border-radius: 2px; background: var(--green); flex: none; }
 .session-row__body { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .session-row__title { font-size: 15px; font-weight: 600; }
 .session-row__meta { font-size: 13px; color: var(--body); }
+.session-row__action {
+  font-size: 13px; font-weight: 600; color: var(--green); white-space: nowrap; flex: none;
+}
 .pill {
   align-self: flex-start; font-size: 11px; font-weight: 600;
   padding: 4px 8px; border-radius: 999px;
-  background: var(--green-tint); color: var(--green);
+  background: var(--green-tint); color: var(--green); flex: none;
+}
+.week-edit {
+  padding: 13px 14px 14px; display: flex; flex-direction: column; gap: 12px;
+  border: 1px solid var(--border-3); border-top: 0;
+  border-radius: 0 0 14px 14px; background: #fff; margin-top: -1px;
+}
+.week-edit__input {
+  font-family: inherit; font-size: 14px; padding: 10px 12px;
+  border-radius: 10px; border: 1px solid var(--border-2); width: 100%;
 }
 
 /* --------------------------------------------------------- parent: rules */
@@ -473,6 +521,10 @@ a:hover { color: var(--green-hover); }
   background: #fff; border: 1px solid #E2DCD3; color: var(--body);
 }
 .chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; }
+.chip--disabled {
+  cursor: default; background: var(--border-4); border-color: var(--border-4);
+  color: var(--muted);
+}
 .therapist-row {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
   padding: 12px 13px; border-radius: 12px; cursor: pointer;
