@@ -1,96 +1,71 @@
 # 🐱 Mew Assistant
 
-**AI-powered personal assistant with voice commands and calendar integration**
-
-[![Status](https://img.shields.io/badge/status-live-success)](https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io)
-[![Azure](https://img.shields.io/badge/azure-deployed-blue)](https://portal.azure.com)
-[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green)](https://fastapi.tiangolo.com/)
+**A scheduling assistant for special-needs families, shared by a parent
+(or guardian), a kid, and their service providers.**
 
 ---
 
-## 🚀 Live Application
+## What it is
 
-**URL:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io
+Mew Assistant is a three-persona scheduling app, not a general calendar
+app or a chatbot. A parent declares a set of rules once. A kid or a
+service provider proposes a change through a single write path
+(`POST /requests`); a deterministic rule engine
+(`app/services/rule_engine.py`) evaluates it immediately — anything that
+satisfies every active rule is applied on the spot and logged quietly,
+and anything that doesn't reaches the parent as one card with three
+compliant alternatives already attached, approved in one tap.
 
-- **Try it:** [Sign in with Google](https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/login)
-- **API Docs:** [Interactive API Documentation](https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/docs)
-- **Calendar:** [View Your Calendar](https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/calendar)
+"Parent" and "guardian" are interchangeable throughout: the same
+handlers answer on both the `/parent` and `/guardian` route prefixes, so
+a family that uses one word never sees the other in a URL.
 
----
-
-## ✨ Features
-
-### Currently Available
-- ✅ **OAuth Sign-In** - Google (Microsoft & Apple coming soon)
-- ✅ **Calendar Integration** - View Google Calendar events
-- ✅ **Secure Authentication** - JWT tokens with 30-day expiry
-- ✅ **Multi-Device** - Works on phone, tablet, computer
-- ✅ **Real-Time Updates** - Calendar syncs automatically
-
-### Coming Soon
-- 🎙️ **Siri Integration** - "Hey Siri, what's on my schedule?"
-- 📅 **Add Events** - Create calendar events via voice
-- 🔔 **Smart Reminders** - AI-powered event reminders
-- 🤖 **AI Assistant** - Natural language calendar management
+See [`docs/THREE_PERSONA_SCHEDULING.md`](docs/THREE_PERSONA_SCHEDULING.md)
+for the full request/approval loop and code map.
 
 ---
 
-## 📚 Documentation
+## Sign-in and deployment
 
-### Quick Start
-- **[User Guide](USER_GUIDE.md)** - How to use Mew Assistant (for end users)
-- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Azure deployment & infrastructure
-- **[OAuth Setup](OAUTH_SETUP.md)** - Configure Google, Microsoft, and Apple sign-in
-
-### Additional Resources
-- **[Changelog](CHANGELOG.md)** - Version history and changes
-- **[Siri Setup](SIRI_SETUP_GUIDE.md)** - Configure iOS Shortcuts (coming soon)
-- **[API Documentation](https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/docs)** - Interactive API docs
-
----
-
-## 🏗️ Technology Stack
-
-### Backend
-- **Framework:** FastAPI (Python 3.11)
-- **Database:** PostgreSQL (Azure Flexible Server)
-- **ORM:** SQLAlchemy
-- **Authentication:** OAuth 2.0 + JWT
-- **API Integrations:** Google Calendar API
-
-### Infrastructure
-- **Cloud:** Azure Container Apps
-- **Registry:** Azure Container Registry
-- **Secrets:** Azure Key Vault
-- **Identity:** Managed Identity
-- **Scaling:** Auto-scale (1-3 replicas)
-
-### Security
-- HTTPS-only connections
-- Secrets stored in Azure Key Vault
-- Input validation & sanitization
-- Rate limiting
-- CORS configuration
+- **Sign-in:** [WorkOS AuthKit](https://workos.com/docs/authkit) (hosted
+  UI, no per-provider code in this app) — email/password, Google,
+  Microsoft, Apple, and passwordless magic-code sign-in. See
+  [`app/routers/oauth_workos.py`](app/routers/oauth_workos.py).
+- **Calendar connect:** a separate, unrelated Google Cloud OAuth flow
+  lets a parent grant Mew read access to a provider's Google Calendar
+  once already signed in — see
+  [`app/routers/calendar_oauth.py`](app/routers/calendar_oauth.py) and
+  [`docs/OAUTH_SETUP.md`](docs/OAUTH_SETUP.md) for setup of both flows.
+- **Deployment:** [Fly.io](https://fly.io) (`fly.toml`), app
+  `mew-assistant`, region `iad`, health-checked at `/health`. CI
+  (`.github/workflows/ci-cd.yml`'s `deploy_fly` job) deploys on push to
+  `master` once tests, lint, security, and secret scans all pass. See
+  `CLAUDE.md`'s Deployment section for details.
 
 ---
 
-## 🚀 Getting Started
+## Features (as of `CHANGELOG.md`'s `1.1.0` entry)
 
-### For End Users
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Three-persona scheduling (parent/kid/provider) | ✅ Shipped | Deterministic rule engine, `POST /requests` sole write path |
+| Parent approval with compliant alternatives | ✅ Shipped | `POST /parent/approvals/{id}/choose` |
+| Service provider sessions view | ✅ Shipped | `GET /provider/sessions`, scoped to the caller's org |
+| Calendar sync (Google OAuth + ICS) | ✅ Shipped | Idempotent pull, write-back on approved changes |
+| Voice requests | ✅ Shipped (request-only) | `POST /voice/requests` reads a request back; can never approve |
+| Notifications (email/SMS) | ✅ Shipped | Locale-keyed, best-effort delivery |
+| Onboarding setup | ✅ Shipped | `POST /onboarding/setup`, idempotent |
+| Sign-in via WorkOS AuthKit | ✅ Shipped | HttpOnly session cookie, `Authorization` header still wins |
+| Internationalization (en/es/hi/ar) | ✅ Shipped | `hi`/`ar` are unreviewed machine translations |
+| Voice command pipeline (`POST /voice/command`) | 🐛 Known broken | See `docs/KNOWN_ISSUES.md` |
 
-**3-minute setup:**
+See `CHANGELOG.md` for the full, dated history.
 
-1. **Sign In:** https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/login
-2. **Click "Sign in with Google"**
-3. **Grant calendar permission**
-4. **Done!** View your calendar instantly
+---
 
-See [USER_GUIDE.md](USER_GUIDE.md) for detailed instructions.
+## For developers
 
-### For Developers
-
-**Local Development:**
+**Local development:**
 
 ```bash
 # Clone repository
@@ -106,10 +81,7 @@ pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your credentials
-
-# Run database migrations
-python run_migration.py
+# Edit .env with your credentials (WorkOS, Google Calendar OAuth, etc.)
 
 # Start development server
 uvicorn app.main:app --reload --port 8888
@@ -118,160 +90,38 @@ uvicorn app.main:app --reload --port 8888
 **Docker:**
 
 ```bash
-# Build image
 docker build -t mew-assistant .
-
-# Run container
 docker run -p 8888:8000 --env-file .env mew-assistant
 ```
 
-See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for production deployment.
-
----
-
-## 🔐 OAuth Configuration
-
-### Google OAuth (Working ✅)
-- Configured in Google Cloud Console
-- Calendar API enabled
-- Credentials stored in Azure Key Vault
-
-### Microsoft OAuth (Ready ⏳)
-- Awaiting Azure AD app registration
-- See [OAUTH_SETUP.md](OAUTH_SETUP.md) for setup instructions
-
-### Apple Sign In (Ready ⏳)
-- Awaiting Apple Developer configuration
-- See [OAUTH_SETUP.md](OAUTH_SETUP.md) for setup instructions
-
----
-
-## 📊 Project Status
-
-### Current Version: 1.1.0
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Google OAuth | ✅ Live | Fully functional |
-| Calendar Viewer | ✅ Live | Read-only access |
-| Microsoft OAuth | ⏳ Ready | Needs setup (10 min) |
-| Apple Sign In | ⏳ Ready | Needs setup (20 min) |
-| Siri Shortcuts | 🔨 In Progress | 2-3 weeks |
-| Add Calendar Events | 📋 Planned | 3-4 weeks |
-| AI Assistant | 📋 Planned | Q1 2026 |
-
-**Legend:** ✅ Live | ⏳ Ready | 🔨 In Progress | 📋 Planned
-
----
-
-## 🧪 Testing
-
-### Manual Testing
-
-**Health Check:**
-```bash
-curl https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/health
-```
-
-**OAuth Flow:**
-1. Visit: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/auth/oauth/login
-2. Click "Sign in with Google"
-3. Verify successful login
-
-**Calendar View:**
-1. After login, go to: https://mew-assistant-dev.gentlehill-b3306295.westus2.azurecontainerapps.io/calendar
-2. Click "Show My Events"
-3. Verify events display
-
-### Automated Testing
+**Testing:**
 
 ```bash
-# Run tests
-pytest
-
-# With coverage
-pytest --cov=app --cov-report=html
+pytest tests/
+flake8 app tests
 ```
 
----
-
-## 🤝 Contributing
-
-This is currently a private project for initial customer testing.
-
-**If you're a test user:**
-- Report bugs via the admin
-- Request features
-- Share feedback
-
-**For developers:**
-- Follow existing code style
-- Write tests for new features
-- Update documentation
+See `CLAUDE.md` for the full git-flow, CI/CD gate, and deployment
+conventions this repo follows.
 
 ---
 
-## 📝 License
+## Documentation
+
+- [`CHANGELOG.md`](CHANGELOG.md) — version history
+- [`docs/OAUTH_SETUP.md`](docs/OAUTH_SETUP.md) — WorkOS sign-in and
+  Google Calendar OAuth setup
+- [`docs/THREE_PERSONA_SCHEDULING.md`](docs/THREE_PERSONA_SCHEDULING.md) —
+  the request/rule/approval loop and code map
+- [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) — tracked, un-fixed bugs
+- [`CLAUDE.md`](CLAUDE.md) — git flow, CI/CD gates, and deployment
+
+---
+
+## License
 
 See [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📞 Support
-
-### For Users
-- See [USER_GUIDE.md](USER_GUIDE.md) troubleshooting section
-- Check [CHANGELOG.md](CHANGELOG.md) for recent updates
-
-### For Developers
-- Review [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- Check container logs in Azure Portal
-- Verify environment variables and secrets
-
-### Contact
-- **GitHub:** https://github.com/skakumanu/mew-assistant
-- **Email:** Contact admin for support
-
----
-
-## 🎯 Roadmap
-
-### Phase 1: Core Calendar (✅ Complete)
-- [x] OAuth authentication (Google)
-- [x] Calendar integration (read-only)
-- [x] Web interface
-- [x] Azure deployment
-
-### Phase 2: Multi-Provider (⏳ Current)
-- [x] Google OAuth ✅
-- [ ] Microsoft OAuth (ready for setup)
-- [ ] Apple Sign In (ready for setup)
-
-### Phase 3: iOS Integration (🔨 In Progress)
-- [ ] Siri Shortcuts
-- [ ] Voice commands
-- [ ] iOS app (optional)
-
-### Phase 4: Advanced Features (📋 Planned)
-- [ ] Calendar write access
-- [ ] AI-powered scheduling
-- [ ] Smart reminders
-- [ ] Natural language processing
-
----
-
-## 🙏 Acknowledgments
-
-Built with:
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [SQLAlchemy](https://www.sqlalchemy.org/) - SQL toolkit and ORM
-- [Authlib](https://authlib.org/) - OAuth library
-- [Azure](https://azure.microsoft.com/) - Cloud infrastructure
-- [Google Calendar API](https://developers.google.com/calendar) - Calendar integration
-
----
-
-**🐱 Mew Assistant - Your AI-powered personal assistant**
-
-*Making calendar management simple, smart, and voice-activated*
-
+**🐱 Mew Assistant** — one schedule, three people, almost no decisions.
