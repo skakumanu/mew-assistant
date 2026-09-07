@@ -121,6 +121,12 @@ LATE_COLUMNS = {
     "scheduled_sessions": {
         "kid_calendar_event_id": {"postgresql": "VARCHAR(255)", "sqlite": "VARCHAR(255)"},
     },
+    "provider_orgs": {
+        "calendar_display_name": {"postgresql": "VARCHAR(255)", "sqlite": "VARCHAR(255)"},
+    },
+    "kid_calendar_connections": {
+        "calendar_display_name": {"postgresql": "VARCHAR(255)", "sqlite": "VARCHAR(255)"},
+    },
 }
 
 
