@@ -23,6 +23,7 @@ from ..services.presenter import Presenter
 from ..services.ruleset_service import RuleSetService
 from ..services.smart_approval_service import SmartApprovalService
 from ..utils.auth import get_current_user, verify_parent_account
+from ..utils.locale import from_local, to_local
 from ..utils.locale_context import translator_for
 
 # "Parent" and "guardian" are the same persona under two names, so these
@@ -83,7 +84,11 @@ async def get_pending_approvals(
     pending_requests = approval_service.get_pending_requests(current_user.id)
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
+    rule_service = RuleSetService(db)
+    presenter = Presenter(
+        translator, db, rule_service.caregiver_term(current_user.id),
+        timezone=rule_service.timezone(current_user.id),
+    )
 
     # Enrich with kid and activity details
     result = []
@@ -341,7 +346,11 @@ async def get_inbox(
     verify_parent_account(current_user)
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
+    rule_service = RuleSetService(db)
+    presenter = Presenter(
+        translator, db, rule_service.caregiver_term(current_user.id),
+        timezone=rule_service.timezone(current_user.id),
+    )
 
     # The engine has already decided what is here. SmartApprovalService is
     # consulted only to annotate each card with what history says.
@@ -390,12 +399,13 @@ async def choose_alternative(
     )
 
     translator = translator_for(request.headers.get("accept-language"), current_user, db)
+    tz_name = RuleSetService(db).timezone_for_child(session.child_id)
     return {
         "success": True,
         "request_id": approval_request.id,
         "session_id": session.id,
         "start_utc": session.start_utc.isoformat(),
-        "when": translator.when(session.start_utc),
+        "when": translator.when(to_local(session.start_utc, tz_name)),
     }
 
 
@@ -421,7 +431,11 @@ async def get_change_log(
     verify_parent_account(current_user)
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
+    rule_service = RuleSetService(db)
+    presenter = Presenter(
+        translator, db, rule_service.caregiver_term(current_user.id),
+        timezone=rule_service.timezone(current_user.id),
+    )
 
     entries = ChangeRequestService(db).log_for_parent(current_user.id, limit=max(1, min(limit, 50)))
     return [presenter.log_entry(entry) for entry in entries]
@@ -449,7 +463,11 @@ async def get_week(
     from ..database.models import ScheduledSession
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
-    presenter = Presenter(translator, db, RuleSetService(db).caregiver_term(current_user.id))
+    rule_service = RuleSetService(db)
+    presenter = Presenter(
+        translator, db, rule_service.caregiver_term(current_user.id),
+        timezone=rule_service.timezone(current_user.id),
+    )
 
     children = (
         [child_id]
@@ -457,17 +475,26 @@ async def get_week(
         else [kid.id for kid in db.query(User).filter(User.parent_id == current_user.id).all()]
     )
 
-    start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    tz_name = rule_service.timezone(current_user.id, child_id)
+
+    # "Today" and the day window are the family's own day, not UTC's - a
+    # session stored as, say, midnight UTC is still yesterday evening for a
+    # family west of Greenwich, and must be windowed and grouped as such.
+    start_local = to_local(datetime.utcnow(), tz_name).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     span = max(1, min(days, 31))
-    end = start + timedelta(days=span)
+    end_local = start_local + timedelta(days=span)
+    start_utc = from_local(start_local, tz_name)
+    end_utc = from_local(end_local, tz_name)
 
     rows = (
         db.query(ScheduledSession)
         .filter(
             ScheduledSession.child_id.in_(children or [-1]),
             ScheduledSession.is_cancelled.is_(False),
-            ScheduledSession.start_utc >= start,
-            ScheduledSession.start_utc < end,
+            ScheduledSession.start_utc >= start_utc,
+            ScheduledSession.start_utc < end_utc,
         )
         .order_by(ScheduledSession.start_utc.asc())
         .all()
@@ -475,24 +502,26 @@ async def get_week(
 
     by_day = {}
     for row in rows:
-        by_day.setdefault(row.start_utc.date(), []).append(row)
+        local_start = to_local(row.start_utc, tz_name)
+        by_day.setdefault(local_start.date(), []).append((row, local_start))
 
     out = []
     for offset in range(span):
-        day = (start + timedelta(days=offset)).date()
-        sessions = by_day.get(day, [])
+        day_moment = start_local + timedelta(days=offset)
+        day = day_moment.date()
+        entries = by_day.get(day, [])
         out.append(
             {
                 "date": day.isoformat(),
                 "name": translator.days[day.weekday()],
-                "label": translator.date_label(start + timedelta(days=offset)),
-                "empty": not sessions,
+                "label": translator.date_label(day_moment),
+                "empty": not entries,
                 "sessions": [
                     {
                         **presenter.session(row).model_dump(mode="json"),
-                        "time_label": translator.time(row.start_utc),
+                        "time_label": translator.time(local_start),
                     }
-                    for row in sessions
+                    for row, local_start in entries
                 ],
             }
         )
