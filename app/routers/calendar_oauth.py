@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from ..database.connection import get_db
 from ..database.models import OAuthProvider, ProviderOrg, ProviderOrgConnection, User
-from ..routers.calendar_sync import _upsert_connection
+from ..routers.calendar_sync import _family_calendar_usage_map, _upsert_connection
 from ..utils.auth import (
     create_calendar_connect_state,
     decode_calendar_connect_state,
@@ -222,6 +222,15 @@ async def list_calendars(
     # A parent's own calendar first, then everything else in whatever
     # order Google returned it - no reason to re-sort someone's own list.
     calendars.sort(key=lambda c: not c["primary"])
+
+    # Tell the picker which of these are already spoken for elsewhere in
+    # the family BEFORE a save is attempted, not after PUT rejects it -
+    # excluding this org's own current connection, so re-picking what's
+    # already there never shows as a conflict with itself.
+    usage = _family_calendar_usage_map(db, current_user.id, exclude_org_id=org_id)
+    for cal in calendars:
+        cal["in_use_by"] = usage.get(cal["id"])
+
     return {"calendars": calendars}
 
 

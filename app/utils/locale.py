@@ -17,6 +17,7 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,38 @@ def resolve_locale(accept_language: Optional[str], override: Optional[str] = Non
             return base
 
     return DEFAULT_LOCALE
+
+
+DEFAULT_TIMEZONE = "America/Chicago"
+
+
+def to_local(moment: Optional[datetime], tz_name: str) -> Optional[datetime]:
+    """
+    Every stored moment is UTC; this is the one place that turns it into the
+    wall-clock time a family actually sees. An unknown or garbage timezone
+    name falls back to leaving the moment as-is rather than raising - a page
+    that's merely un-converted is better than one that 500s.
+    """
+    if moment is None:
+        return None
+    try:
+        zone = ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return moment
+    aware = moment.replace(tzinfo=ZoneInfo("UTC")).astimezone(zone)
+    return aware.replace(tzinfo=None)
+
+
+def from_local(moment: Optional[datetime], tz_name: str) -> Optional[datetime]:
+    """The inverse of to_local - a family's wall-clock moment, back to UTC."""
+    if moment is None:
+        return None
+    try:
+        zone = ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return moment
+    aware = moment.replace(tzinfo=zone).astimezone(ZoneInfo("UTC"))
+    return aware.replace(tzinfo=None)
 
 
 class Translator:
