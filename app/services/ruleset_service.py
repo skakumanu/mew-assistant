@@ -23,8 +23,10 @@ from ..database.models import (
     ProtectedBlock,
     RuleSet,
     ScheduledSession,
+    User,
     WeeklyCap,
 )
+from ..utils.locale import DEFAULT_TIMEZONE
 from . import rule_engine as engine
 
 logger = logging.getLogger(__name__)
@@ -94,6 +96,27 @@ class RuleSetService:
         ruleset = self.get(parent_id, child_id)
         term = (ruleset.caregiver_term if ruleset else None) or DEFAULT_CAREGIVER_TERM
         return term if term in CAREGIVER_TERMS else DEFAULT_CAREGIVER_TERM
+
+    def timezone(self, parent_id: int, child_id: Optional[int] = None) -> str:
+        """
+        The family's own timezone - every stored moment is UTC, and this is
+        the value that turns it back into their wall clock. Falls back to
+        the same default a fresh RuleSet is created with, so a family with
+        no rule set yet still gets a real timezone rather than a blank one.
+        """
+        ruleset = self.get(parent_id, child_id)
+        return (ruleset.timezone if ruleset else None) or DEFAULT_TIMEZONE
+
+    def timezone_for_child(self, child_id: int) -> str:
+        """
+        Same as timezone(), for callers that only know a child_id - a
+        provider's own roster view, or a kid signed in as themselves - and
+        have no parent_id of their own to hand in.
+        """
+        child = self.db.query(User).filter(User.id == child_id).first()
+        if child is None or child.parent_id is None:
+            return DEFAULT_TIMEZONE
+        return self.timezone(child.parent_id, child_id)
 
     # -- engine translation ------------------------------------------------
 
