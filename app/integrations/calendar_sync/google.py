@@ -26,6 +26,14 @@ REQUEST_TIMEOUT_SECONDS = 20
 PAGE_SIZE = 250
 # Refresh a little early rather than racing the expiry on a slow request.
 EXPIRY_SKEW_SECONDS = 120
+# Stamped on every event create_event() writes, and checked on every pull.
+# A kid's push target and a provider's pull source can be the very same
+# calendar (a family sharing one calendar for everything) - without this,
+# a pull would see the event Mew itself just created as a brand new session,
+# push a mirror of THAT too, and the two directions would feed each other
+# forever. Tagging what Mew wrote lets a pull simply never re-ingest it,
+# regardless of which calendar it landed on.
+MIRROR_PROPERTY_KEY = "mew_kid_calendar_mirror"
 
 
 class GoogleCalendarAdapter(CalendarAdapter):
@@ -73,6 +81,8 @@ class GoogleCalendarAdapter(CalendarAdapter):
                 "GET", f"/calendars/{_quote(self.calendar_id)}/events", params=params
             )
             for item in payload.get("items", []):
+                if _is_mew_mirror(item):
+                    continue
                 event = _to_event(item)
                 if event is not None:
                     events.append(event)
@@ -134,6 +144,9 @@ class GoogleCalendarAdapter(CalendarAdapter):
                 "dateTime": _rfc3339(start_utc + timedelta(minutes=duration_minutes)),
                 "timeZone": "UTC",
             },
+            # Marks this as Mew's own mirror so a later pull never re-ingests
+            # it as a new session - see MIRROR_PROPERTY_KEY above.
+            "extendedProperties": {"private": {MIRROR_PROPERTY_KEY: "true"}},
         }
         if location is not None:
             body["location"] = location
@@ -219,6 +232,12 @@ class GoogleCalendarAdapter(CalendarAdapter):
             self.expires_at = datetime.utcnow() + timedelta(seconds=int(expires_in))
         if self.on_token_refreshed:
             self.on_token_refreshed(self.access_token, self.expires_at)
+
+
+def _is_mew_mirror(item: Dict[str, Any]) -> bool:
+    """True for an event create_event() itself wrote - see MIRROR_PROPERTY_KEY."""
+    private = item.get("extendedProperties", {}).get("private", {})
+    return private.get(MIRROR_PROPERTY_KEY) == "true"
 
 
 def _to_event(item: Dict[str, Any]) -> Optional[CalendarEvent]:
