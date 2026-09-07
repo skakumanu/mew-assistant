@@ -1,3 +1,10 @@
+> **Historical / superseded.** This document describes an earlier
+> version of Mew Assistant's Siri integration that no longer matches the
+> current app. Kept for historical reference only — see
+> `app/routers/voice_platforms.py` for the current webhook-based
+> integration. Do not follow these steps for the app as it exists
+> today.
+
 # 🎤 Siri Integration Setup Guide for Mew Assistant
 
 ## Quick Setup for iPhone (3 Minutes)

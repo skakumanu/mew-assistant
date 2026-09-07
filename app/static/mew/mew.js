@@ -129,7 +129,14 @@
         requireSignIn();
         throw new Error('unauthenticated');
       }
-      if (!response.ok) throw new Error('http ' + response.status);
+      if (!response.ok) {
+        return response.json().catch(function () { return null; }).then(function (body) {
+          var err = new Error((body && body.detail) || ('http ' + response.status));
+          err.status = response.status;
+          err.detail = body && body.detail;
+          throw err;
+        });
+      }
       return response.status === 204 ? null : response.json();
     });
   }
@@ -147,7 +154,7 @@
   // ----------------------------------------------------------- parent
 
   var parent = {
-    state: { tab: 'inbox' },
+    state: { tab: 'inbox', weekOpen: null, weekDraft: null },
 
     start: function () {
       Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
@@ -312,35 +319,114 @@
     loadWeek: function () {
       var host = document.getElementById('pane-week');
       api('/parent/week').then(function (days) {
-        clear(host);
-        days.forEach(function (day) {
-          var rows = day.sessions.map(function (session) {
-            var children = [
-              el('span', { class: 'session-row__rail', 'aria-hidden': 'true' }),
-              el('div', { class: 'session-row__body' }, [
-                el('p', { class: 'session-row__title', text: session.title }),
-                el('p', {
-                  class: 'session-row__meta',
-                  text: session.time_label + ' · ' + (session.provider_person_name || '')
-                })
-              ])
-            ];
-            if (session.changed) {
-              children.push(el('span', { class: 'pill', text: t('parent.updated') }));
-            }
-            return el('div', { class: 'session-row' }, children);
-          });
-          if (day.empty) {
-            rows.push(el('p', { class: 'day__free', text: t('parent.free') }));
-          }
-          host.appendChild(el('section', { class: 'day' }, [
-            el('div', { class: 'day__head' }, [
-              el('h3', { class: 'day__name', text: day.name }),
-              el('span', { class: 'day__date', text: day.label })
-            ])
-          ].concat(rows)));
-        });
+        parent.state.weekDays = days;
+        parent.renderWeek(days);
       }).catch(function () { failed(host); });
+    },
+
+    renderWeek: function (days) {
+      var host = document.getElementById('pane-week');
+      clear(host);
+      days.forEach(function (day) {
+        var rows = day.sessions.map(function (session) { return parent.sessionRow(session); });
+        if (day.empty) {
+          rows.push(el('p', { class: 'day__free', text: t('parent.free') }));
+        }
+        host.appendChild(el('section', { class: 'day' }, [
+          el('div', { class: 'day__head' }, [
+            el('h3', { class: 'day__name', text: day.name }),
+            el('span', { class: 'day__date', text: day.label })
+          ])
+        ].concat(rows)));
+      });
+    },
+
+    sessionRow: function (session) {
+      var open = parent.state.weekOpen === session.id;
+
+      var head = el('button', {
+        class: 'session-row', type: 'button', 'aria-expanded': String(open),
+        onclick: function () {
+          if (open) {
+            parent.state.weekOpen = null;
+          } else {
+            parent.state.weekOpen = session.id;
+            parent.state.weekDraft = { newStart: new Date(session.start_utc) };
+          }
+          parent.renderWeek(parent.state.weekDays);
+        }
+      }, [
+        el('span', { class: 'session-row__rail', 'aria-hidden': 'true' }),
+        el('div', { class: 'session-row__body' }, [
+          el('p', { class: 'session-row__title', text: session.title }),
+          el('p', {
+            class: 'session-row__meta',
+            text: session.time_label + ' · ' + (session.provider_person_name || '')
+          })
+        ])
+      ].concat(session.changed ? [el('span', { class: 'pill', text: t('parent.updated') })] : [])
+        .concat([el('span', {
+          class: 'session-row__action',
+          text: open ? t('parent.close_edit') : t('parent.edit_session')
+        })]));
+
+      var wrapper = [head];
+      if (open) wrapper.push(parent.sessionForm(session));
+      return el('div', { class: 'session-row-wrap' }, wrapper);
+    },
+
+    sessionForm: function (session) {
+      var draft = parent.state.weekDraft;
+
+      function localInputValue(date) {
+        var offsetMs = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+      }
+
+      var timeInput = el('input', {
+        type: 'datetime-local', class: 'week-edit__input',
+        value: localInputValue(draft.newStart),
+        onchange: function (event) {
+          var value = event.target.value;
+          if (value) draft.newStart = new Date(value);
+        }
+      });
+
+      return el('div', { class: 'week-edit' }, [
+        el('div', {}, [
+          el('p', { class: 'field-label', text: t('parent.new_time_label') }),
+          timeInput
+        ]),
+        el('div', { class: 'actions' }, [
+          el('button', {
+            class: 'btn btn--primary', type: 'button', text: t('parent.move_session'),
+            onclick: function () { parent.requestChange(session, 'move', draft.newStart); }
+          }),
+          el('button', {
+            class: 'btn btn--quiet', type: 'button', text: t('parent.cancel_session'),
+            onclick: function () {
+              if (!global.confirm(t('parent.cancel_session_confirm', { title: session.title }))) return;
+              parent.requestChange(session, 'cancel', null);
+            }
+          })
+        ])
+      ]);
+    },
+
+    requestChange: function (session, kind, newStart) {
+      api('/requests', {
+        method: 'POST',
+        body: {
+          session_id: session.id,
+          kind: kind,
+          new_start: newStart ? newStart.toISOString() : null
+        }
+      }).then(function (result) {
+        announce(result.message);
+        parent.state.weekOpen = null;
+        parent.load();
+        parent.loadWeek();
+      }).catch(function (err) { announce((err && err.detail) || t('ui.error')); });
     },
 
     loadRules: function () {
@@ -434,28 +520,116 @@
 
     loadProviders: function () {
       var host = document.getElementById('parent-providers');
+      var kidHost = document.getElementById('parent-kid-calendars');
+      var summaryHost = document.getElementById('parent-shared-calendars');
       var chooseOrgId = Number(new URLSearchParams(global.location.search).get('choose_calendar_org'));
-      api('/calendar-sync/orgs').then(function (orgs) {
-        parent.renderProviders(host, orgs, chooseOrgId);
-      }).catch(function () { failed(host); });
+      var chooseKidId = Number(new URLSearchParams(global.location.search).get('choose_kid_calendar'));
 
-      parent.loadKidCalendars();
+      // Both lists are fetched together so the shared-calendar summary
+      // below can compare them - loading either alone can't tell you
+      // whether a provider and a kid happen to point at the same one.
+      Promise.all([api('/calendar-sync/orgs'), api('/calendar-sync/google/kid/list')])
+        .then(function (results) {
+          var orgs = results[0];
+          var kids = results[1];
+          parent.renderProviders(host, orgs, chooseOrgId);
+          if (kidHost) parent.renderKidCalendars(kidHost, kids, chooseKidId);
+          if (summaryHost) parent.renderSharedCalendarSummary(summaryHost, orgs, kids);
+        })
+        .catch(function () { failed(host); });
+    },
+
+    // A calendar shared between a provider's pull source and a kid's push
+    // target is exactly the setup that caused real duplicate events in
+    // production (see calendar_sync.py's _family_calendar_usage_map) - this
+    // surfaces it plainly on the tab itself, not only inside a picker
+    // someone has to open first.
+    renderSharedCalendarSummary: function (host, orgs, kids) {
+      clear(host);
+      var groups = {};
+      orgs.forEach(function (org) {
+        if (!org.calendar_connected || !org.calendar_display_name) return;
+        (groups[org.calendar_display_name] = groups[org.calendar_display_name] || [])
+          .push({ name: org.name, direction: 'pull' });
+      });
+      kids.forEach(function (kid) {
+        if (!kid.calendar_connected || !kid.calendar_display_name) return;
+        (groups[kid.calendar_display_name] = groups[kid.calendar_display_name] || [])
+          .push({ name: kid.name, direction: 'push' });
+      });
+
+      var sharedNames = Object.keys(groups).filter(function (name) { return groups[name].length > 1; });
+      if (!sharedNames.length) return;
+
+      var rows = sharedNames.map(function (calendarName) {
+        var entries = groups[calendarName].map(function (entry) {
+          return entry.name + ' (' + t('parent.direction_' + entry.direction + '_tag') + ')';
+        }).join(', ');
+        return el('p', { class: 'shared-calendar__row' }, [
+          el('strong', { text: calendarName }),
+          el('span', { text: ' — ' + entries })
+        ]);
+      });
+
+      host.appendChild(el('div', { class: 'shared-calendar-panel' }, [
+        el('p', { class: 'field-label', text: t('parent.shared_calendar_heading') }),
+        el('p', { class: 'provider-note', text: t('parent.shared_calendar_intro') })
+      ].concat(rows)));
     },
 
     renderProviders: function (host, orgs, chooseOrgId) {
       clear(host);
       if (!orgs.length) {
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_providers') }));
-        return;
+      } else {
+        orgs.forEach(function (org) { host.appendChild(parent.providerCard(org, chooseOrgId)); });
       }
-      orgs.forEach(function (org) { host.appendChild(parent.providerCard(org, chooseOrgId)); });
+      host.appendChild(parent.addProviderForm());
+    },
+
+    // A family's roster of providers grows over time - the setup wizard
+    // only ever runs once, so this is the only way to add a second (or
+    // fifth) provider afterward.
+    addProviderForm: function () {
+      var nameInput = el('input', { type: 'text', placeholder: t('parent.add_provider_name_placeholder') });
+      var kindSelect = el('select', {}, [
+        el('option', { value: 'aba', text: t('parent.kind_aba') }),
+        el('option', { value: 'speech', text: t('parent.kind_speech') }),
+        el('option', { value: 'ot', text: t('parent.kind_ot') }),
+        el('option', { value: 'school', text: t('parent.kind_school') }),
+        el('option', { value: 'transport', text: t('parent.kind_transport') }),
+        el('option', { value: 'other', text: t('parent.kind_other') })
+      ]);
+      kindSelect.value = 'other';
+      var statusMsg = el('p', { class: 'log-row__meta' });
+      var addBtn = el('button', {
+        class: 'btn btn--primary', type: 'button', text: t('parent.add_provider'),
+        onclick: function () {
+          var name = (nameInput.value || '').trim();
+          if (!name) return;
+          statusMsg.textContent = t('ui.loading');
+          api('/onboarding/providers', { method: 'POST', body: { name: name, kind: kindSelect.value } })
+            .then(function () {
+              nameInput.value = '';
+              parent.loadProviders();
+            })
+            .catch(function () { statusMsg.textContent = t('ui.error'); });
+        }
+      });
+      return el('article', { class: 'provider-card' }, [
+        el('p', { class: 'field-label', text: t('parent.add_provider_heading') }),
+        el('div', { class: 'actions' }, [nameInput, kindSelect, addBtn]),
+        statusMsg
+      ]);
     },
 
     providerCard: function (org, chooseOrgId) {
       var statusMsg = el('p', { class: 'log-row__meta' });
 
       var statusText = org.calendar_connected
-        ? t('parent.calendar_connected', { provider: org.calendar_provider })
+        ? (org.calendar_display_name
+          ? t('parent.calendar_connected_named', { name: org.calendar_display_name, provider: org.calendar_provider })
+          : t('parent.calendar_connected', { provider: org.calendar_provider }))
         : t('parent.calendar_not_connected');
 
       var icsInput = el('input', { type: 'text', placeholder: t('parent.ics_url_placeholder') });
@@ -489,6 +663,7 @@
 
       var card = el('article', { class: 'provider-card' }, [
         el('h3', { class: 'provider-card__name', text: org.name }),
+        el('p', { class: 'direction-tag direction-tag--pull', text: t('parent.direction_pull_tag') }),
         el('p', { class: 'field-label', text: statusText }),
         el('div', { class: 'actions' }, [icsInput, connectIcsBtn, icsHelpToggle]),
         icsHelpBody,
@@ -499,34 +674,54 @@
       if (org.id === chooseOrgId) {
         var pickerHost = el('div', { class: 'calendar-picker' });
         card.insertBefore(pickerHost, statusMsg);
-        parent.loadCalendarPicker({ kind: 'org', id: org.id }, pickerHost, statusMsg);
+        parent.loadCalendarPicker({ kind: 'org', id: org.id, name: org.name }, pickerHost, statusMsg);
       }
 
       return card;
-    },
-
-    loadKidCalendars: function () {
-      var host = document.getElementById('parent-kid-calendars');
-      if (!host) return;
-      var chooseKidId = Number(new URLSearchParams(global.location.search).get('choose_kid_calendar'));
-      api('/calendar-sync/google/kid/list').then(function (kids) {
-        parent.renderKidCalendars(host, kids, chooseKidId);
-      }).catch(function () { failed(host); });
     },
 
     renderKidCalendars: function (host, kids, chooseKidId) {
       clear(host);
       if (!kids.length) {
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_kids_yet') }));
-        return;
+      } else {
+        kids.forEach(function (kidRow) { host.appendChild(parent.kidCalendarCard(kidRow, chooseKidId)); });
       }
-      kids.forEach(function (kidRow) { host.appendChild(parent.kidCalendarCard(kidRow, chooseKidId)); });
+      host.appendChild(parent.addKidForm());
+    },
+
+    // Families with more than one kid on Mew usually add the second one
+    // well after their own first setup - this is the only place to do that.
+    addKidForm: function () {
+      var nameInput = el('input', { type: 'text', placeholder: t('parent.add_kid_name_placeholder') });
+      var statusMsg = el('p', { class: 'log-row__meta' });
+      var addBtn = el('button', {
+        class: 'btn btn--primary', type: 'button', text: t('parent.add_kid'),
+        onclick: function () {
+          var name = (nameInput.value || '').trim();
+          if (!name) return;
+          statusMsg.textContent = t('ui.loading');
+          api('/onboarding/kids', { method: 'POST', body: { display_name: name } })
+            .then(function () {
+              nameInput.value = '';
+              parent.loadProviders();
+            })
+            .catch(function () { statusMsg.textContent = t('ui.error'); });
+        }
+      });
+      return el('article', { class: 'provider-card' }, [
+        el('p', { class: 'field-label', text: t('parent.add_kid_heading') }),
+        el('div', { class: 'actions' }, [nameInput, addBtn]),
+        statusMsg
+      ]);
     },
 
     kidCalendarCard: function (kidRow, chooseKidId) {
       var statusMsg = el('p', { class: 'log-row__meta' });
       var statusText = kidRow.calendar_connected
-        ? t('parent.kid_calendar_connected')
+        ? (kidRow.calendar_display_name
+          ? t('parent.kid_calendar_connected_named', { name: kidRow.calendar_display_name })
+          : t('parent.kid_calendar_connected'))
         : t('parent.kid_calendar_not_connected');
 
       var connectGoogleBtn = el('a', {
@@ -536,6 +731,7 @@
 
       var card = el('article', { class: 'provider-card' }, [
         el('h3', { class: 'provider-card__name', text: kidRow.name }),
+        el('p', { class: 'direction-tag direction-tag--push', text: t('parent.direction_push_tag') }),
         el('p', { class: 'field-label', text: statusText }),
         el('div', { class: 'actions' }, [connectGoogleBtn]),
         statusMsg
@@ -544,15 +740,17 @@
       if (kidRow.id === chooseKidId) {
         var pickerHost = el('div', { class: 'calendar-picker' });
         card.insertBefore(pickerHost, statusMsg);
-        parent.loadCalendarPicker({ kind: 'kid', id: kidRow.id }, pickerHost, statusMsg);
+        parent.loadCalendarPicker({ kind: 'kid', id: kidRow.id, name: kidRow.name }, pickerHost, statusMsg);
       }
 
       return card;
     },
 
-    // target is { kind: 'org'|'kid', id }: which picker/save endpoint to
-    // use. A provider's calendar is a read source (existing picker), a
-    // kid's is a push target (new one) - same chip-list UI either way.
+    // target is { kind: 'org'|'kid', id, name }: which picker/save endpoint
+    // to use, and whose name to put in the direction hint below. A
+    // provider's calendar is a read source (pull), a kid's is a push
+    // target - same chip-list UI either way, which is exactly why the
+    // hint matters: nothing else on this screen says which one you're in.
     loadCalendarPicker: function (target, host, statusMsg) {
       host.textContent = t('ui.loading');
       var url = target.kind === 'kid'
@@ -569,27 +767,58 @@
         host.appendChild(el('p', { class: 'empty', text: t('parent.no_calendars_found') }));
         return;
       }
+      var hintKey = target.kind === 'kid' ? 'parent.picker_hint_push' : 'parent.picker_hint_pull';
+      host.appendChild(el('p', { class: 'calendar-picker__hint', text: t(hintKey, { name: target.name }) }));
+
+      // A calendar already claimed elsewhere in the family is shown, not
+      // hidden - just not clickable, with the same reason the save would
+      // otherwise only surface after a rejected PUT (see calendar_sync.py's
+      // _family_calendar_usage_map). Catching this before the click is the
+      // whole point: it was exactly what dogfooding this feature couldn't do.
+      var available = calendars.filter(function (cal) { return !cal.in_use_by; });
+      var unavailable = calendars.filter(function (cal) { return !!cal.in_use_by; });
+
       host.appendChild(el('p', { class: 'field-label', text: t('parent.choose_calendar') }));
-      var chips = calendars.map(function (cal) {
-        var label = cal.primary
-          ? t('parent.calendar_primary_label', { name: cal.summary })
-          : cal.summary;
-        return el('button', {
-          class: 'chip', type: 'button', text: label,
-          onclick: function () { parent.chooseGoogleCalendar(target, cal.id, host, statusMsg); }
+      if (available.length) {
+        var chips = available.map(function (cal) {
+          var label = cal.primary
+            ? t('parent.calendar_primary_label', { name: cal.summary })
+            : cal.summary;
+          return el('button', {
+            class: 'chip', type: 'button', text: label,
+            onclick: function () { parent.chooseGoogleCalendar(target, cal.id, cal.summary, host, statusMsg); }
+          });
         });
-      });
-      host.appendChild(el('div', { class: 'chips' }, chips));
+        host.appendChild(el('div', { class: 'chips' }, chips));
+      }
+
+      if (unavailable.length) {
+        var rows = unavailable.map(function (cal) {
+          var label = cal.primary
+            ? t('parent.calendar_primary_label', { name: cal.summary })
+            : cal.summary;
+          var directionLabel = t('parent.direction_' + cal.in_use_by.direction + '_tag');
+          return el('div', { class: 'calendar-picker__unavailable' }, [
+            el('span', { class: 'chip chip--disabled', text: label }),
+            el('span', {
+              class: 'calendar-picker__unavailable-reason',
+              text: t('parent.calendar_in_use_by', { name: cal.in_use_by.name, direction: directionLabel })
+            })
+          ]);
+        });
+        host.appendChild(el('div', { class: 'calendar-picker__unavailable-list' }, rows));
+      }
     },
 
-    chooseGoogleCalendar: function (target, calendarId, pickerHost, statusMsg) {
+    chooseGoogleCalendar: function (target, calendarId, calendarName, pickerHost, statusMsg) {
       statusMsg.textContent = t('ui.loading');
       var url = target.kind === 'kid'
         ? '/calendar-sync/kids/' + target.id + '/calendar'
         : '/calendar-sync/orgs/' + target.id + '/calendar';
       var queryParam = target.kind === 'kid' ? 'choose_kid_calendar' : 'choose_calendar_org';
       api(url, {
-        method: 'PUT', body: { calendar_provider: 'google', calendar_account_id: calendarId }
+        method: 'PUT',
+        body: { calendar_provider: 'google', calendar_account_id: calendarId, calendar_display_name: calendarName }
       }).then(function (report) {
         if (target.kind === 'kid') {
           statusMsg.textContent = t('parent.kid_calendar_connect_ok');
@@ -600,7 +829,9 @@
         var url2 = new URL(global.location.href);
         url2.searchParams.delete(queryParam);
         global.history.replaceState(null, '', url2.toString());
-      }).catch(function () { statusMsg.textContent = t('ui.error'); });
+      }).catch(function (err) {
+        statusMsg.textContent = (err && err.detail) || t('ui.error');
+      });
     },
 
     connectIcs: function (orgId, url, statusMsg) {
