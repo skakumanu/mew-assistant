@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 import httpx
 from fastapi import status
-from jose import jwt
+import jwt
 
 from app.database.models import (
     KidCalendarConnection,
