@@ -125,7 +125,13 @@
     "kid_calendar_not_connected": "अभी तक नहीं जुड़ा।",
     "connect_kid_google": "उनका Google कैलेंडर जोड़ें",
     "picker_hint_push": "आप नीचे जो भी कैलेंडर चुनेंगे, Mew {name} का Mew शेड्यूल उसमें भेजेगा — वह उस कैलेंडर से कभी नहीं पढ़ेगा।",
-    "kid_calendar_connect_ok": "जुड़ गया। उनका शेड्यूल वहाँ दिखने लगेगा।"
+    "kid_calendar_connect_ok": "जुड़ गया। उनका शेड्यूल वहाँ दिखने लगेगा।",
+    "edit_session": "इसे बदलें",
+    "close_edit": "बंद करें",
+    "new_time_label": "नया समय",
+    "move_session": "बदलें",
+    "cancel_session": "सेशन रद्द करें",
+    "cancel_session_confirm": "{title} रद्द करें? इसे यहाँ से वापस नहीं किया जा सकता।"
   },
   "kid": {
     "my_day": "मेरा दिन",

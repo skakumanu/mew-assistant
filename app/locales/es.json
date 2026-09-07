@@ -125,7 +125,13 @@
     "kid_calendar_not_connected": "Aún no conectado.",
     "connect_kid_google": "Conectar su Google Calendar",
     "picker_hint_push": "Mew enviará el horario de Mew de {name} al calendario que elijas abajo — nunca lee de ese calendario.",
-    "kid_calendar_connect_ok": "Conectado. Su horario empezará a aparecer ahí."
+    "kid_calendar_connect_ok": "Conectado. Su horario empezará a aparecer ahí.",
+    "edit_session": "Cambiar esto",
+    "close_edit": "Cerrar",
+    "new_time_label": "Nueva hora",
+    "move_session": "Mover",
+    "cancel_session": "Cancelar sesión",
+    "cancel_session_confirm": "¿Cancelar {title}? Esto no se puede deshacer desde aquí."
   },
   "kid": {
     "my_day": "Mi día",

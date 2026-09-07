@@ -125,7 +125,13 @@
     "kid_calendar_not_connected": "Not connected yet.",
     "connect_kid_google": "Connect their Google Calendar",
     "picker_hint_push": "Mew will send {name}'s Mew schedule to whichever calendar you pick below — it never reads from that calendar.",
-    "kid_calendar_connect_ok": "Connected. Their schedule will start appearing there."
+    "kid_calendar_connect_ok": "Connected. Their schedule will start appearing there.",
+    "edit_session": "Change this",
+    "close_edit": "Close",
+    "new_time_label": "New time",
+    "move_session": "Move",
+    "cancel_session": "Cancel session",
+    "cancel_session_confirm": "Cancel {title}? This can't be undone from here."
   },
   "kid": {
     "my_day": "My day",
