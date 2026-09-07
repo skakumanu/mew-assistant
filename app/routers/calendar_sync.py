@@ -108,6 +108,11 @@ class ConnectCalendar(BaseModel):
 
     calendar_provider: str  # google | ics
     calendar_account_id: str  # a Google calendar id, or an ICS feed URL
+    # The human-readable name Google's own picker showed for this calendar
+    # ("Sindhu's Calendar"), so the Providers tab can show what's actually
+    # connected instead of just "Connected via google." - a raw calendar id
+    # like a primary calendar's own email address tells a parent nothing.
+    calendar_display_name: Optional[str] = None
 
 
 @router.put("/orgs/{org_id}/calendar", response_model=SyncReport)
@@ -138,8 +143,25 @@ async def connect_org_calendar(
             status_code=status.HTTP_404_NOT_FOUND, detail="Provider organisation not found"
         )
 
+    account_id = payload.calendar_account_id.strip()
+    unchanged = org.calendar_provider == provider and org.calendar_account_id == account_id
+    if provider == "google" and not unchanged and _google_calendar_in_use_by_family(
+        db, current_user.id, account_id, exclude_org_id=org.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This calendar is already connected as a kid's push target for your "
+                "family. Pulling from the same calendar a push writes to creates a "
+                "sync loop - pick a different calendar for this provider."
+            ),
+        )
+
     org.calendar_provider = provider
-    org.calendar_account_id = payload.calendar_account_id.strip()
+    org.calendar_account_id = account_id
+    org.calendar_display_name = (
+        payload.calendar_display_name.strip() if payload.calendar_display_name else None
+    )
     _upsert_connection(db, org_id=org.id, parent_id=current_user.id)
     db.commit()
 
@@ -163,6 +185,87 @@ async def connect_org_calendar(
         skipped=skipped,
         error=error,
     )
+
+
+def _family_calendar_usage_map(
+    db: DbSession,
+    parent_id: int,
+    exclude_org_id: Optional[int] = None,
+    exclude_child_id: Optional[int] = None,
+) -> dict:
+    """
+    Every Google calendar this family already has in use, keyed by calendar
+    id, naming who's using it and in which direction.
+
+    This is the same information _google_calendar_in_use_by_family checks
+    for, but returned instead of collapsed into a bool - it lets a calendar
+    picker show a conflict BEFORE a save is attempted, rather than a parent
+    only discovering it from a rejected PUT after they've already picked.
+    ``exclude_org_id``/``exclude_child_id`` leave the entity being edited
+    out of its own results, the same reasoning as the collision check.
+    """
+    usage: dict = {}
+
+    org_query = (
+        db.query(ProviderOrg)
+        .join(ProviderOrgConnection, ProviderOrgConnection.org_id == ProviderOrg.id)
+        .filter(
+            ProviderOrgConnection.parent_id == parent_id,
+            ProviderOrg.calendar_provider == "google",
+            ProviderOrg.calendar_account_id.isnot(None),
+        )
+    )
+    if exclude_org_id is not None:
+        org_query = org_query.filter(ProviderOrg.id != exclude_org_id)
+    for org in org_query.all():
+        usage[org.calendar_account_id] = {"kind": "org", "name": org.name, "direction": "pull"}
+
+    kid_query = db.query(KidCalendarConnection).filter(
+        KidCalendarConnection.parent_id == parent_id,
+        KidCalendarConnection.calendar_provider == "google",
+        KidCalendarConnection.calendar_account_id.isnot(None),
+    )
+    if exclude_child_id is not None:
+        kid_query = kid_query.filter(KidCalendarConnection.child_id != exclude_child_id)
+    kid_rows = kid_query.all()
+    if kid_rows:
+        kids_by_id = {
+            kid.id: kid
+            for kid in db.query(User).filter(User.id.in_([row.child_id for row in kid_rows])).all()
+        }
+        for row in kid_rows:
+            kid = kids_by_id.get(row.child_id)
+            name = (kid.display_name or kid.username) if kid else "your kid"
+            usage[row.calendar_account_id] = {"kind": "kid", "name": name, "direction": "push"}
+
+    return usage
+
+
+def _google_calendar_in_use_by_family(
+    db: DbSession,
+    parent_id: int,
+    calendar_account_id: str,
+    exclude_org_id: Optional[int] = None,
+    exclude_child_id: Optional[int] = None,
+) -> bool:
+    """
+    True when this family already points a provider's pull source OR a
+    kid's push target at this exact Google calendar.
+
+    Pointing both directions at the same calendar is what caused a real
+    production incident: a pull sees every event a push just mirrored onto
+    that calendar as a brand-new external event, mirrors it again, and the
+    two directions feed each other forever. The mirror-tagging fix in
+    GoogleCalendarAdapter stops that loop from growing without bound, but
+    this is the cheaper fix - refuse the collision at the door so nobody
+    hits the loop, or even the milder "class shows twice" annoyance, again.
+    ``exclude_org_id``/``exclude_child_id`` let a no-op re-save of the same
+    value to the same record through, rather than flagging it against itself.
+    """
+    usage = _family_calendar_usage_map(
+        db, parent_id, exclude_org_id=exclude_org_id, exclude_child_id=exclude_child_id
+    )
+    return calendar_account_id in usage
 
 
 def _upsert_connection(
@@ -198,6 +301,7 @@ class ProviderOrgOut(BaseModel):
     name: str
     kind: str
     calendar_provider: Optional[str] = None
+    calendar_display_name: Optional[str] = None
     calendar_connected: bool = False
 
 
@@ -224,6 +328,7 @@ async def list_my_orgs(
             name=org.name,
             kind=org.kind,
             calendar_provider=org.calendar_provider,
+            calendar_display_name=org.calendar_display_name,
             calendar_connected=bool(org.calendar_provider and org.calendar_account_id),
         )
         for org in rows
@@ -235,6 +340,7 @@ class ConnectKidCalendar(BaseModel):
 
     calendar_provider: str  # google only, for now
     calendar_account_id: str  # a Google calendar id
+    calendar_display_name: Optional[str] = None
 
 
 class KidCalendarConnectionOut(BaseModel):
@@ -243,6 +349,7 @@ class KidCalendarConnectionOut(BaseModel):
     child_id: int
     ok: bool
     calendar_connected: bool
+    calendar_display_name: Optional[str] = None
 
 
 @router.put("/kids/{child_id}/calendar", response_model=KidCalendarConnectionOut)
@@ -271,12 +378,42 @@ async def connect_kid_calendar(
     if child is None or child.parent_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your child")
 
+    account_id = payload.calendar_account_id.strip()
+    existing = (
+        db.query(KidCalendarConnection).filter(KidCalendarConnection.child_id == child.id).first()
+    )
+    unchanged = (
+        existing is not None
+        and existing.calendar_provider == provider
+        and existing.calendar_account_id == account_id
+    )
+    if not unchanged and _google_calendar_in_use_by_family(
+        db, current_user.id, account_id, exclude_child_id=child.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This calendar is already connected as a provider's pull source for "
+                "your family. Pushing this kid's schedule to the same calendar a "
+                "pull reads from creates a sync loop - pick a different calendar "
+                "for this kid."
+            ),
+        )
+
     connection = _upsert_kid_connection(db, child_id=child.id, parent_id=current_user.id)
     connection.calendar_provider = provider
-    connection.calendar_account_id = payload.calendar_account_id.strip()
+    connection.calendar_account_id = account_id
+    connection.calendar_display_name = (
+        payload.calendar_display_name.strip() if payload.calendar_display_name else None
+    )
     db.commit()
 
-    return KidCalendarConnectionOut(child_id=child.id, ok=True, calendar_connected=True)
+    return KidCalendarConnectionOut(
+        child_id=child.id,
+        ok=True,
+        calendar_connected=True,
+        calendar_display_name=connection.calendar_display_name,
+    )
 
 
 def _upsert_kid_connection(
