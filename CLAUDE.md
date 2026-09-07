@@ -2,6 +2,49 @@
 
 Instructions for Claude Code (and any other agent) working in this repository.
 
+## AI-native SDLC
+
+Feature and bug-fix work in this repo runs through a six-phase loop, each
+phase a dedicated agent, each handoff committing a version-controlled
+Markdown artifact a human reviews before the next phase starts:
+
+```
+Plan → Design → Build → Test → Deploy → (dogfooding) → Maintain → back to Plan
+```
+
+| Phase | Agent | Reads | Writes | Human gate |
+|---|---|---|---|---|
+| Plan | `sdlc-plan` | the raw request | `docs/features/<slug>/intent.md` | accepts the problem as scoped |
+| Design | `sdlc-design` | `intent.md` | `spec.md` | approves the concrete design |
+| Build | `sdlc-build` | `spec.md` | `plan.md`, then code + tests, on a `feature/`/`hotfix/` branch | approves the plan and implementation |
+| Test | `sdlc-test` | the branch, `spec.md`'s acceptance criteria | a verification report | accepts pass (or a known, accepted gap) |
+| Deploy | `sdlc-deploy` | the tested branch | a PR + merge to `develop` | none needed for the `develop` merge itself |
+| Maintain | `sdlc-maintain` | production feedback about a shipped feature | the *next* cycle's `intent.md` | closes the loop back to Plan |
+
+**The production gate is `develop` → `master`, and it is never automatic.**
+`master` auto-deploys to Fly.io on every green push (see "CI/CD gates"
+below) - promoting to it always needs an explicit human instruction in the
+conversation, never inferred from an earlier "ship this" or from Deploy's
+own confidence. Every phase agent's own instructions repeat this; it is
+the one rule this SDLC does not delegate.
+
+Run this loop with the `ship-feature` skill (`.claude/skills/ship-feature/
+SKILL.md`) - it's the orchestrator: it dispatches each `sdlc-*` agent in
+`.claude/agents/`, shows the human the actual artifact at every handoff,
+and stops until the human clears it to continue. The agents themselves
+carry the phase-specific detail (what an intent.md/spec.md/plan.md needs
+to contain, this repo's own conventions to follow, what each phase must
+never do) - this file states the shape of the loop, not the mechanics of
+running it.
+
+Not every change needs the ceremony spelled out: a one-line typo fix can
+move through the phases quickly (Plan and Design can each be a paragraph),
+but it still goes through them, on the theory that the discipline of
+writing "what problem, why, what design, what plan" costs little when the
+answer is short and catches real mistakes when it isn't as short as it
+looked. `docs/features/parent-week-edit/` is a worked example, written
+retroactively for a feature shipped before this skill existed.
+
 ## Git Flow — mandatory
 
 - `master` and `develop` are protected. Never commit directly to either.
