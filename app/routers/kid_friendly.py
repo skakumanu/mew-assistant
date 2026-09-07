@@ -31,8 +31,10 @@ from ..services.change_request_service import ChangeRequestService
 from ..services.kid_service import KidService
 from ..services.notification_service import NotificationService
 from ..services.presenter import Presenter
+from ..services.ruleset_service import RuleSetService
 from ..utils.auth import get_current_user, verify_kid_account
 from ..utils.content_filter import ContentFilter
+from ..utils.locale import from_local, to_local
 from ..utils.locale_context import translator_for
 
 router = APIRouter(prefix="/kid", tags=["Kid-Friendly"])
@@ -275,6 +277,7 @@ async def _change_scheduled_session(
     )
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
+    tz_name = RuleSetService(db).timezone_for_child(current_user.id)
 
     if outcome.auto_applied:
         message = (
@@ -283,7 +286,7 @@ async def _change_scheduled_session(
             else translator.t(
                 "kid.done",
                 title=outcome.session.title,
-                time=translator.time(outcome.session.start_utc),
+                time=translator.time(to_local(outcome.session.start_utc, tz_name)),
             )
         )
         return SimplifiedResponse(
@@ -365,6 +368,7 @@ async def ask_about_a_session(
 
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
     presenter = Presenter(translator, db)
+    tz_name = RuleSetService(db).timezone_for_child(current_user.id)
 
     if outcome.auto_applied:
         message = (
@@ -373,7 +377,7 @@ async def ask_about_a_session(
             else translator.t(
                 "kid.done",
                 title=outcome.session.title,
-                time=translator.time(outcome.session.start_utc),
+                time=translator.time(to_local(outcome.session.start_utc, tz_name)),
             )
         )
         return ChangeRequestOut(
@@ -413,10 +417,16 @@ async def get_today(
     translator = translator_for(http_request.headers.get("accept-language"), current_user, db)
     presenter = Presenter(translator, db)
     service = ChangeRequestService(db)
+    tz_name = RuleSetService(db).timezone_for_child(current_user.id)
 
-    now = datetime.utcnow()
-    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_end = day_start + timedelta(days=1)
+    # "Today" is the kid's own day, not UTC's - an evening class stored as
+    # past-midnight UTC is still this evening for them.
+    now_utc = datetime.utcnow()
+    now_local = to_local(now_utc, tz_name)
+    day_start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end_local = day_start_local + timedelta(days=1)
+    day_start = from_local(day_start_local, tz_name)
+    day_end = from_local(day_end_local, tz_name)
     sessions = service.sessions_for_child(current_user.id, day_start, day_end)
 
     cards: List[KidCardOut] = []
@@ -431,11 +441,11 @@ async def get_today(
             KidCardOut(
                 session_id=session.id,
                 title=session.title,
-                time_label=translator.time(session.start_utc),
+                time_label=translator.time(to_local(session.start_utc, tz_name)),
                 person=session.person.display_name if session.person else "",
                 initial=(session.title or "?")[:1].upper(),
                 tile_index=presenter.tile_index(session),
-                can_ask=pending is None and session.start_utc > now,
+                can_ask=pending is None and session.start_utc > now_utc,
                 status_text=status_text,
                 symbols=presenter.kid_card_symbols(session),
             )
@@ -444,9 +454,11 @@ async def get_today(
     count = len(cards)
     return KidTodayOut(
         greeting=translator.t("kid.my_day"),
-        day_label=f"{translator.day_name(now)}, {translator.date_label(now)}",
+        day_label=f"{translator.day_name(now_local)}, {translator.date_label(now_local)}",
         count_label=translator.t("kid.things_today", count=count),
-        streak_label=translator.t("kid.calm_days", count=_calm_streak(db, current_user.id)),
+        streak_label=translator.t(
+            "kid.calm_days", count=_calm_streak(db, current_user.id, tz_name)
+        ),
         cards=cards,
         note=translator.t("kid.note"),
         locale=translator.code,
@@ -454,15 +466,17 @@ async def get_today(
     )
 
 
-def _calm_streak(db: Session, kid_id: int) -> int:
+def _calm_streak(db: Session, kid_id: int, tz_name: str) -> int:
     """
     Consecutive days back from today with nothing parked for a parent.
 
     The design maps the old sticker collection onto this: a calm day is a
-    day where every request cleared the rules on its own.
+    day where every request cleared the rules on its own. Days are the
+    kid's own calendar days, not UTC's, so a request parked late in the
+    evening still counts against the day it happened for them.
     """
     parked_days = {
-        row.created_at.date()
+        to_local(row.created_at, tz_name).date()
         for row in db.query(ApprovalRequest)
         .filter(
             ApprovalRequest.kid_id == kid_id,
@@ -473,7 +487,7 @@ def _calm_streak(db: Session, kid_id: int) -> int:
         if row.created_at is not None
     }
 
-    today = datetime.utcnow().date()
+    today = to_local(datetime.utcnow(), tz_name).date()
     streak = 0
     while streak < MAX_STREAK_DAYS:
         if (today - timedelta(days=streak)) in parked_days:
