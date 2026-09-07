@@ -4,10 +4,12 @@ Tests for AI Scheduler Service
 
 from datetime import datetime
 
+import jwt
 import pytest
 
 from app.database.models import ActivityType, PriorityLevel, ScheduleEntry, SessionStatus
 from app.services.ai_scheduler_service import AISchedulerService
+from app.utils.config import settings
 
 
 @pytest.mark.asyncio
@@ -209,3 +211,29 @@ async def test_pattern_learning_threshold(db_session, test_user):
     patterns = await service._learn_user_patterns(test_user.id, "therapy")
 
     assert patterns["has_patterns"] is False
+
+
+def test_a_tampered_bearer_token_is_rejected_with_401_not_500(client, test_user):
+    """
+    Regression guard for app/middleware/auth.py's get_current_user: a token
+    that fails to decode for any reason other than expiry (bad signature,
+    here) must return a clean 401, not crash. This dependency previously
+    caught `jwt.JWTError` - an exception name from python-jose, not the
+    real PyJWT this file actually imports - so any non-expired decode
+    failure fell straight through the except clause into an unhandled
+    AttributeError (a 500) instead of ever reaching this branch.
+    """
+    tampered_token = jwt.encode({"sub": test_user.id}, "not-the-real-secret", algorithm=settings.ALGORITHM)
+
+    response = client.post(
+        "/ai-scheduler/detect-conflicts",
+        json={
+            "start_time": "2025-01-15T10:00:00",
+            "end_time": "2025-01-15T11:00:00",
+            "title": "Tutoring",
+            "activity_type": "tutoring",
+        },
+        headers={"Authorization": f"Bearer {tampered_token}"},
+    )
+
+    assert response.status_code == 401
