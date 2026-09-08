@@ -31,6 +31,14 @@
 
 ---
 
+### 🏗️ Architecture
+
+| Document | Purpose |
+|----------|---------|
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Whole-app reference: router layer map, data model, services layer, deployment topology, and the trigger-list for keeping it current |
+
+---
+
 ### 📱 Mobile & Voice
 
 | Document | Purpose | Status |
@@ -70,6 +78,7 @@
 | Document | Purpose |
 |----------|---------|
 | **[CHANGELOG.md](CHANGELOG.md)** | Version history & bug fixes |
+| **[docs/WHATS_NEW.md](docs/WHATS_NEW.md)** | The same history, written for a parent rather than a developer |
 | **[LICENSE](LICENSE)** | Project license |
 
 ---
@@ -113,6 +122,8 @@ generated from `openapi.json`)
 ├── DOCUMENTATION_INDEX.md       # This file
 └── docs/
     ├── README.md
+    ├── ARCHITECTURE.md
+    ├── WHATS_NEW.md
     ├── OAUTH_SETUP.md
     ├── THREE_PERSONA_SCHEDULING.md
     ├── KNOWN_ISSUES.md
