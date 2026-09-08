@@ -89,6 +89,16 @@ Azure IaC (`infrastructure/azure/`, root `*.bicep` files) — dormant and no
 longer wired into CI, kept for reference/teardown only. Don't resurrect it
 without checking with the repo owner first.
 
+## Documentation
+
+`docs/ARCHITECTURE.md` is the whole-app architecture reference (router
+layer map, data model, services layer, deployment topology).
+`docs/THREE_PERSONA_SCHEDULING.md` covers the request/approval loop in
+depth and stays the source of truth for that one domain; `ARCHITECTURE.md`
+links to it rather than duplicating it. `docs/ARCHITECTURE.md`'s own
+closing section is the trigger-list for when to update it — check it
+before adding a router, a model, a service, or a new external integration.
+
 ## Before committing
 
 - Run `pytest tests/` and `flake8 app tests` locally — CI runs the same
@@ -96,3 +106,11 @@ without checking with the repo owner first.
 - Never commit `.env`, real secrets, or `.db` files — `.gitignore` should
   already cover these; double-check `git status` before staging.
 - Use conventional commit style (`feat:`, `fix:`, `chore:`, `docs:`, etc.).
+- If this change is user-visible, bump `APP_VERSION` in
+  `app/utils/config.py` (semver), and add a matching `CHANGELOG.md` entry
+  and git tag in the same release — `tests/test_version.py` fails CI if
+  `APP_VERSION` and `CHANGELOG.md`'s top versioned entry disagree.
+- If this change is user-visible, add a matching plain-language entry to
+  `docs/WHATS_NEW.md` alongside the `CHANGELOG.md` entry above — written
+  for a parent, not a developer (no file paths, endpoint names, or
+  internal class names).

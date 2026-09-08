@@ -6,6 +6,28 @@ All notable changes to the Mew Assistant project.
 
 ## [Unreleased]
 
+### 🔧 Process / tooling
+- Adopted five engineering-discipline practices, closing gaps surfaced by
+  this cycle's own investigation rather than by rote
+  ([docs/features/adopt-engineering-discipline-practices/](docs/features/adopt-engineering-discipline-practices/)):
+  - `settings.APP_VERSION` is now the single source `FastAPI(version=...)`
+    and `GET /version` both read from, locked against `CHANGELOG.md`'s top
+    entry by `tests/test_version.py` — replaces `/version`'s previously
+    hardcoded, unrelated `landing-page-v2` stub
+  - Two new `.gitleaks.toml` rules (`connection-string-credential`,
+    `google-oauth-client-secret`) close a demonstrated blind spot in
+    gitleaks' default ruleset against this repo's own real incident shape
+  - A file-scoped coverage floor (`.github/workflows/ci-cd.yml`) and a new
+    golden-outcomes test class (`tests/test_change_request_decisions.py`)
+    lock `ChangeRequestService.submit()`'s approve/park decision as a named
+    invariant, independent of the whole-repo coverage aggregate
+  - `docs/WHATS_NEW.md`: this changelog's parent-readable companion
+  - `docs/ARCHITECTURE.md`: a whole-app architecture reference with its own
+    update trigger-list, filling a gap `align-docs-with-current-app`
+    explicitly left open
+  - No user-facing change; nothing here touches `app/database/models.py`,
+    a route, or a locale file
+
 ## [1.1.0] - August 24, 2026
 
 ### ✨ Features
