@@ -25,7 +25,14 @@ description = "Documentation examples with placeholder tokens, and this repo's o
 paths = [
   '''docs/GETTING_STARTED\.md''',
   '''docs/FEDERATED_AUTH_GUIDE\.md''',
-  '''DEPLOYMENT_SUMMARY\.md'''
+  '''DEPLOYMENT_SUMMARY\.md''',
+  # This cycle's own design doc discusses the incident shape and quotes
+  # synthetic/redacted examples of it - never a live secret (the real
+  # values it once quoted were redacted; see git blame).
+  '''docs/features/adopt-engineering-discipline-practices/spec\.md''',
+  # Synthetic, incident-shaped fixtures verifying the two rules below -
+  # explicitly never a real secret, see the file's own module docstring.
+  '''tests/test_gitleaks_rules\.py'''
 ]
 regexes = [
   '''YOUR_ACCESS_TOKEN''',
