@@ -19,7 +19,7 @@ cryptography==50.0.1
 workos>=10.3.0,<11
 
 # Google Services
-google-auth==2.56.3
+google-auth==2.57.1
 google-auth-oauthlib==1.4.1
 google-auth-httplib2==0.2.0
 google-api-python-client==2.199.0
