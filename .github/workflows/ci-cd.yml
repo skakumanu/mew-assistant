@@ -37,6 +37,31 @@ jobs:
         WORKOS_CLIENT_ID: test-workos-client-id-for-ci-only
         ENVIRONMENT: test
         PYTHONPATH: '.'
+    - name: Data-accuracy gate - rule engine / change-request decisions
+      # File-scoped coverage floor over the two modules that decide whether
+      # a change auto-applies or waits for a parent (app/services/rule_engine.py,
+      # app/services/change_request_service.py). `--cov=app` in pytest.ini's
+      # own `addopts` would otherwise silently widen these `--cov=<module>`
+      # flags back into the whole-repo aggregate above (which cannot fail
+      # over a drop isolated to one file) - `--override-ini=addopts=` is
+      # what makes this a real per-file gate instead of a no-op duplicate of
+      # the step above. 94.5 is today's measured combined coverage (95.06%,
+      # rule_engine.py 100%/change_request_service.py 92%) minus a small
+      # margin, not a guessed round number - see
+      # docs/features/adopt-engineering-discipline-practices/plan.md.
+      run: |
+        pytest tests/test_rule_engine.py tests/test_change_requests.py \
+          --override-ini=addopts= \
+          --cov=app.services.rule_engine --cov=app.services.change_request_service \
+          --cov-report=term-missing --cov-fail-under=94.5
+      env:
+        DATABASE_URL: sqlite:///./test-${{ github.run_id }}.db
+        SECRET_KEY: test-secret-key-for-ci-only
+        JWT_SECRET_KEY: test-secret-key-for-ci-only
+        WORKOS_API_KEY: test-workos-api-key-for-ci-only
+        WORKOS_CLIENT_ID: test-workos-client-id-for-ci-only
+        ENVIRONMENT: test
+        PYTHONPATH: '.'
     - name: Upload coverage reports
       uses: codecov/codecov-action@v7
       if: success()
