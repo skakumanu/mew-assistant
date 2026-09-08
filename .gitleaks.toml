@@ -1,5 +1,27 @@
+# Two additive rules, closing a gap demonstrated against gitleaks v8.18.4's
+# own bundled default ruleset (github.com/gitleaks/gitleaks config/gitleaks.toml)
+# and the shape of this repo's own real incident (commit 98ae088): an
+# `az containerapp show`-style JSON export with `"name": "...SECRET",` and
+# its value on the *next* line (defeats keyword-adjacent `generic-api-key`),
+# and a plaintext password embedded in a `scheme://user:pass@host`
+# connection string (no default rule covers this shape at all). Full
+# investigation: docs/features/adopt-engineering-discipline-practices/spec.md,
+# section 2. Verified via tests/test_gitleaks_rules.py, never against a real
+# secret.
+[[rules]]
+id = "connection-string-credential"
+description = "A plaintext credential inside a scheme://user:pass@host connection string (DATABASE_URL's own shape)"
+regex = '''(?i)\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqps?)://[A-Za-z0-9_.~%+-]*:[^\s@/]+@[A-Za-z0-9_.-]+'''
+tags = ["credentials", "connection-string"]
+
+[[rules]]
+id = "google-oauth-client-secret"
+description = "A Google OAuth client secret (GOCSPX- is a scanner-friendly prefix Google added specifically for this)"
+regex = '''GOCSPX-[A-Za-z0-9_-]{20,64}'''
+tags = ["credentials", "google-oauth"]
+
 [allowlist]
-description = "Documentation examples with placeholder tokens"
+description = "Documentation examples with placeholder tokens, and this repo's own non-secret dev/test connection-string placeholders that would otherwise false-positive against connection-string-credential"
 paths = [
   '''docs/GETTING_STARTED\.md''',
   '''docs/FEDERATED_AUTH_GUIDE\.md''',
@@ -7,5 +29,10 @@ paths = [
 ]
 regexes = [
   '''YOUR_ACCESS_TOKEN''',
-  '''Authorization: Bearer [A-Z_]+'''
+  '''Authorization: Bearer [A-Z_]+''',
+  # app/database/connection.py's fallback default and docker-compose.yml's
+  # local-dev DATABASE_URL - the same non-secret placeholder in both places.
+  '''postgresql://mew_user:mew_password@''',
+  # .github/workflows/performance-test.yml's CI-only DATABASE_URL.
+  '''postgresql://mew:test_password@'''
 ]
