@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ from .database.connection import init_db, verify_schema
 from .middleware import CORSSecurityMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
 from .middleware.bot_protection import BotProtectionMiddleware
 from .routers import landing
+from .utils.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Mew Assistant API",
     description="AI-powered scheduling assistant for special needs families",
-    version="1.1.0",
+    version=settings.APP_VERSION,
     lifespan=lifespan,
 )
 
@@ -143,4 +145,8 @@ async def health():
 
 @app.get("/version")
 async def version():
-    return {"version": "landing-page-v2", "deployed": "2025-11-28T02:00:00Z"}
+    # `deployed` has no reliable source yet: nothing in fly.toml/Dockerfile
+    # sets BUILD_TIME today, so this is `null` until that's wired up, rather
+    # than a guessed or stale timestamp. `version` is the real signal here,
+    # and it now has exactly one source (settings.APP_VERSION).
+    return {"version": settings.APP_VERSION, "deployed": os.environ.get("BUILD_TIME")}
