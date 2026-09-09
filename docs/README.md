@@ -7,6 +7,9 @@ Welcome to the Mew Assistant documentation directory!
 ## 📖 Documentation Index
 
 ### For Developers
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - the whole-app reference: router
+  layer map, data model, services layer, deployment topology, and the
+  trigger-list for keeping it current
 - **[OAUTH_SETUP.md](OAUTH_SETUP.md)** - WorkOS AuthKit sign-in setup, plus
   the separate Google Calendar-connect OAuth flow
 - **[THREE_PERSONA_SCHEDULING.md](THREE_PERSONA_SCHEDULING.md)** - the
@@ -17,6 +20,8 @@ Welcome to the Mew Assistant documentation directory!
 - **[integrations/SETUP_GUIDE.md](integrations/SETUP_GUIDE.md)** -
   Email/SMS/WhatsApp/AI/Calendar integration setup
 - **[../CHANGELOG.md](../CHANGELOG.md)** - version history and changes
+- **[WHATS_NEW.md](WHATS_NEW.md)** - the same history, written for a
+  parent rather than a developer
 - **[../CLAUDE.md](../CLAUDE.md)** - git flow, CI/CD gates, deployment
 
 ### Historical / superseded (kept for reference only)
@@ -43,6 +48,8 @@ Welcome to the Mew Assistant documentation directory!
 ├── CLAUDE.md                # Git flow, CI/CD, deployment
 └── docs/
     ├── README.md            # This file
+    ├── ARCHITECTURE.md
+    ├── WHATS_NEW.md
     ├── OAUTH_SETUP.md
     ├── THREE_PERSONA_SCHEDULING.md
     ├── KNOWN_ISSUES.md
