@@ -6,6 +6,53 @@ All notable changes to the Mew Assistant project.
 
 ## [Unreleased]
 
+## [1.2.0] - September 9, 2026
+
+### 🔌 Integrations
+- **Push a kid's own schedule into their own Google Calendar**
+  ([docs/features/kid-calendar-push/](docs/features/kid-calendar-push/)):
+  a one-way, parent-authorised mirror of a kid's `ScheduledSession`s into
+  their own personal Google Calendar - distinct from, and independent of,
+  the existing provider-calendar pull/write-back
+  - `KidCalendarConnection` (`app/database/models.py`) is the parent's
+    push target for a kid: one row per `child_id`, enforced by a unique
+    constraint on `child_id` alone, so a co-parent reconnecting it updates
+    the same row rather than creating a sibling one
+  - `CalendarSyncService.push_to_kid_calendar()`
+    (`app/services/calendar_sync_service.py`) creates, updates or cancels
+    the mirrored event, deciding which purely from whether
+    `ScheduledSession.kid_calendar_event_id` is already set; every event
+    it writes is tagged (`MIRROR_PROPERTY_KEY`,
+    `app/integrations/calendar_sync/google.py`) so a later pull can never
+    re-ingest its own mirror as a new session
+  - Wired into both places a push-only feature needs, each independently
+    best-effort so one failing write never blocks the other:
+    `ChangeRequestService`'s write-back on a parent approval or a
+    rule-engine auto-clear, and `CalendarSyncService.pull_org` for a
+    session a provider reschedules on their own calendar
+  - `app/routers/kid_calendar_oauth.py`: the parent-facing OAuth
+    connect/callback/calendar-picker flow - ownership-checked so a parent
+    can only connect a kid that is actually theirs, and the calendar
+    picker filters to writer/owner calendars only (a push target, unlike
+    the provider picker's read-only need) and flags a calendar already in
+    use elsewhere in the family
+  - `calendar_oauth.py`'s `CALENDAR_SCOPE` is the full
+    `.../auth/calendar` scope (not `calendar.readonly`), specifically to
+    support the writes this flow needs - incidentally correct for the
+    provider write-back path too
+  - Providers tab (`app/static/mew/mew.js`'s
+    `renderKidCalendars`/`kidCalendarCard`) gained a per-kid calendar
+    card: connect button, calendar picker, and a shared-calendar conflict
+    warning; copy localised in all four supported locales
+  - `tests/test_kid_calendar_connections.py`: the connect flow,
+    cross-family ownership isolation, the calendar picker, push
+    create/update/cancel, and two regression cases for real incidents (a
+    shared push/pull calendar causing a duplicate-event loop; a
+    pre-existing collision wrongly re-flagged on a plain reconnect)
+  - Already built, merged and live in production ahead of this entry;
+    this closes a release-record gap rather than describing new work -
+    see the linked feature folder for the full account
+
 ### 🔧 Process / tooling
 - Adopted five engineering-discipline practices, closing gaps surfaced by
   this cycle's own investigation rather than by rote
