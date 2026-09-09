@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     # CHANGELOG.md's top *versioned* heading by tests/test_version.py.
     # Bump this (semver) in the same PR as a user-visible change, alongside
     # a matching CHANGELOG.md entry and git tag - see CLAUDE.md.
-    APP_VERSION: str = "1.1.0"
+    APP_VERSION: str = "1.2.0"
     ENVIRONMENT: str = "production"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"

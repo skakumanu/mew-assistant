@@ -25,9 +25,12 @@ behind each release, see [`CHANGELOG.md`](../CHANGELOG.md).
 - Lots of small accessibility improvements: bigger buttons, calmer
   motion, and information that's never shown using color alone.
 
-## September 2026
+## September 9, 2026
 
-- Nothing new for you to see this time - this update was behind-the-
-  scenes housekeeping (how we track version numbers, catch accidental
-  secrets, and keep our own documentation honest) so future updates stay
-  reliable.
+- If your child is old enough to check their own phone calendar, you can
+  now connect their Mew schedule to it. Once you set this up for them
+  from the Providers tab, any change to their schedule - one you
+  approve, or one their care team makes - shows up automatically on
+  their own Google Calendar, the same one they already check. It only
+  ever adds to their calendar; nothing from their personal calendar is
+  ever read back into Mew.
