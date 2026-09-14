@@ -7,7 +7,7 @@ pydantic-settings==2.15.0
 # Database
 sqlalchemy==2.0.52
 psycopg2-binary==2.9.12
-alembic==1.19.1
+alembic==1.19.2
 
 # Authentication & OAuth
 pyjwt==2.13.0
