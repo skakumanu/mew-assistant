@@ -39,3 +39,7 @@ reason = "Same starlette/fastapi constraint as GHSA-86qp-5c8j-p5mr."
 [[IgnoredVulns]]
 id = "GHSA-6w46-j5rx-g56g"
 reason = "pytest (transitive via pytest-asyncio/pytest-benchmark, dev/test-only, never shipped to production): bumping to 9.x needs pytest-asyncio 0.23.8 and pytest-benchmark 5.2.3 verified compatible first — separate follow-up, not blocking this infra PR."
+
+[[IgnoredVulns]]
+id = "GHSA-gvp8-978c-rx2q"
+reason = "pyjwt (direct dep, PYSEC-2026-4146, CVSS 6.5): osv-scanner itself reports Fixed version: -- for this one, unlike every other pyjwt advisory bumped away by the 2.15.0 upgrade alongside it. No released pyjwt version fixes it yet."
