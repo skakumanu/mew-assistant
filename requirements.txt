@@ -1,13 +1,13 @@
 # Core FastAPI
 fastapi==0.141.1
-uvicorn[standard]==0.52.4
-pydantic==2.12.4
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
 pydantic-settings==2.15.0
 
 # Database
-sqlalchemy==2.0.52
-psycopg2-binary==2.9.12
-alembic==1.19.1
+sqlalchemy==2.0.54
+psycopg2-binary==2.9.13
+alembic==1.20.0
 
 # Authentication & OAuth
 pyjwt==2.15.0
@@ -19,7 +19,7 @@ cryptography==50.0.1
 workos>=10.3.0,<11
 
 # Google Services
-google-auth==2.57.1
+google-auth==2.58.0
 google-auth-oauthlib==1.4.1
 google-auth-httplib2==0.4.2
 google-api-python-client==2.200.0
@@ -36,10 +36,10 @@ email-validator==2.3.0
 jinja2==3.1.6
 
 # Twilio (SMS/WhatsApp webhook signature verification)
-twilio==9.11.0
+twilio==9.11.1
 
 # Other
-requests==2.33.0
+requests==2.34.2
 python-dateutil==2.9.0.post0
 pytz==2026.3.post1
 bleach==6.4.0
@@ -58,7 +58,7 @@ pytest-benchmark==5.3.0
 # whole dependency was the only real remedy.)
 aiohttp==3.14.4
 idna==3.19
-protobuf==7.36.1
+protobuf==7.36.2
 pygments==2.21.0
 # anyio rides in via httpx; GHSA-82r6-8w77-94w6 (critical) and
 # GHSA-5p39-cfhj-2xmp, both fixed in 4.14.2.
