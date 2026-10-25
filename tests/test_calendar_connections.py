@@ -39,12 +39,19 @@ from .conftest import _auth
 # test's patched value when two mocks are chained in the same test.
 _REAL_ASYNC_CLIENT = httpx.AsyncClient
 
-ICS = """BEGIN:VCALENDAR
+# Anchored to "now" rather than a literal date - a hardcoded past date
+# would make the ICS adapter correctly (and silently) skip the event as
+# already over, which is exactly what broke this fixture once real time
+# caught up to a previous literal.
+_ICS_EVENT_START = datetime.utcnow() + timedelta(days=1)
+_ICS_EVENT_END = _ICS_EVENT_START + timedelta(hours=1, minutes=30)
+
+ICS = f"""BEGIN:VCALENDAR
 BEGIN:VEVENT
 UID:aba-100
 SUMMARY:ABA session
-DTSTART:20260910T153000Z
-DTEND:20260910T170000Z
+DTSTART:{_ICS_EVENT_START.strftime('%Y%m%dT%H%M%SZ')}
+DTEND:{_ICS_EVENT_END.strftime('%Y%m%dT%H%M%SZ')}
 END:VEVENT
 END:VCALENDAR
 """
