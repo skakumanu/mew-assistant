@@ -21,7 +21,7 @@ workos>=10.3.0,<11
 # Google Services
 google-auth==2.58.0
 google-auth-oauthlib==1.4.1
-google-auth-httplib2==0.4.2
+google-auth-httplib2==0.4.4
 google-api-python-client==2.200.0
 
 # Azure
